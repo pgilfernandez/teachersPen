@@ -25,6 +25,8 @@ La barra se puede mover arrastrando el nombre. La aplicación también aparece e
 
 Las preferencias permiten cambiar el grosor, colores, duración y atajos. Guardar aplica los cambios; si un atajo está ocupado o es inválido se conservan los ajustes anteriores. Los trazos se guardan solo en memoria y permanecen fijos en coordenadas de pantalla. En modo interacción los trazos siguen visibles y los clics atraviesan la capa. Las pizarras tienen un fondo opaco hasta que vuelves a pulsar su botón/atajo.
 
+Si abres una pizarra después de ocultar los trazos, empieza limpia: las anotaciones ocultas se borran del lienzo y se pueden recuperar explícitamente con Deshacer. Cambiar entre blanco y negro conserva los trazos visibles que estés usando.
+
 ## Compatibilidad
 
 | Plataforma | Base de esta versión | Estado |

@@ -78,7 +78,12 @@ function perform(action: Action, fromShortcut = false) {
     case 'visible': state.visible = !state.visible; if (!state.visible) setDrawing(false); break;
     case 'white': case 'black':
       state.background = state.background === action ? 'transparent' : action;
-      if (state.background !== 'transparent') setDrawing(true);
+      if (state.background !== 'transparent') {
+        // Opening a board from a clean, hidden canvas must not reveal the old ink.
+        // Clear through the history so the user can still explicitly undo it.
+        if (!state.visible) sendDrawingAction('clear');
+        setDrawing(true);
+      }
       break;
     case 'timer':
       clearTimeout(timerTimeout);
@@ -255,7 +260,28 @@ async function runSmoke() {
   await new Promise(resolve => setTimeout(resolve, 100));
   assert.equal(await overlay.webContents.executeJavaScript(`(() => { const c=document.querySelector('canvas'); return c.getContext('2d').getImageData(0,0,c.width,c.height).data.some((v,i)=>i%4===3&&v>0); })()`), false);
   perform('redo');
+  await new Promise(resolve => setTimeout(resolve, 100));
+  const hasInk = () => overlay.webContents.executeJavaScript(`(() => { const c=document.querySelector('canvas'); return c.getContext('2d').getImageData(0,0,c.width,c.height).data.some((v,i)=>i%4===3&&v>0); })()`);
+  perform('visible');
+  await new Promise(resolve => setTimeout(resolve, 100));
+  assert.equal(await hasInk(), false, 'Ocultar debe dejar la pantalla limpia');
   perform('white'); assert.equal(state.background, 'white');
+  await new Promise(resolve => setTimeout(resolve, 100));
+  assert.equal(await hasInk(), false, 'La pizarra blanca no debe recuperar los trazos ocultos');
+  perform('black'); assert.equal(state.background, 'black');
+  await new Promise(resolve => setTimeout(resolve, 100));
+  assert.equal(await hasInk(), false, 'La pizarra negra debe seguir limpia');
+  perform('undo');
+  await new Promise(resolve => setTimeout(resolve, 100));
+  assert.equal(await hasInk(), true, 'El borrado al abrir una pizarra debe poder deshacerse');
+  perform('clear');
+  perform('white');
+  await new Promise(resolve => setTimeout(resolve, 100));
+  assert.equal(await hasInk(), false, 'Borrar todo y cambiar a blanco debe mantener el lienzo limpio');
+  perform('black');
+  await new Promise(resolve => setTimeout(resolve, 100));
+  assert.equal(await hasInk(), false, 'Borrar todo y cambiar a negro debe mantener el lienzo limpio');
+  perform('white');
   perform('white'); assert.equal(state.background, 'transparent');
   perform('toggle'); assert.equal(state.drawing, false);
   openPreferences();
