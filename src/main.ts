@@ -1,7 +1,9 @@
-import { app, BrowserWindow, globalShortcut, ipcMain, Menu, nativeImage, screen, Tray } from 'electron';
+import { app, BrowserWindow, globalShortcut, ipcMain, Menu, nativeImage, powerMonitor, screen, Tray } from 'electron';
 import { readFileSync, writeFileSync, mkdirSync, renameSync } from 'node:fs';
 import path from 'node:path';
 import { actions, actionLabels, defaults, parseSettings, tools, type Action, type Command, type Settings, type State } from './shared';
+import { HoldActivation, isDrawingShortcut } from './hold';
+import { NativeHoldMonitor } from './native-hold';
 
 const smoke = process.argv.includes('--smoke-test');
 app.setName('TeachersPen');
@@ -12,12 +14,23 @@ let tray: Tray;
 let activeDisplay: number;
 let quitting = false;
 let rebuilding = false;
+let recordingShortcut = false;
 let timerTimeout: ReturnType<typeof setTimeout> | undefined;
+const nativeDirectory = app.isPackaged ? path.join(process.resourcesPath, 'app.asar.unpacked', 'dist', 'native') : path.join(__dirname, 'native');
+const holdMonitor = new NativeHoldMonitor(path.join(nativeDirectory, process.platform === 'win32' ? 'key-state.exe' : 'key-state'));
 const state: State = {
   drawing: false, tool: 'freehand', color: 1, visible: true, background: 'transparent', timerEnd: null,
   settings: defaults(), shortcutErrors: [], platform: process.platform,
-  wayland: process.platform === 'linux' && !!process.env.WAYLAND_DISPLAY
+  wayland: process.platform === 'linux' && !!process.env.WAYLAND_DISPLAY,
+  holding: false, holdAvailable: holdMonitor.available, holdError: null
 };
+const hold = new HoldActivation(holdMonitor, action => {
+  state.holding = true;
+  state.holdError = null;
+  if (action !== 'toggle') perform(action, true);
+  else activeDisplay = screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).id;
+  setDrawing(true);
+}, () => setDrawing(false), message => { state.holdError = message; broadcast(); });
 // Electron 37's overlay backend is supported on X11. Do not silently claim Wayland support.
 if (process.platform === 'linux') app.commandLine.appendSwitch('ozone-platform', 'x11');
 if (process.argv.includes('--software-rendering')) app.disableHardwareAcceleration();
@@ -51,13 +64,15 @@ function createWindow(role: string, options: Electron.BrowserWindowConstructorOp
   return win;
 }
 function setDrawing(drawing: boolean) {
+  if (!drawing) { hold.dismiss(); state.holding = false; }
   state.drawing = drawing;
   if (drawing) state.visible = true;
   for (const overlay of overlays.values()) {
-    overlay.setIgnoreMouseEvents(!drawing);
+    // Automated drawing uses synthetic renderer events; let the user's real clicks pass.
+    overlay.setIgnoreMouseEvents(smoke || !drawing);
     overlay.setFocusable(drawing);
   }
-  if (drawing) overlays.get(activeDisplay)?.focus();
+  if (drawing && !smoke) overlays.get(activeDisplay)?.focus();
   broadcast();
 }
 function sendDrawingAction(action: Action) {
@@ -93,7 +108,13 @@ function perform(action: Action, fromShortcut = false) {
   }
   broadcast();
 }
+function handleShortcut(action: Action, settings = state.settings) {
+  if (settings.activation === 'hold' && isDrawingShortcut(action)) hold.press(action, settings.shortcuts[action]);
+  else perform(action, true);
+}
 function registerShortcuts(settings: Settings): string[] {
+  hold.stop();
+  if (state.holding) setDrawing(false);
   globalShortcut.unregisterAll();
   const errors: string[] = [];
   const seen = new Set<string>();
@@ -103,8 +124,12 @@ function registerShortcuts(settings: Settings): string[] {
     const normalized = accelerator.toLowerCase();
     if (seen.has(normalized)) { errors.push(`${actionLabels[action]}: atajo duplicado (${accelerator})`); continue; }
     seen.add(normalized);
+    if (settings.activation === 'hold' && isDrawingShortcut(action)) {
+      const error = holdMonitor.validate(accelerator);
+      if (error) { errors.push(`${actionLabels[action]}: ${error}`); continue; }
+    }
     try {
-      if (!globalShortcut.register(accelerator, () => perform(action, true))) errors.push(`${actionLabels[action]}: no se puede registrar ${accelerator}`);
+      if (!globalShortcut.register(accelerator, () => handleShortcut(action, settings))) errors.push(`${actionLabels[action]}: no se puede registrar ${accelerator}`);
     } catch { errors.push(`${actionLabels[action]}: combinación no válida (${accelerator})`); }
   }
   return errors;
@@ -123,7 +148,7 @@ async function createOverlays() {
     overlay.setIgnoreMouseEvents(true);
     overlay.on('closed', () => { overlays.delete(display.id); });
     await new Promise<void>(resolve => overlay.webContents.once('did-finish-load', () => { overlay.showInactive(); resolve(); }));
-    overlay.setIgnoreMouseEvents(!state.drawing);
+    overlay.setIgnoreMouseEvents(smoke || !state.drawing);
     overlay.setFocusable(state.drawing);
   }
 }
@@ -132,8 +157,13 @@ function openPreferences() {
   if (preferences && !preferences.isDestroyed()) { preferences.show(); return; }
   preferences = createWindow('preferences', { width: 650, height: 800, minWidth: 570, minHeight: 500, title: 'Preferencias · TeachersPen', backgroundColor: '#f6f5f1', autoHideMenuBar: true });
   preferences.once('ready-to-show', () => preferences?.show());
-  preferences.on('closed', () => { preferences = undefined; });
-  preferences.on('blur', () => { state.shortcutErrors = registerShortcuts(state.settings); broadcast(); });
+  const finishRecording = () => {
+    if (!recordingShortcut) return;
+    recordingShortcut = false;
+    state.shortcutErrors = registerShortcuts(state.settings); broadcast();
+  };
+  preferences.on('closed', () => { preferences = undefined; finishRecording(); });
+  preferences.on('blur', finishRecording);
 }
 function makeTray() {
   const pixels = Buffer.alloc(16 * 16 * 4);
@@ -182,7 +212,8 @@ async function start() {
         }
         case 'record-shortcut':
           if (event.sender !== preferences?.webContents) return { ok: false, error: 'Solo se pueden editar atajos desde Preferencias' };
-          if (command.active) globalShortcut.unregisterAll();
+          recordingShortcut = command.active === true;
+          if (command.active) { hold.stop(); setDrawing(false); globalShortcut.unregisterAll(); }
           else state.shortcutErrors = registerShortcuts(state.settings);
           break;
         case 'toolbar-size':
@@ -195,7 +226,7 @@ async function start() {
           if (errors.length) { state.shortcutErrors = registerShortcuts(state.settings); broadcast(); return { ok: false, error: errors.join('\n') }; }
           try { saveSettings(next); }
           catch (error) { state.shortcutErrors = registerShortcuts(state.settings); throw error; }
-          state.settings = next; state.shortcutErrors = []; break;
+          state.settings = next; state.shortcutErrors = []; state.holdError = null; break;
         }
         case 'quit': app.quit(); break;
         default: return { ok: false, error: 'Comando desconocido' };
@@ -234,12 +265,19 @@ async function start() {
     rebuilding = false;
   });
   app.on('activate', () => toolbar.showInactive());
+  const stopHolding = () => { hold.stop(); if (state.holding) setDrawing(false); };
+  powerMonitor.on('suspend', stopHolding);
+  powerMonitor.on('lock-screen', stopHolding);
   broadcast();
   if (smoke) await runSmoke();
 }
 async function runSmoke() {
   const assert: typeof import('node:assert/strict') = (await import('node:assert/strict')).default;
   const overlay = overlays.get(activeDisplay)!;
+  const hasInk = () => overlay.webContents.executeJavaScript(`new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(() => {
+    const c = document.querySelector('canvas');
+    resolve(c.getContext('2d').getImageData(0,0,c.width,c.height).data.some((v,i)=>i%4===3&&v>0));
+  })))`);
   // Give React a turn to install event listeners, then exercise the real renderer/IPC.
   await new Promise(resolve => setTimeout(resolve, 500));
   assert.equal(state.drawing, false);
@@ -258,10 +296,9 @@ async function runSmoke() {
   assert.equal(ink, true, 'El renderer debe pintar el trazo');
   perform('undo');
   await new Promise(resolve => setTimeout(resolve, 100));
-  assert.equal(await overlay.webContents.executeJavaScript(`(() => { const c=document.querySelector('canvas'); return c.getContext('2d').getImageData(0,0,c.width,c.height).data.some((v,i)=>i%4===3&&v>0); })()`), false);
+  assert.equal(await hasInk(), false);
   perform('redo');
   await new Promise(resolve => setTimeout(resolve, 100));
-  const hasInk = () => overlay.webContents.executeJavaScript(`(() => { const c=document.querySelector('canvas'); return c.getContext('2d').getImageData(0,0,c.width,c.height).data.some((v,i)=>i%4===3&&v>0); })()`);
   perform('visible');
   await new Promise(resolve => setTimeout(resolve, 100));
   assert.equal(await hasInk(), false, 'Ocultar debe dejar la pantalla limpia');
@@ -302,6 +339,53 @@ async function runSmoke() {
   })()`);
   assert.equal(saved.ok, true);
   assert.equal(state.settings.width, 8);
+  const holdSettings: Settings = { ...state.settings, activation: 'hold', shortcuts: { ...state.settings.shortcuts, toggle: 'Control+Shift+F19' } };
+  state.shortcutErrors = registerShortcuts(holdSettings);
+  assert.equal(state.shortcutErrors.length, 0, state.shortcutErrors.join(', '));
+  state.settings = holdSettings;
+  assert.equal(state.holdAvailable, true);
+  // A shortcut already released when its watcher starts must never latch drawing on.
+  hold.press('toggle', holdSettings.shortcuts.toggle);
+  await new Promise(resolve => setTimeout(resolve, 150));
+  assert.equal(state.drawing, false);
+  const nativeProbe = process.argv.find(arg => arg.startsWith('--test-native-hold='))?.slice('--test-native-hold='.length);
+  if (nativeProbe) {
+    const { spawn } = await import('node:child_process');
+    const waitFor = async (predicate: () => boolean, timeout = 400) => {
+      const deadline = Date.now() + timeout;
+      while (!predicate() && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 10));
+      assert.ok(predicate(), `El modo dibujo debe responder a la pulsación/liberación nativa (drawing=${state.drawing}, holding=${state.holding}, error=${state.holdError})`);
+    };
+    for (const modifierFirst of [false, true]) {
+      const probe = spawn(nativeProbe, modifierFirst ? ['--modifier-first'] : [], { stdio: ['ignore', 'pipe', 'pipe'] });
+      let postedDown = false;
+      let modifierReleased = false;
+      let probeError = '';
+      probe.stdout.on('data', (chunk: Buffer) => {
+        const message = chunk.toString();
+        // macOS does not dispatch synthesized CGEvents to Carbon global hotkeys.
+        // Enter via the same callback and check real native state/release end to end.
+        if (message.includes('down')) { postedDown = true; handleShortcut('toggle'); }
+        if (message.includes('modifier-up')) modifierReleased = true;
+      });
+      probe.stderr.on('data', (chunk: Buffer) => { probeError += chunk.toString(); });
+      const exited = new Promise<void>((resolve, reject) => {
+        probe.once('error', reject);
+        probe.once('close', code => code === 0 ? resolve() : reject(new Error(probeError || `Prueba nativa: ${code}`)));
+      });
+      try {
+        await waitFor(() => postedDown, 3000);
+        await waitFor(() => state.drawing && state.holding, 1000);
+        if (modifierFirst) {
+          await waitFor(() => modifierReleased, 2000);
+          await waitFor(() => !state.drawing, 1000);
+        }
+        await exited;
+        await waitFor(() => !state.drawing && !state.holding);
+      } finally { await exited; }
+    }
+    console.log('HOLD NATIVO OK: activación con estado real del teclado, liberación de tecla y de modificador.');
+  }
   perform('timer'); assert.ok(state.timerEnd && state.timerEnd > Date.now());
   perform('timer'); assert.equal(state.timerEnd, null);
   assert.equal(await overlay.webContents.executeJavaScript('typeof window.require'), 'undefined');
@@ -313,5 +397,5 @@ async function runSmoke() {
   console.log('SMOKE OK: ventanas reales, dibujo Canvas, deshacer, IPC, pizarras, modo interacción, preferencias y atajos registrados.');
   app.quit();
 }
-app.on('before-quit', () => { quitting = true; clearTimeout(timerTimeout); globalShortcut.unregisterAll(); });
+app.on('before-quit', () => { quitting = true; hold.stop(); clearTimeout(timerTimeout); globalShortcut.unregisterAll(); });
 app.on('window-all-closed', () => { if (quitting) app.quit(); });

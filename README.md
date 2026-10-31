@@ -13,6 +13,10 @@ npm start
 
 La barra se puede mover arrastrando el nombre. La aplicación también aparece en la barra de menús/bandeja del sistema. Desde allí puedes recuperar las herramientas o volver al escritorio.
 
+En **Preferencias → Activación → Mantener pulsado**, pulsa Guardar y mantén el atajo mientras dibujas. Funciona con el atajo de activación, herramientas, colores y pizarras. Soltar la tecla principal o cualquiera de los modificadores devuelve el control al escritorio y conserva los trazos. Esc interrumpe el dibujo aunque sigas manteniendo el atajo; para volver a activarlo debes soltarlo y pulsarlo otra vez. Los botones de la barra permiten activar el dibujo manualmente. El modo inicial sigue siendo pulsar para activar/desactivar.
+
+La liberación se comprueba mediante un pequeño ejecutable nativo, cada 8 ms y solo mientras mantienes un atajo. Usa Core Graphics en macOS, `GetAsyncKeyState` en Windows y X11 en Linux. No instala un monitor permanente de teclado ni registra lo que escribes. El ejecutable macOS se compila para Intel y Apple Silicon con versión mínima 11.0. Windows y Linux siguen pendientes de prueba real.
+
 - `Ctrl+Mayús+Espacio`: activar/salir del dibujo. En Mac es Control, no Command.
 - `Esc`: salir cuando la capa de dibujo tiene el foco.
 - `Ctrl+Mayús+A/Q/W/S`: mano alzada/línea/flecha/rectángulo.
@@ -56,10 +60,15 @@ Ese argumento se transmite a Electron y desactiva la aceleración por hardware. 
 npm run typecheck
 npm test
 npm run smoke
+npm run test:hold:mac
 npm run pack
 ```
 
 `smoke` abre ventanas reales, prueba dibujo mediante eventos sintéticos, deshacer, cambios de fondo, aislamiento del renderer, preferencias y registro de atajos. Sale al terminar y no escribe preferencias. No equivale a comprobar entrada física, paso de clics, todos los escritorios/fullscreen ni otros sistemas.
+
+`test:hold:mac` comprueba además el estado nativo con eventos enviados al sistema (Ctrl+Mayús+F19), la liberación de la tecla y la liberación anticipada de un modificador. Invoca el mismo manejador del atajo para iniciar la prueba: macOS no entrega esos eventos sintetizados al registro global de Carbon. Por tanto, no sustituye la prueba con teclado físico. Solo se ejecuta si ya existe permiso para simular eventos; no solicita permisos automáticamente. Las pruebas unitarias cubren repetición, atajos solapados, cancelación y fallo del comprobador sin necesitar esos permisos.
+
+La compilación ahora necesita herramientas C: Xcode Command Line Tools en macOS, Visual Studio x64 Native Tools en Windows y compilador C más cabeceras X11 (`libx11-dev` o equivalente) en Linux. La aplicación empaquetada incluye el ejecutable y no necesita compilador. Empaqueta Linux en la distribución más antigua que se vaya a admitir para no elevar innecesariamente la versión de glibc.
 
 Primera verificación local (31/10/2026): typecheck, dos pruebas de historial/validación de preferencias y smoke de la aplicación fuente y de la `.app` empaquetada completados en Monterey 12.7.6 x64. Se comprobó que el paquete declara `LSMinimumSystemVersion=11.0`. La aplicación local está en `release/mac/TeachersPen.app`.
 
@@ -67,7 +76,6 @@ Para generar instaladores: `npm run dist:mac`, `npm run dist:win`, `npm run dist
 
 ## Pendiente
 
-- Modo mantener pulsado: integración de pulsación/liberación por sistema; aparece desactivado en preferencias.
 - Validación manual con ratón, pantallas completas, cambios de Spaces y dos monitores con distinto escalado.
 - Pruebas en Big Sur, Apple Silicon, Windows y Linux/X11; backend específico para Wayland.
 - Persistencia/exportación de anotaciones y recuperación tras cierre.
@@ -82,3 +90,5 @@ Para generar instaladores: `npm run dist:mac`, `npm run dist:win`, `npm run dist
 ## Organización
 
 `src/main.ts` gestiona ventanas, monitores, atajos y preferencias. `src/preload.ts` expone un puente IPC limitado. `src/shared.ts` define el contrato y valida preferencias. `src/model.ts` conserva trazos e historial. `src/renderer/` contiene interfaz y Canvas. `scripts/build.mjs` compila sin servidor web. Las preferencias se escriben de forma atómica en `settings.json` dentro del directorio de datos de Electron (`~/Library/Application Support/TeachersPen` en macOS, según el nombre de aplicación).
+
+`src/hold.ts` coordina los atajos mantenidos y su cancelación; `src/native-hold.ts` gestiona el proceso de comprobación. `native/key-state.c` contiene las implementaciones de macOS, Windows y X11 y se compila durante el build.

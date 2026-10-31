@@ -24,4 +24,7 @@ test('preferences from disk are bounded, validated and retain the exit shortcut'
   assert.equal(settings.shortcuts.arrow, 'Alt+A');
   assert.equal(settings.shortcuts.undo, defaults().shortcuts.undo);
   assert.equal(new Set(Object.values(defaults().shortcuts)).size, actions.length);
+  assert.equal(settings.activation, 'toggle', 'Las preferencias antiguas conservan la activación original');
+  assert.equal(parseSettings({ activation: 'hold' }).activation, 'hold');
+  assert.equal(parseSettings({ activation: 'unknown' }).activation, 'toggle');
 });

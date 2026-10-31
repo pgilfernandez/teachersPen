@@ -1,5 +1,6 @@
 import { build } from 'esbuild';
 import { mkdir, copyFile } from 'node:fs/promises';
+import './build-native.mjs';
 
 await mkdir('dist', { recursive: true });
 await build({ entryPoints: ['src/main.ts'], outfile: 'dist/main.cjs', bundle: true, platform: 'node', target: 'node22', external: ['electron'] });

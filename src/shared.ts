@@ -11,6 +11,7 @@ export const actionLabels = {
 export type Action = keyof typeof actionLabels;
 export const actions = Object.keys(actionLabels) as Action[];
 export interface Settings {
+  activation: 'toggle' | 'hold';
   width: number;
   colors: string[];
   shortcuts: Record<Action, string>;
@@ -27,10 +28,14 @@ export interface State {
   shortcutErrors: string[];
   platform: string;
   wayland: boolean;
+  holding: boolean;
+  holdAvailable: boolean;
+  holdError: string | null;
 }
 export function defaults(): Settings {
   const keys = ['Space', 'A', 'Q', 'W', 'S', 'E', 'D', 'C', 'R', 'F', 'Z', 'Y', 'X', 'H', 'T', 'V', 'B'];
   return {
+    activation: 'toggle',
     width: 6, colors: ['#ef4444', '#087bff', '#78cc00', '#e2cd00', '#bfc0c2'], timerSeconds: 300,
     shortcuts: Object.fromEntries(actions.map((action, i) => [action, `Control+Shift+${keys[i]}`])) as Record<Action, string>
   };
@@ -39,6 +44,7 @@ export function parseSettings(input: unknown): Settings {
   const base = defaults();
   if (!input || typeof input !== 'object') return base;
   const data = input as Partial<Settings>;
+  if (data.activation === 'hold') base.activation = 'hold';
   if (Number.isFinite(data.width)) base.width = Math.max(1, Math.min(40, Math.round(data.width!)));
   if (Number.isFinite(data.timerSeconds)) base.timerSeconds = Math.max(10, Math.min(7200, Math.round(data.timerSeconds!)));
   if (Array.isArray(data.colors) && data.colors.length === 5 && data.colors.every(c => typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c))) base.colors = [...data.colors];

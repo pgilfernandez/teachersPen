@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test tests/*.test.ts",
     "smoke": "npm run build && node scripts/run.mjs --smoke-test",
+    "test:hold:mac": "node scripts/test-hold-mac.mjs",
     "pack": "npm run build && electron-builder --dir",
     "dist:mac": "npm run build && electron-builder --mac",
     "dist:win": "npm run build && electron-builder --win",
@@ -34,6 +35,7 @@
   "build": {
     "appId": "org.teacherspen.desktop",
     "files": ["dist/**/*", "package.json"],
+    "asarUnpack": ["dist/native/**"],
     "directories": { "output": "release" },
     "mac": {
       "category": "public.app-category.education",

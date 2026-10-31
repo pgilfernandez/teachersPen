@@ -122,7 +122,7 @@ function Overlay({ state }: { state: State }) {
       onPointerCancel={finish} onLostPointerCapture={finish}
     />
     {state.timerEnd && <Timer end={state.timerEnd} />}
-    {state.drawing && <div className="drawing-hint">{toolNames[state.tool]} · Esc para interactuar</div>}
+    {state.drawing && <div className="drawing-hint">{toolNames[state.tool]} · {state.holding ? 'Suelta el atajo para interactuar' : 'Esc para interactuar'}</div>}
   </div>;
 }
 function Timer({ end }: { end: number }) {
@@ -163,7 +163,7 @@ function Toolbar({ state }: { state: State }) {
       <button className={state.timerEnd ? 'active' : ''} onClick={() => void action('timer')} title={tip('Temporizador', 'timer')}>◷ Temporizador</button>
       <button onClick={() => void command({ type: 'quit' })}>Salir</button>
     </div>
-    {(state.shortcutErrors.length > 0 || state.wayland) && <div className="toolbar-warning" onClick={() => void command({ type: 'preferences' })}>{state.wayland ? 'Wayland: compatibilidad experimental mediante XWayland. Consulta las preferencias.' : 'Hay atajos no disponibles. Abre Preferencias para revisarlos.'}</div>}
+    {(state.shortcutErrors.length > 0 || state.wayland || state.holdError) && <div className="toolbar-warning" onClick={() => void command({ type: 'preferences' })}>{state.holdError || (state.wayland ? 'Wayland: compatibilidad experimental mediante XWayland. Consulta las preferencias.' : 'Hay atajos no disponibles. Abre Preferencias para revisarlos.')}</div>}
   </main>;
 }
 function Preferences({ state }: { state: State }) {
@@ -183,7 +183,8 @@ function Preferences({ state }: { state: State }) {
   return <main className="preferences-main">
     <header><div className="eyebrow">TEACHERSPEN / PREFERENCIAS</div><h1>Tu pantalla, tu pizarra.</h1><p>Configura las herramientas para acompañar tus clases.</p></header>
     <section><h2>Dibujo</h2><div className="setting-row"><label htmlFor="line-width">Grosor del trazo</label><div><input id="line-width" type="number" min="1" max="40" value={draft.width} onChange={e => field('width', Number(e.target.value))} /> <span className="muted">px</span></div></div>
-      <div className="setting-row"><label htmlFor="activation">Activación</label><select id="activation" defaultValue="toggle"><option value="toggle">Pulsar para activar / desactivar</option><option disabled>Mantener pulsado · próximamente</option></select></div>
+      <div className="setting-row"><label htmlFor="activation">Activación</label><select id="activation" value={draft.activation} onChange={e => field('activation', e.target.value as Settings['activation'])}><option value="toggle">Pulsar para activar / desactivar</option><option value="hold" disabled={!state.holdAvailable}>Mantener pulsado</option></select></div>
+      {draft.activation === 'hold' && <p className="help">Mantén pulsado el atajo de activación, de una herramienta o de un color mientras dibujas. Al soltar cualquiera de sus teclas vuelves a interactuar. Los botones de la barra también permiten activar el dibujo manualmente.</p>}
       <p className="help">Al salir del dibujo, los trazos permanecen visibles y puedes volver a usar las aplicaciones de debajo. Esc sale del modo dibujo.</p>
     </section>
     <section><h2>Colores</h2><div className="preset-colors">{draft.colors.map((color, index) => <label key={index}><input aria-label={`Color ${index + 1}`} type="color" value={color} onChange={e => field('colors', draft.colors.map((old, i) => i === index ? e.target.value : old))} /><span>Color {index + 1}</span></label>)}</div></section>
@@ -206,6 +207,7 @@ function Preferences({ state }: { state: State }) {
     </section>
     <section><h2>Temporizador</h2><div className="setting-row"><label htmlFor="timer-duration">Duración en minutos</label><input id="timer-duration" type="number" min="1" max="120" step="1" value={draft.timerSeconds / 60} onChange={e => field('timerSeconds', Math.max(1, Number(e.target.value)) * 60)} /></div><p className="help">El atajo inicia o cancela la cuenta atrás. Cambiar la duración se aplica al siguiente temporizador.</p></section>
     {state.shortcutErrors.length > 0 && <div className="notice" role="alert">{state.shortcutErrors.join('\n')}</div>}
+    {state.holdError && <div className="notice" role="alert">{state.holdError}</div>}
     {state.wayland && <div className="notice">Esta versión utiliza X11/XWayland. La superposición sobre aplicaciones Wayland nativas no está garantizada.</div>}
     <footer className="preferences-footer"><button onClick={() => { setDraft(defaults()); setMessage('Valores restaurados. Pulsa Guardar para aplicarlos.'); }}>Restaurar valores</button><button className="primary" disabled={saving} onClick={() => void save()}>{saving ? 'Guardando…' : 'Guardar preferencias'}</button></footer>
     <p className="save-message" role="status">{message}</p>
