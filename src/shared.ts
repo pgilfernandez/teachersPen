@@ -1,9 +1,9 @@
-export const tools = ['freehand', 'line', 'arrow', 'rectangle'] as const;
+export const tools = ['freehand', 'line', 'arrow', 'rectangle', 'circle'] as const;
 export type Tool = typeof tools[number];
 export type Background = 'transparent' | 'white' | 'black';
 export const actionLabels = {
   toggle: 'Activar / salir del dibujo',
-  freehand: 'Mano alzada', line: 'Línea', arrow: 'Flecha', rectangle: 'Rectángulo',
+  freehand: 'Mano alzada', line: 'Línea', arrow: 'Flecha', rectangle: 'Rectángulo', circle: 'Círculo',
   color0: 'Color 1', color1: 'Color 2', color2: 'Color 3', color3: 'Color 4', color4: 'Color 5',
   undo: 'Deshacer', redo: 'Rehacer', clear: 'Borrar todo', visible: 'Ocultar / mostrar trazos',
   timer: 'Temporizador', white: 'Pizarra blanca', black: 'Pizarra negra'
@@ -33,7 +33,7 @@ export interface State {
   holdError: string | null;
 }
 export function defaults(): Settings {
-  const keys = ['Space', 'A', 'Q', 'W', 'S', 'E', 'D', 'C', 'R', 'F', 'Z', 'Y', 'X', 'H', 'T', 'V', 'B'];
+  const keys = ['Space', 'A', 'Q', 'W', 'S', 'O', 'E', 'D', 'C', 'R', 'F', 'Z', 'Y', 'X', 'H', 'T', 'V', 'B'];
   return {
     activation: 'toggle',
     width: 6, colors: ['#ef4444', '#087bff', '#78cc00', '#e2cd00', '#bfc0c2'], timerSeconds: 300,

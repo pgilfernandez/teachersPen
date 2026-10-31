@@ -20,6 +20,7 @@ La liberación se comprueba mediante un pequeño ejecutable nativo, cada 8 ms y 
 - `Ctrl+Mayús+Espacio`: activar/salir del dibujo. En Mac es Control, no Command.
 - `Esc`: salir cuando la capa de dibujo tiene el foco.
 - `Ctrl+Mayús+A/Q/W/S`: mano alzada/línea/flecha/rectángulo.
+- `Ctrl+Mayús+O`: círculo. Arrastra desde el centro para definir el radio.
 - `Ctrl+Mayús+E/D/C/R/F`: los cinco colores; también activan el dibujo.
 - `Ctrl+Mayús+Z/Y`: deshacer/rehacer en el monitor activo.
 - `Ctrl+Mayús+X`: borrar todos los monitores (se puede deshacer por monitor).

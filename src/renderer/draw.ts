@@ -10,6 +10,11 @@ export function paintStroke(ctx: CanvasRenderingContext2D, stroke: Stroke) {
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
   ctx.beginPath();
+  if (stroke.tool === 'circle') {
+    ctx.arc(first.x, first.y, Math.hypot(last.x - first.x, last.y - first.y), 0, Math.PI * 2);
+    ctx.stroke();
+    return;
+  }
   if (stroke.tool === 'rectangle') {
     ctx.strokeRect(first.x, first.y, last.x - first.x, last.y - first.y);
     return;

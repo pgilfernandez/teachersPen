@@ -238,8 +238,8 @@ async function start() {
   await createOverlays();
   const area = screen.getPrimaryDisplay().workArea;
   toolbar = createWindow('toolbar', {
-    x: area.x + Math.round((area.width - 930) / 2), y: area.y + 18,
-    width: 930, height: 150, frame: false, transparent: true, backgroundColor: '#00000000',
+    x: area.x + Math.round((area.width - 965) / 2), y: area.y + 18,
+    width: 965, height: 150, frame: false, transparent: true, backgroundColor: '#00000000',
     resizable: false, hasShadow: false, skipTaskbar: true
   });
   toolbar.setAlwaysOnTop(true, 'screen-saver', 1);
@@ -294,6 +294,21 @@ async function runSmoke() {
     }));
   })()`);
   assert.equal(ink, true, 'El renderer debe pintar el trazo');
+  perform('circle');
+  await new Promise(resolve => setTimeout(resolve, 100));
+  const circlePixels = await overlay.webContents.executeJavaScript(`(async () => {
+    const canvas = document.querySelector('canvas');
+    const pointer = (type,x,y) => canvas.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerId:1,clientX:x,clientY:y,button:0,buttons:1}));
+    pointer('pointerdown',420,420); pointer('pointermove',480,420); pointer('pointerup',480,420);
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    const scale = devicePixelRatio;
+    const alpha = (x,y) => canvas.getContext('2d').getImageData(Math.round(x*scale),Math.round(y*scale),1,1).data[3];
+    return [alpha(480,420),alpha(420,360),alpha(420,420)];
+  })()`);
+  assert.ok(circlePixels[0] > 0 && circlePixels[1] > 0, 'El círculo debe tener el mismo radio horizontal y vertical');
+  assert.equal(circlePixels[2], 0, 'El círculo debe conservar su interior transparente');
+  perform('undo');
+  await new Promise(resolve => setTimeout(resolve, 100));
   perform('undo');
   await new Promise(resolve => setTimeout(resolve, 100));
   assert.equal(await hasInk(), false);

@@ -8,8 +8,8 @@ const role = new URLSearchParams(location.search).get('role') || 'toolbar';
 document.body.className = role;
 const command = (value: Command) => window.pen.command(value);
 const action = (value: Action) => command({ type: 'action', action: value });
-const toolNames: Record<Tool, string> = { freehand: 'Lápiz', line: 'Línea', arrow: 'Flecha', rectangle: 'Rectángulo' };
-const toolIcons: Record<Tool, string> = { freehand: '✎', line: '╱', arrow: '↗', rectangle: '▭' };
+const toolNames: Record<Tool, string> = { freehand: 'Lápiz', line: 'Línea', arrow: 'Flecha', rectangle: 'Rectángulo', circle: 'Círculo' };
+const toolIcons: Record<Tool, string> = { freehand: '✎', line: '╱', arrow: '↗', rectangle: '▭', circle: '○' };
 function keyLabel(value: string) { return value.replace(/Control/g, 'Ctrl').replace(/Shift/g, 'Mayús').replace(/Space/g, 'Espacio'); }
 
 function App() {
