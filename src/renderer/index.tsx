@@ -170,8 +170,20 @@ function Preferences({ state }: { state: State }) {
   const [draft, setDraft] = useState<Settings>(() => structuredClone(state.settings));
   const [message, setMessage] = useState('');
   const [saving, setSaving] = useState(false);
+  const [changingActivation, setChangingActivation] = useState(false);
   const [recording, setRecording] = useState<Action | null>(null);
   const field = <K extends keyof Settings>(key: K, value: Settings[K]) => { setDraft(previous => ({ ...previous, [key]: value })); setMessage(''); };
+  const changeActivation = async (activation: Settings['activation']) => {
+    setChangingActivation(true);
+    try {
+      const result = await command({ type: 'activation', activation });
+      if (result.ok) {
+        setDraft(previous => ({ ...previous, activation }));
+        setMessage('Modo de activación aplicado y guardado.');
+      } else setMessage(result.error || 'No se ha podido cambiar el modo de activación.');
+    } catch (error) { setMessage(String(error)); }
+    finally { setChangingActivation(false); }
+  };
   const save = async () => {
     setSaving(true);
     try {
@@ -183,8 +195,9 @@ function Preferences({ state }: { state: State }) {
   return <main className="preferences-main">
     <header><div className="eyebrow">TEACHERSPEN / PREFERENCIAS</div><h1>Tu pantalla, tu pizarra.</h1><p>Configura las herramientas para acompañar tus clases.</p></header>
     <section><h2>Dibujo</h2><div className="setting-row"><label htmlFor="line-width">Grosor del trazo</label><div><input id="line-width" type="number" min="1" max="40" value={draft.width} onChange={e => field('width', Number(e.target.value))} /> <span className="muted">px</span></div></div>
-      <div className="setting-row"><label htmlFor="activation">Activación</label><select id="activation" value={draft.activation} onChange={e => field('activation', e.target.value as Settings['activation'])}><option value="toggle">Pulsar para activar / desactivar</option><option value="hold" disabled={!state.holdAvailable}>Mantener pulsado</option></select></div>
-      {draft.activation === 'hold' && <p className="help">Mantén pulsado el atajo de activación, de una herramienta o de un color mientras dibujas. Al soltar cualquiera de sus teclas vuelves a interactuar. Los botones de la barra también permiten activar el dibujo manualmente.</p>}
+      <div className="setting-row"><label htmlFor="activation">Activación</label><select id="activation" value={state.settings.activation} disabled={changingActivation || saving} onChange={e => void changeActivation(e.target.value as Settings['activation'])}><option value="toggle">Pulsar para activar / desactivar</option><option value="hold" disabled={!state.holdAvailable}>Mantener pulsado</option></select></div>
+      <p className="help">El modo de activación se aplica y guarda al seleccionarlo.</p>
+      {state.settings.activation === 'hold' && <p className="help">Mantén pulsado el atajo de activación, de una herramienta o de un color mientras dibujas. Al soltar cualquiera de sus teclas vuelves a interactuar. Los botones de la barra también permiten activar el dibujo manualmente.</p>}
       <p className="help">Al salir del dibujo, los trazos permanecen visibles y puedes volver a usar las aplicaciones de debajo. Esc sale del modo dibujo.</p>
     </section>
     <section><h2>Colores</h2><div className="preset-colors">{draft.colors.map((color, index) => <label key={index}><input aria-label={`Color ${index + 1}`} type="color" value={color} onChange={e => field('colors', draft.colors.map((old, i) => i === index ? e.target.value : old))} /><span>Color {index + 1}</span></label>)}</div></section>
@@ -209,7 +222,7 @@ function Preferences({ state }: { state: State }) {
     {state.shortcutErrors.length > 0 && <div className="notice" role="alert">{state.shortcutErrors.join('\n')}</div>}
     {state.holdError && <div className="notice" role="alert">{state.holdError}</div>}
     {state.wayland && <div className="notice">Esta versión utiliza X11/XWayland. La superposición sobre aplicaciones Wayland nativas no está garantizada.</div>}
-    <footer className="preferences-footer"><button onClick={() => { setDraft(defaults()); setMessage('Valores restaurados. Pulsa Guardar para aplicarlos.'); }}>Restaurar valores</button><button className="primary" disabled={saving} onClick={() => void save()}>{saving ? 'Guardando…' : 'Guardar preferencias'}</button></footer>
+    <footer className="preferences-footer"><button disabled={changingActivation || saving} onClick={() => { setDraft(defaults()); setMessage('Valores restaurados. Pulsa Guardar para aplicarlos.'); }}>Restaurar valores</button><button className="primary" disabled={saving || changingActivation} onClick={() => void save()}>{saving ? 'Guardando…' : 'Guardar preferencias'}</button></footer>
     <p className="save-message" role="status">{message}</p>
     <p className="version">TeachersPen 0.1 · Todo se guarda en este ordenador.</p>
   </main>;

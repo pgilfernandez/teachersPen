@@ -220,6 +220,16 @@ async function start() {
           if (event.sender === toolbar?.webContents && Number.isFinite(command.height)) toolbar.setContentSize(toolbar.getContentSize()[0], Math.max(90, Math.min(180, Math.ceil(command.height))));
           break;
         case 'preferences': openPreferences(); break;
+        case 'activation': {
+          if (command.activation !== 'toggle' && command.activation !== 'hold') return { ok: false, error: 'Modo de activación no válido' };
+          const next = { ...state.settings, activation: command.activation };
+          const errors = registerShortcuts(next);
+          if (errors.length) { state.shortcutErrors = registerShortcuts(state.settings); broadcast(); return { ok: false, error: errors.join('\n') }; }
+          try { saveSettings(next); }
+          catch (error) { state.shortcutErrors = registerShortcuts(state.settings); throw error; }
+          setDrawing(false);
+          state.settings = next; state.shortcutErrors = []; state.holdError = null; break;
+        }
         case 'settings': {
           const next = parseSettings(command.settings);
           const errors = registerShortcuts(next);
@@ -340,6 +350,17 @@ async function runSmoke() {
   await new Promise<void>(resolve => preferences!.webContents.once('did-finish-load', () => resolve()));
   await new Promise(resolve => setTimeout(resolve, 200));
   assert.ok(await preferences!.webContents.executeJavaScript(`document.body.innerText.includes('Atajos globales')`));
+  const settingsBeforeMode = structuredClone(state.settings);
+  const selectedMode = await preferences!.webContents.executeJavaScript(`(async () => {
+    const select = document.getElementById('activation');
+    select.value = 'hold';
+    select.dispatchEvent(new Event('change', {bubbles:true}));
+    await new Promise(resolve => setTimeout(resolve, 50));
+    return window.pen.getState();
+  })()`);
+  assert.equal(selectedMode.settings.activation, 'hold', 'Seleccionar mantener pulsado debe aplicarse sin pulsar Guardar');
+  assert.deepEqual(selectedMode.settings, { ...settingsBeforeMode, activation: 'hold' }, 'Cambiar la activación debe conservar los demás ajustes');
+  assert.equal(await preferences!.webContents.executeJavaScript(`document.getElementById('activation').value`), 'hold');
   const rejected = await preferences!.webContents.executeJavaScript(`(async () => {
     const current = await window.pen.getState();
     current.settings.shortcuts.arrow = current.settings.shortcuts.line;
@@ -360,8 +381,11 @@ async function runSmoke() {
   state.settings = holdSettings;
   assert.equal(state.holdAvailable, true);
   // A shortcut already released when its watcher starts must never latch drawing on.
-  hold.press('toggle', holdSettings.shortcuts.toggle);
-  await new Promise(resolve => setTimeout(resolve, 150));
+  await new Promise<void>((resolve, reject) => {
+    holdMonitor.watch(holdSettings.shortcuts.toggle,
+      () => reject(new Error('El atajo de prueba debería estar suelto')),
+      resolve, message => reject(new Error(message)));
+  });
   assert.equal(state.drawing, false);
   const nativeProbe = process.argv.find(arg => arg.startsWith('--test-native-hold='))?.slice('--test-native-hold='.length);
   if (nativeProbe) {

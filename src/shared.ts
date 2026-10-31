@@ -64,6 +64,7 @@ export type Command =
   | { type: 'color'; index: number }
   | { type: 'width'; width: number }
   | { type: 'settings'; settings: Settings }
+  | { type: 'activation'; activation: Settings['activation'] }
   | { type: 'preferences' }
   | { type: 'active-display' }
   | { type: 'record-shortcut'; active: boolean }

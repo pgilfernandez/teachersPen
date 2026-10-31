@@ -18,6 +18,12 @@ int main(int argc, char **argv) {
   post(kVK_Control, true, kCGEventFlagMaskControl);
   post(kVK_Shift, true, both);
   post(kVK_F19, true, both);
+  /* CGEventPost queues delivery. Start the watcher only after Quartz sees the chord. */
+  for (int attempt = 0; attempt < 500; attempt++) {
+    if (CGEventSourceKeyState(kCGEventSourceStateCombinedSessionState, kVK_F19) &&
+        (CGEventSourceFlagsState(kCGEventSourceStateCombinedSessionState) & both) == both) break;
+    usleep(1000);
+  }
   puts("down"); fflush(stdout);
   usleep(1500000);
   if (argc > 1 && strcmp(argv[1], "--modifier-first") == 0) {

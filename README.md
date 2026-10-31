@@ -13,7 +13,7 @@ npm start
 
 La barra se puede mover arrastrando el nombre. La aplicación también aparece en la barra de menús/bandeja del sistema. Desde allí puedes recuperar las herramientas o volver al escritorio.
 
-En **Preferencias → Activación → Mantener pulsado**, pulsa Guardar y mantén el atajo mientras dibujas. Funciona con el atajo de activación, herramientas, colores y pizarras. Soltar la tecla principal o cualquiera de los modificadores devuelve el control al escritorio y conserva los trazos. Esc interrumpe el dibujo aunque sigas manteniendo el atajo; para volver a activarlo debes soltarlo y pulsarlo otra vez. Los botones de la barra permiten activar el dibujo manualmente. El modo inicial sigue siendo pulsar para activar/desactivar.
+En **Preferencias → Activación → Mantener pulsado**, el cambio se aplica y guarda inmediatamente; no hace falta pulsar Guardar. Mantén el atajo mientras dibujas. Funciona con el atajo de activación, herramientas, colores y pizarras. Soltar la tecla principal o cualquiera de los modificadores devuelve el control al escritorio y conserva los trazos. Esc interrumpe el dibujo aunque sigas manteniendo el atajo; para volver a activarlo debes soltarlo y pulsarlo otra vez. Los botones de la barra permiten activar el dibujo manualmente. El modo inicial sigue siendo pulsar para activar/desactivar.
 
 La liberación se comprueba mediante un pequeño ejecutable nativo, cada 8 ms y solo mientras mantienes un atajo. Usa Core Graphics en macOS, `GetAsyncKeyState` en Windows y X11 en Linux. No instala un monitor permanente de teclado ni registra lo que escribes. El ejecutable macOS se compila para Intel y Apple Silicon con versión mínima 11.0. Windows y Linux siguen pendientes de prueba real.
 
