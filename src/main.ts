@@ -351,16 +351,21 @@ async function runSmoke() {
   await new Promise(resolve => setTimeout(resolve, 200));
   assert.ok(await preferences!.webContents.executeJavaScript(`document.body.innerText.includes('Atajos globales')`));
   const settingsBeforeMode = structuredClone(state.settings);
+  const modePosition = await preferences!.webContents.executeJavaScript(`(() => { const r = document.getElementById('activation-hold').getBoundingClientRect(); return {x:Math.round(r.x+r.width/2), y:Math.round(r.y+r.height/2)}; })()`);
+  preferences!.webContents.sendInputEvent({ type: 'mouseDown', ...modePosition, button: 'left', clickCount: 1 });
+  preferences!.webContents.sendInputEvent({ type: 'mouseUp', ...modePosition, button: 'left', clickCount: 1 });
   const selectedMode = await preferences!.webContents.executeJavaScript(`(async () => {
-    const select = document.getElementById('activation');
-    select.value = 'hold';
-    select.dispatchEvent(new Event('change', {bubbles:true}));
-    await new Promise(resolve => setTimeout(resolve, 50));
+    const deadline = Date.now() + 3000;
+    while (Date.now() < deadline) {
+      const state = await window.pen.getState();
+      if (state.settings.activation === 'hold') return state;
+      await new Promise(resolve => setTimeout(resolve, 20));
+    }
     return window.pen.getState();
   })()`);
   assert.equal(selectedMode.settings.activation, 'hold', 'Seleccionar mantener pulsado debe aplicarse sin pulsar Guardar');
   assert.deepEqual(selectedMode.settings, { ...settingsBeforeMode, activation: 'hold' }, 'Cambiar la activación debe conservar los demás ajustes');
-  assert.equal(await preferences!.webContents.executeJavaScript(`document.getElementById('activation').value`), 'hold');
+  assert.equal(await preferences!.webContents.executeJavaScript(`new Promise(resolve => requestAnimationFrame(() => resolve(document.getElementById('activation-hold').checked)))`), true);
   const rejected = await preferences!.webContents.executeJavaScript(`(async () => {
     const current = await window.pen.getState();
     current.settings.shortcuts.arrow = current.settings.shortcuts.line;

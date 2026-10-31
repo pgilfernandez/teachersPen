@@ -157,7 +157,7 @@ function Toolbar({ state }: { state: State }) {
       <button className={`icon-button ${!state.visible ? 'selected' : ''}`} aria-label="Ocultar o mostrar" title={tip('Ocultar / mostrar', 'visible')} onClick={() => void action('visible')}>{state.visible ? '◉' : '◎'}</button>
       <button className="icon-button" aria-label="Preferencias" title="Preferencias" onClick={() => void command({ type: 'preferences' })}>⚙</button>
     </div>
-    <div className="toolbar-footer"><span className={`status-dot ${state.drawing ? 'on' : ''}`} /><span>{state.drawing ? 'Dibuja sobre cualquier aplicación' : 'Puedes usar las aplicaciones de debajo'}</span><kbd>{keyLabel(state.settings.shortcuts.toggle)}</kbd><div className="footer-spacer" />
+    <div className="toolbar-footer"><span className={`status-dot ${state.drawing ? 'on' : ''}`} /><span>{state.holding ? 'Suelta el atajo para interactuar' : state.drawing ? 'Dibuja sobre cualquier aplicación' : state.settings.activation === 'hold' ? 'Mantén el atajo para dibujar' : 'Puedes usar las aplicaciones de debajo'}</span><kbd>{keyLabel(state.settings.shortcuts.toggle)}</kbd><div className="footer-spacer" />
       <button className={state.background === 'white' ? 'active' : ''} onClick={() => void action('white')} title={tip('Pizarra blanca', 'white')}>Blanca</button>
       <button className={state.background === 'black' ? 'active' : ''} onClick={() => void action('black')} title={tip('Pizarra negra', 'black')}>Negra</button>
       <button className={state.timerEnd ? 'active' : ''} onClick={() => void action('timer')} title={tip('Temporizador', 'timer')}>◷ Temporizador</button>
@@ -195,7 +195,10 @@ function Preferences({ state }: { state: State }) {
   return <main className="preferences-main">
     <header><div className="eyebrow">TEACHERSPEN / PREFERENCIAS</div><h1>Tu pantalla, tu pizarra.</h1><p>Configura las herramientas para acompañar tus clases.</p></header>
     <section><h2>Dibujo</h2><div className="setting-row"><label htmlFor="line-width">Grosor del trazo</label><div><input id="line-width" type="number" min="1" max="40" value={draft.width} onChange={e => field('width', Number(e.target.value))} /> <span className="muted">px</span></div></div>
-      <div className="setting-row"><label htmlFor="activation">Activación</label><select id="activation" value={state.settings.activation} disabled={changingActivation || saving} onChange={e => void changeActivation(e.target.value as Settings['activation'])}><option value="toggle">Pulsar para activar / desactivar</option><option value="hold" disabled={!state.holdAvailable}>Mantener pulsado</option></select></div>
+      <div className="setting-row"><span id="activation-label">Activación</span><div className="activation-options" role="radiogroup" aria-labelledby="activation-label">
+        <label className={state.settings.activation === 'toggle' ? 'active' : ''}><input id="activation-toggle" type="radio" name="activation" checked={state.settings.activation === 'toggle'} disabled={changingActivation || saving} onChange={() => void changeActivation('toggle')} />Pulsar para activar / desactivar</label>
+        <label className={state.settings.activation === 'hold' ? 'active' : ''}><input id="activation-hold" type="radio" name="activation" checked={state.settings.activation === 'hold'} disabled={changingActivation || saving || !state.holdAvailable} onChange={() => void changeActivation('hold')} />Mantener pulsado</label>
+      </div></div>
       <p className="help">El modo de activación se aplica y guarda al seleccionarlo.</p>
       {state.settings.activation === 'hold' && <p className="help">Mantén pulsado el atajo de activación, de una herramienta o de un color mientras dibujas. Al soltar cualquiera de sus teclas vuelves a interactuar. Los botones de la barra también permiten activar el dibujo manualmente.</p>}
       <p className="help">Al salir del dibujo, los trazos permanecen visibles y puedes volver a usar las aplicaciones de debajo. Esc sale del modo dibujo.</p>

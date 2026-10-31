@@ -15,6 +15,8 @@ La barra se puede mover arrastrando el nombre. La aplicación también aparece e
 
 En **Preferencias → Activación → Mantener pulsado**, el cambio se aplica y guarda inmediatamente; no hace falta pulsar Guardar. Mantén el atajo mientras dibujas. Funciona con el atajo de activación, herramientas, colores y pizarras. Soltar la tecla principal o cualquiera de los modificadores devuelve el control al escritorio y conserva los trazos. Esc interrumpe el dibujo aunque sigas manteniendo el atajo; para volver a activarlo debes soltarlo y pulsarlo otra vez. Los botones de la barra permiten activar el dibujo manualmente. El modo inicial sigue siendo pulsar para activar/desactivar.
 
+Los dos modos aparecen como opciones visibles y la opción marcada indica el modo realmente activo. La barra muestra «Mantén el atajo para dibujar» cuando ese modo está activado y «Suelta el atajo para interactuar» durante la pulsación.
+
 La liberación se comprueba mediante un pequeño ejecutable nativo, cada 8 ms y solo mientras mantienes un atajo. Usa Core Graphics en macOS, `GetAsyncKeyState` en Windows y X11 en Linux. No instala un monitor permanente de teclado ni registra lo que escribes. El ejecutable macOS se compila para Intel y Apple Silicon con versión mínima 11.0. Windows y Linux siguen pendientes de prueba real.
 
 - `Ctrl+Mayús+Espacio`: activar/salir del dibujo. En Mac es Control, no Command.

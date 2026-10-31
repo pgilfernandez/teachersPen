@@ -49,6 +49,10 @@ section { margin-bottom: 27px; }
 h2 { font-size: 15px; border-bottom: 1px solid #d8dcda; padding-bottom: 9px; margin: 0 0 14px; }
 .setting-row { display: flex; align-items: center; justify-content: space-between; margin: 12px 0; gap: 20px; font-size: 13px; }
 .setting-row input { width: 85px; }
+.activation-options { display: grid; gap: 6px; width: 290px; font-size: 12px; }
+.activation-options label { display: flex; align-items: center; gap: 8px; padding: 9px; border: 1px solid #cfd6d9; border-radius: 6px; background: #fff; cursor: pointer; }
+.activation-options label.active { background: #e2edff; border-color: #8fb5ed; color: #145fc5; }
+.activation-options input { width: auto; margin: 0; }
 input, select { border: 1px solid #cfd6d9; border-radius: 6px; padding: 7px 9px; background: #fff; color: #33414d; }
 select { font-size: 12px; max-width: 290px; }
 .muted { color: #85919a; }
