@@ -16,6 +16,9 @@ canvas { width: 100%; height: 100%; display: block; touch-action: none; }
 .timer.ending { background: #a92c2c; }
 .toolbar-shell { margin: 8px; border: 1px solid #d5d9dc; border-radius: 14px; background: #fbfcfd; box-shadow: 0 3px 12px #15263826; overflow: hidden; user-select: none; }
 .toolbar { display: flex; align-items: center; gap: 3px; padding: 10px 12px; }
+.mini-launcher { position: absolute; left: 3px; top: 3px; display: flex; align-items: center; justify-content: center; width: 50px; height: 50px; padding: 0; border: 1px solid #8ba3c4; border-radius: 50%; background: #f7faff; color: #2474df; opacity: .8; cursor: grab; user-select: none; touch-action: none; }
+.mini-launcher:hover { opacity: .6; }
+.mini-launcher:active { cursor: grabbing; }
 .brand { display: flex; align-items: center; gap: 5px; margin-right: 6px; -webkit-app-region: drag; font-size: 15px; white-space: nowrap; }
 .brand strong { font-weight: 700; letter-spacing: -.6px; }
 .brand strong span { color: #2474df; }
@@ -53,6 +56,12 @@ h2 { font-size: 15px; border-bottom: 1px solid #d8dcda; padding-bottom: 9px; mar
 .activation-options label { display: flex; align-items: center; gap: 8px; padding: 9px; border: 1px solid #cfd6d9; border-radius: 6px; background: #fff; cursor: pointer; }
 .activation-options label.active { background: #e2edff; border-color: #8fb5ed; color: #145fc5; }
 .activation-options input { width: auto; margin: 0; }
+.toolbar-options { display: grid; gap: 8px; }
+.toolbar-options label { display: flex; align-items: center; gap: 10px; padding: 12px; border: 1px solid #cfd6d9; border-radius: 7px; background: #fff; cursor: pointer; }
+.toolbar-options label.active { background: #e2edff; border-color: #8fb5ed; color: #145fc5; }
+.toolbar-options input { margin: 0; }
+.toolbar-options strong { display: block; font-size: 13px; font-weight: 600; }
+.toolbar-options small { display: block; margin-top: 4px; font-size: 11px; line-height: 1.5; color: #74808b; }
 input, select { border: 1px solid #cfd6d9; border-radius: 6px; padding: 7px 9px; background: #fff; color: #33414d; }
 select { font-size: 12px; max-width: 290px; }
 .muted { color: #85919a; }

@@ -1,7 +1,9 @@
-import { app, BrowserWindow, globalShortcut, ipcMain, Menu, nativeImage, powerMonitor, screen, Tray } from 'electron';
+import { app, BrowserWindow, dialog, globalShortcut, ipcMain, Menu, nativeImage, powerMonitor, screen, Tray } from 'electron';
 import { readFileSync, writeFileSync, mkdirSync, renameSync } from 'node:fs';
 import path from 'node:path';
-import { actions, actionLabels, defaults, parseSettings, tools, type Action, type Command, type Settings, type State } from './shared';
+import { actions, actionLabels, defaults, parseSettings, tools, type Action, type Command, type Settings, type State, type ToolbarMode } from './shared';
+import { MiniDrag, MINI_RADIUS, MINI_SIZE, fitPosition, readPosition } from './toolbar';
+import type { Point } from './model';
 import { HoldActivation, isDrawingShortcut } from './hold';
 import { NativeHoldMonitor } from './native-hold';
 
@@ -9,6 +11,10 @@ const smoke = process.argv.includes('--smoke-test');
 app.setName('TeachersPen');
 const overlays = new Map<number, BrowserWindow>();
 let toolbar: BrowserWindow;
+let mini: BrowserWindow | undefined;
+let miniPosition: Point | null = null;
+let accessory = false;
+const miniDrag = new MiniDrag();
 let preferences: BrowserWindow | undefined;
 let tray: Tray;
 let activeDisplay: number;
@@ -22,7 +28,7 @@ const state: State = {
   drawing: false, tool: 'freehand', color: 1, visible: true, background: 'transparent', timerEnd: null,
   settings: defaults(), shortcutErrors: [], platform: process.platform,
   wayland: process.platform === 'linux' && !!process.env.WAYLAND_DISPLAY,
-  holding: false, holdAvailable: holdMonitor.available, holdError: null
+  holding: false, holdAvailable: holdMonitor.available, holdError: null, toolbarExpanded: true
 };
 const hold = new HoldActivation(holdMonitor, action => {
   state.holding = true;
@@ -36,10 +42,10 @@ if (process.platform === 'linux') app.commandLine.appendSwitch('ozone-platform',
 if (process.argv.includes('--software-rendering')) app.disableHardwareAcceleration();
 if (!app.requestSingleInstanceLock()) app.quit();
 else {
-  app.on('second-instance', () => { toolbar?.show(); });
+  app.on('second-instance', () => { if (toolbar) showTools(); });
   app.whenReady().then(start).catch(error => { console.error(error); app.exit(1); });
 }
-function windows() { return [...overlays.values(), toolbar, preferences].filter((win): win is BrowserWindow => !!win && !win.isDestroyed()); }
+function windows() { return [...overlays.values(), toolbar, mini, preferences].filter((win): win is BrowserWindow => !!win && !win.isDestroyed()); }
 function broadcast() { for (const win of windows()) win.webContents.send('pen:state', state); }
 function settingsPath() { return path.join(app.getPath('userData'), 'settings.json'); }
 function saveSettings(settings: Settings) {
@@ -47,6 +53,90 @@ function saveSettings(settings: Settings) {
   mkdirSync(app.getPath('userData'), { recursive: true });
   writeFileSync(`${settingsPath()}.tmp`, JSON.stringify(settings, null, 2));
   renameSync(`${settingsPath()}.tmp`, settingsPath());
+}
+function updateDock() {
+  const hidden = state.settings.toolbarMode === 'hidden';
+  if (process.platform === 'darwin' && accessory !== hidden) {
+    accessory = hidden;
+    app.setActivationPolicy(hidden ? 'accessory' : 'regular');
+  }
+  preferences?.setSkipTaskbar(hidden);
+}
+function miniShape() {
+  if (!mini || process.platform === 'darwin') return;
+  const rows: Electron.Rectangle[] = [];
+  for (let y = 3; y < MINI_SIZE - 3; y++) {
+    const half = Math.sqrt(MINI_RADIUS ** 2 - (y + 0.5 - MINI_SIZE / 2) ** 2);
+    const x = Math.ceil(MINI_SIZE / 2 - half);
+    rows.push({ x, y, width: MINI_SIZE - x * 2, height: 1 });
+  }
+  mini.setShape(rows);
+}
+function moveMini(point: Point) {
+  if (!mini) return;
+  const area = screen.getDisplayNearestPoint({ x: Math.round(point.x + MINI_SIZE / 2), y: Math.round(point.y + MINI_SIZE / 2) }).workArea;
+  const fitted = fitPosition(point, { width: MINI_SIZE, height: MINI_SIZE }, area);
+  mini.setPosition(fitted.x, fitted.y);
+  miniShape();
+}
+function updateMiniHit(interactive?: boolean) {
+  if (!mini || process.platform !== 'darwin' || miniDrag.active) return;
+  const bounds = mini.getBounds();
+  const cursor = screen.getCursorScreenPoint();
+  const hit = interactive ?? Math.hypot(cursor.x - bounds.x - MINI_SIZE / 2, cursor.y - bounds.y - MINI_SIZE / 2) <= MINI_RADIUS;
+  mini.setIgnoreMouseEvents(!hit, { forward: true });
+}
+function applyToolbarPresentation() {
+  updateDock();
+  if (!toolbar || !mini) return;
+  const full = state.settings.toolbarMode === 'visible' || state.toolbarExpanded;
+  if (full) { mini.hide(); toolbar.showInactive(); }
+  else {
+    toolbar.hide();
+    if (state.settings.toolbarMode === 'minimal') { mini.showInactive(); updateMiniHit(); }
+    else mini.hide();
+  }
+  refreshTrayMenu();
+}
+function showTools() {
+  if (!toolbar) return;
+  if (state.settings.toolbarMode === 'minimal' && mini) {
+    const point = mini.getBounds();
+    const area = screen.getDisplayMatching(point).workArea;
+    const size = toolbar.getBounds();
+    const position = fitPosition({ x: point.x, y: point.y + MINI_SIZE + 8 }, size, area);
+    toolbar.setPosition(position.x, position.y);
+  }
+  state.toolbarExpanded = true;
+  applyToolbarPresentation(); broadcast();
+}
+function collapseTools() {
+  state.toolbarExpanded = false;
+  miniDrag.cancel();
+  applyToolbarPresentation(); broadcast();
+}
+function setToolbarMode(mode: ToolbarMode) {
+  if (!['visible', 'minimal', 'hidden'].includes(mode)) return { ok: false, error: 'Modo de barra no válido' };
+  try {
+    const next = { ...state.settings, toolbarMode: mode };
+    saveSettings(next);
+    state.settings = next;
+    state.toolbarExpanded = mode === 'visible';
+    miniDrag.cancel();
+    applyToolbarPresentation(); broadcast();
+    return { ok: true };
+  } catch (error) { return { ok: false, error: String(error) }; }
+}
+function rememberMiniPosition() {
+  if (!mini) return;
+  const { x, y } = mini.getBounds();
+  miniPosition = { x, y };
+  if (smoke) return;
+  const file = path.join(app.getPath('userData'), 'window-state.json');
+  try {
+    writeFileSync(`${file}.tmp`, JSON.stringify(miniPosition));
+    renameSync(`${file}.tmp`, file);
+  } catch (error) { console.error('No se pudo guardar la posición del círculo', error); }
 }
 function createWindow(role: string, options: Electron.BrowserWindowConstructorOptions) {
   const win = new BrowserWindow({
@@ -144,7 +234,7 @@ async function createOverlays() {
     });
     overlays.set(display.id, overlay);
     overlay.setAlwaysOnTop(true, 'screen-saver');
-    if (process.platform === 'darwin') overlay.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+    if (process.platform === 'darwin') overlay.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: state.settings.toolbarMode === 'hidden' });
     overlay.setIgnoreMouseEvents(true);
     overlay.on('closed', () => { overlays.delete(display.id); });
     await new Promise<void>(resolve => overlay.webContents.once('did-finish-load', () => { overlay.showInactive(); resolve(); }));
@@ -155,7 +245,7 @@ async function createOverlays() {
 function openPreferences() {
   setDrawing(false);
   if (preferences && !preferences.isDestroyed()) { preferences.show(); return; }
-  preferences = createWindow('preferences', { width: 650, height: 800, minWidth: 570, minHeight: 500, title: 'Preferencias · TeachersPen', backgroundColor: '#f6f5f1', autoHideMenuBar: true });
+  preferences = createWindow('preferences', { width: 650, height: 800, minWidth: 570, minHeight: 500, title: 'Preferencias · TeachersPen', backgroundColor: '#f6f5f1', autoHideMenuBar: true, skipTaskbar: state.settings.toolbarMode === 'hidden' });
   preferences.once('ready-to-show', () => preferences?.show());
   const finishRecording = () => {
     if (!recordingShortcut) return;
@@ -177,20 +267,35 @@ function makeTray() {
   if (process.platform === 'darwin') icon.setTemplateImage(true);
   tray = new Tray(icon);
   tray.setToolTip('TeachersPen');
+  refreshTrayMenu();
+  // macOS opens the native context menu itself; other platforms can open it on click.
+  if (process.platform !== 'darwin') tray.on('click', () => tray.popUpContextMenu());
+}
+function refreshTrayMenu() {
+  if (!tray) return;
   tray.setContextMenu(Menu.buildFromTemplate([
-    { label: 'Mostrar herramientas', click: () => toolbar.showInactive() },
+    { label: 'Mostrar barra completa', click: showTools },
+    { label: 'Contraer / ocultar barra', enabled: state.settings.toolbarMode !== 'visible' && state.toolbarExpanded, click: collapseTools },
+    { label: 'Barra de dibujo', submenu: (['visible', 'minimal', 'hidden'] as ToolbarMode[]).map(mode => ({
+      label: ({ visible: 'Visible', minimal: 'Mínima', hidden: 'Oculta' })[mode], type: 'radio' as const, checked: state.settings.toolbarMode === mode,
+      click: () => { const result = setToolbarMode(mode); if (!result.ok) dialog.showErrorBox('TeachersPen', result.error || 'No se pudo cambiar la barra'); }
+    })) },
     { label: 'Dibujar / interactuar', click: () => perform('toggle') },
     { label: 'Volver al escritorio', click: () => { state.background = 'transparent'; setDrawing(false); } },
     { label: 'Preferencias…', click: openPreferences },
     { type: 'separator' }, { label: 'Salir de TeachersPen', click: () => app.quit() }
   ]));
-  tray.on('click', () => toolbar.showInactive());
 }
 async function start() {
   if (!smoke) {
     try { state.settings = parseSettings(JSON.parse(readFileSync(settingsPath(), 'utf8'))); }
     catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') console.error('No se pudieron cargar las preferencias', error); }
+    try { miniPosition = readPosition(JSON.parse(readFileSync(path.join(app.getPath('userData'), 'window-state.json'), 'utf8'))); }
+    catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') console.error('No se pudo cargar la posición del círculo', error); }
   }
+  if (smoke && process.argv.includes('--smoke-hidden-start')) state.settings.toolbarMode = 'hidden';
+  state.toolbarExpanded = state.settings.toolbarMode === 'visible';
+  updateDock();
   activeDisplay = screen.getPrimaryDisplay().id;
   ipcMain.handle('pen:get-state', event => {
     if (!windows().some(win => win.webContents === event.sender)) throw new Error('Ventana no autorizada');
@@ -219,6 +324,28 @@ async function start() {
         case 'toolbar-size':
           if (event.sender === toolbar?.webContents && Number.isFinite(command.height)) toolbar.setContentSize(toolbar.getContentSize()[0], Math.max(90, Math.min(180, Math.ceil(command.height))));
           break;
+        case 'toolbar-mode': return setToolbarMode(command.mode);
+        case 'show-tools': showTools(); break;
+        case 'collapse-tools': collapseTools(); break;
+        case 'mini-hit':
+          if (event.sender === mini?.webContents) updateMiniHit(command.interactive === true);
+          return { ok: true };
+        case 'mini-pointer': {
+          if (event.sender !== mini?.webContents || !mini) return { ok: false, error: 'Ventana no autorizada' };
+          const pointer = readPosition(command);
+          if (!pointer) return { ok: false, error: 'Posición no válida' };
+          if (command.phase === 'start') {
+            const { x, y } = mini.getBounds(); miniDrag.begin(pointer, { x, y });
+          } else if (command.phase === 'move') {
+            const position = miniDrag.move(pointer); if (position) moveMini(position);
+          } else if (command.phase === 'end') {
+            const result = miniDrag.end(pointer);
+            if (result?.dragged) { if (result.position) moveMini(result.position); rememberMiniPosition(); }
+            else if (result) showTools();
+            updateMiniHit();
+          } else miniDrag.cancel();
+          return { ok: true };
+        }
         case 'preferences': openPreferences(); break;
         case 'activation': {
           if (command.activation !== 'toggle' && command.activation !== 'hold') return { ok: false, error: 'Modo de activación no válido' };
@@ -231,12 +358,14 @@ async function start() {
           state.settings = next; state.shortcutErrors = []; state.holdError = null; break;
         }
         case 'settings': {
-          const next = parseSettings(command.settings);
+          // Presentation is applied immediately by its own control, including tray changes.
+          const next = parseSettings({ ...command.settings, toolbarMode: state.settings.toolbarMode });
           const errors = registerShortcuts(next);
           if (errors.length) { state.shortcutErrors = registerShortcuts(state.settings); broadcast(); return { ok: false, error: errors.join('\n') }; }
           try { saveSettings(next); }
           catch (error) { state.shortcutErrors = registerShortcuts(state.settings); throw error; }
-          state.settings = next; state.shortcutErrors = []; state.holdError = null; break;
+          state.settings = next; state.shortcutErrors = []; state.holdError = null;
+          break;
         }
         case 'quit': app.quit(); break;
         default: return { ok: false, error: 'Comando desconocido' };
@@ -253,11 +382,22 @@ async function start() {
     resizable: false, hasShadow: false, skipTaskbar: true
   });
   toolbar.setAlwaysOnTop(true, 'screen-saver', 1);
-  if (process.platform === 'darwin') toolbar.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-  toolbar.on('close', event => { if (!quitting) { event.preventDefault(); toolbar.hide(); } });
-  await new Promise<void>(resolve => toolbar.webContents.once('did-finish-load', () => { toolbar.showInactive(); resolve(); }));
+  if (process.platform === 'darwin') toolbar.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: state.settings.toolbarMode === 'hidden' });
+  toolbar.on('close', event => { if (!quitting) { event.preventDefault(); collapseTools(); } });
+  await new Promise<void>(resolve => toolbar.webContents.once('did-finish-load', () => resolve()));
+  mini = createWindow('mini', {
+    x: area.x + 24, y: area.y + 24, width: MINI_SIZE, height: MINI_SIZE,
+    frame: false, transparent: true, backgroundColor: '#00000000', hasShadow: false,
+    focusable: false, resizable: false, movable: false, skipTaskbar: true, roundedCorners: false, acceptFirstMouse: true
+  });
+  mini.setAlwaysOnTop(true, 'screen-saver', 2);
+  if (process.platform === 'darwin') mini.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: state.settings.toolbarMode === 'hidden' });
+  mini.on('hide', () => miniDrag.cancel());
+  await new Promise<void>(resolve => mini!.webContents.once('did-finish-load', () => resolve()));
+  moveMini(miniPosition || { x: area.x + 24, y: area.y + 24 });
   state.shortcutErrors = registerShortcuts(state.settings);
   makeTray();
+  applyToolbarPresentation();
   Menu.setApplicationMenu(Menu.buildFromTemplate([
     { label: 'TeachersPen', submenu: [ { label: 'Preferencias…', click: openPreferences }, { type: 'separator' }, { role: 'quit', label: 'Salir de TeachersPen' } ] },
     { label: 'Edición', submenu: [{ role: 'undo' }, { role: 'redo' }, { type: 'separator' }, { role: 'cut' }, { role: 'copy' }, { role: 'paste' }, { role: 'selectAll' }] }
@@ -266,15 +406,17 @@ async function start() {
   screen.on('display-removed', (_event, display) => {
     overlays.get(display.id)?.destroy();
     if (activeDisplay === display.id) activeDisplay = screen.getPrimaryDisplay().id;
+    if (mini) moveMini(mini.getBounds());
   });
   screen.on('display-metrics-changed', () => {
     if (rebuilding) return;
     rebuilding = true;
     setDrawing(false);
     for (const display of screen.getAllDisplays()) overlays.get(display.id)?.setBounds(display.bounds);
+    if (mini) moveMini(mini.getBounds());
     rebuilding = false;
   });
-  app.on('activate', () => toolbar.showInactive());
+  app.on('activate', () => { if (state.settings.toolbarMode !== 'hidden') applyToolbarPresentation(); });
   const stopHolding = () => { hold.stop(); if (state.holding) setDrawing(false); };
   powerMonitor.on('suspend', stopHolding);
   powerMonitor.on('lock-screen', stopHolding);
@@ -290,6 +432,11 @@ async function runSmoke() {
   })))`);
   // Give React a turn to install event listeners, then exercise the real renderer/IPC.
   await new Promise(resolve => setTimeout(resolve, 500));
+  if (process.argv.includes('--smoke-hidden-start')) {
+    assert.equal(toolbar.isVisible(), false, 'El arranque oculto no debe revelar la barra');
+    assert.equal(mini!.isVisible(), false);
+    if (process.platform === 'darwin') assert.equal(app.dock!.isVisible(), false);
+  }
   assert.equal(state.drawing, false);
   perform('freehand');
   assert.equal(state.drawing, true);
@@ -351,7 +498,7 @@ async function runSmoke() {
   await new Promise(resolve => setTimeout(resolve, 200));
   assert.ok(await preferences!.webContents.executeJavaScript(`document.body.innerText.includes('Atajos globales')`));
   const settingsBeforeMode = structuredClone(state.settings);
-  const modePosition = await preferences!.webContents.executeJavaScript(`(() => { const r = document.getElementById('activation-hold').getBoundingClientRect(); return {x:Math.round(r.x+r.width/2), y:Math.round(r.y+r.height/2)}; })()`);
+  const modePosition = await preferences!.webContents.executeJavaScript(`(() => { const input = document.getElementById('activation-hold'); input.scrollIntoView({block:'center'}); const r = input.getBoundingClientRect(); return {x:Math.round(r.x+r.width/2), y:Math.round(r.y+r.height/2)}; })()`);
   preferences!.webContents.sendInputEvent({ type: 'mouseDown', ...modePosition, button: 'left', clickCount: 1 });
   preferences!.webContents.sendInputEvent({ type: 'mouseUp', ...modePosition, button: 'left', clickCount: 1 });
   const selectedMode = await preferences!.webContents.executeJavaScript(`(async () => {
@@ -380,6 +527,55 @@ async function runSmoke() {
   })()`);
   assert.equal(saved.ok, true);
   assert.equal(state.settings.width, 8);
+  const miniControl = await preferences!.webContents.executeJavaScript(`(() => { const input = document.getElementById('toolbar-minimal'); input.scrollIntoView({block:'center'}); const r=input.getBoundingClientRect(); return {x:Math.round(r.x+r.width/2),y:Math.round(r.y+r.height/2)}; })()`);
+  preferences!.webContents.sendInputEvent({ type: 'mouseDown', ...miniControl, button: 'left', clickCount: 1 });
+  preferences!.webContents.sendInputEvent({ type: 'mouseUp', ...miniControl, button: 'left', clickCount: 1 });
+  await preferences!.webContents.executeJavaScript(`(async () => { const end=Date.now()+3000; while(Date.now()<end) { if((await window.pen.getState()).settings.toolbarMode==='minimal') return; await new Promise(r=>setTimeout(r,20)); } })()`);
+  assert.equal(state.settings.toolbarMode, 'minimal');
+  assert.equal(toolbar.isVisible(), false);
+  assert.equal(mini!.isVisible(), true);
+  mini!.webContents.sendInputEvent({ type: 'mouseMove', x: 0, y: 0 });
+  assert.equal(await mini!.webContents.executeJavaScript(`new Promise(resolve=>requestAnimationFrame(()=>resolve(getComputedStyle(document.querySelector('button')).opacity)))`), '0.8');
+  mini!.webContents.sendInputEvent({ type: 'mouseMove', x: 28, y: 28 });
+  assert.equal(await mini!.webContents.executeJavaScript(`new Promise(resolve=>requestAnimationFrame(()=>resolve(getComputedStyle(document.querySelector('button')).opacity)))`), '0.6');
+  const miniBefore = mini!.getBounds();
+  await mini!.webContents.executeJavaScript(`(async () => {
+    const button=document.querySelector('button');
+    const send=(type,x,y)=>button.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerId:2,button:0,screenX:x,screenY:y}));
+    send('pointerdown',${miniBefore.x + 28},${miniBefore.y + 28});
+    send('pointermove',${miniBefore.x + 92},${miniBefore.y + 76});
+    send('pointerup',${miniBefore.x + 92},${miniBefore.y + 76});
+    await window.pen.getState();
+  })()`);
+  assert.equal(toolbar.isVisible(), false, 'Arrastrar el círculo no debe abrir la barra');
+  assert.equal(mini!.getBounds().x, miniBefore.x + 64);
+  assert.equal(mini!.getBounds().y, miniBefore.y + 48);
+  const miniAfterDrag = mini!.getBounds();
+  mini!.webContents.sendInputEvent({ type: 'mouseDown', x: 28, y: 28, button: 'left', clickCount: 1 });
+  mini!.webContents.sendInputEvent({ type: 'mouseUp', x: 28, y: 28, button: 'left', clickCount: 1 });
+  await new Promise(resolve => setTimeout(resolve, 100));
+  assert.equal(toolbar.isVisible(), true, 'Un clic en el círculo debe abrir la barra');
+  assert.equal(mini!.isVisible(), false);
+  collapseTools();
+  assert.deepEqual(mini!.getBounds(), miniAfterDrag, 'Contraer debe devolver el círculo a su posición');
+  assert.equal(setToolbarMode('hidden').ok, true);
+  assert.equal(toolbar.isVisible(), false);
+  assert.equal(mini!.isVisible(), false);
+  assert.equal(tray.isDestroyed(), false);
+  if (process.platform === 'darwin') {
+    await new Promise(resolve => setTimeout(resolve, 100));
+    assert.equal(app.dock!.isVisible(), false, 'El modo oculto debe quitar el icono del Dock');
+  }
+  perform('freehand');
+  await new Promise(resolve => setTimeout(resolve, 100));
+  assert.equal(toolbar.isVisible(), false, 'Dibujar en modo oculto no debe revelar la barra');
+  assert.equal(mini!.isVisible(), false);
+  assert.equal(await overlay.webContents.executeJavaScript(`document.querySelector('.drawing-hint')===null`), true);
+  setDrawing(false);
+  showTools();
+  assert.equal(toolbar.isVisible(), true, 'El menú del sistema debe poder recuperar la barra');
+  collapseTools();
+  assert.equal(toolbar.isVisible(), false);
   const holdSettings: Settings = { ...state.settings, activation: 'hold', shortcuts: { ...state.settings.shortcuts, toggle: 'Control+Shift+F19' } };
   state.shortcutErrors = registerShortcuts(holdSettings);
   assert.equal(state.shortcutErrors.length, 0, state.shortcutErrors.join(', '));
@@ -420,6 +616,8 @@ async function runSmoke() {
       try {
         await waitFor(() => postedDown, 3000);
         await waitFor(() => state.drawing && state.holding, 1000);
+        assert.equal(toolbar.isVisible(), false, 'El atajo mantenido debe dibujar sin revelar la barra oculta');
+        assert.equal(mini!.isVisible(), false);
         if (modifierFirst) {
           await waitFor(() => modifierReleased, 2000);
           await waitFor(() => !state.drawing, 1000);
@@ -432,10 +630,15 @@ async function runSmoke() {
   }
   perform('timer'); assert.ok(state.timerEnd && state.timerEnd > Date.now());
   perform('timer'); assert.equal(state.timerEnd, null);
+  setToolbarMode('visible');
+  assert.equal(toolbar.isVisible(), true);
+  assert.equal(mini!.isVisible(), false);
   assert.equal(await overlay.webContents.executeJavaScript('typeof window.require'), 'undefined');
   assert.ok(state.shortcutErrors.length === 0, state.shortcutErrors.join(', '));
   const artifacts = app.isPackaged ? path.join(app.getPath('temp'), 'teacherspen-smoke') : path.join(app.getAppPath(), '.artifacts');
   mkdirSync(artifacts, { recursive: true });
+  await preferences!.webContents.executeJavaScript('window.scrollTo(0,0)');
+  writeFileSync(path.join(artifacts, 'mini.png'), (await mini!.webContents.capturePage()).toPNG());
   writeFileSync(path.join(artifacts, 'toolbar.png'), (await toolbar.webContents.capturePage()).toPNG());
   writeFileSync(path.join(artifacts, 'preferences.png'), (await preferences!.webContents.capturePage()).toPNG());
   console.log('SMOKE OK: ventanas reales, dibujo Canvas, deshacer, IPC, pizarras, modo interacción, preferencias y atajos registrados.');

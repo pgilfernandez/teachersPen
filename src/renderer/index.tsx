@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { actionLabels, actions, defaults, type Action, type Command, type Settings, type State, type Tool } from '../shared';
+import { actionLabels, actions, defaults, type Action, type Command, type Settings, type State, type Tool, type ToolbarMode } from '../shared';
+import { MINI_RADIUS, MINI_SIZE } from '../toolbar';
 import { DrawingHistory, type Stroke } from '../model';
 import { paintStroke } from './draw';
 
@@ -32,7 +33,45 @@ function App() {
   if (!state) return error ? <p role="alert">{error}</p> : null;
   if (role === 'overlay') return <Overlay state={state} />;
   if (role === 'preferences') return <Preferences state={state} />;
+  if (role === 'mini') return <MiniLauncher state={state} />;
   return <Toolbar state={state} />;
+}
+
+function MiniLauncher({ state }: { state: State }) {
+  const pointer = useRef<number | null>(null);
+  const hit = useRef<boolean | null>(null);
+  useEffect(() => {
+    hit.current = null;
+    if (state.toolbarExpanded || state.settings.toolbarMode !== 'minimal') pointer.current = null;
+  }, [state.toolbarExpanded, state.settings.toolbarMode]);
+  useEffect(() => {
+    const sendHit = (interactive: boolean) => {
+      if (hit.current === interactive || pointer.current !== null) return;
+      hit.current = interactive;
+      void command({ type: 'mini-hit', interactive });
+    };
+    const move = (event: MouseEvent) => sendHit(Math.hypot(event.clientX - MINI_SIZE / 2, event.clientY - MINI_SIZE / 2) <= MINI_RADIUS);
+    const leave = () => sendHit(false);
+    document.addEventListener('mousemove', move);
+    document.documentElement.addEventListener('mouseleave', leave);
+    return () => { document.removeEventListener('mousemove', move); document.documentElement.removeEventListener('mouseleave', leave); };
+  }, []);
+  const send = (phase: 'start' | 'move' | 'end' | 'cancel', event: React.PointerEvent) =>
+    command({ type: 'mini-pointer', phase, x: event.screenX, y: event.screenY });
+  return <button className="mini-launcher" aria-label="Abrir barra de dibujo" title="TeachersPen · Clic para abrir, arrastra para mover"
+    onPointerDown={event => {
+      if (event.button !== 0 || pointer.current !== null) return;
+      event.preventDefault(); pointer.current = event.pointerId;
+      if (event.isTrusted) event.currentTarget.setPointerCapture(event.pointerId);
+      void send('start', event);
+    }}
+    onPointerMove={event => { if (pointer.current === event.pointerId) void send('move', event); }}
+    onPointerUp={event => { if (pointer.current === event.pointerId) { pointer.current = null; void send('end', event); } }}
+    onPointerCancel={event => { if (pointer.current !== null) { pointer.current = null; void send('cancel', event); } }}
+    onLostPointerCapture={event => { if (pointer.current !== null) { pointer.current = null; void send('cancel', event); } }}
+    onClick={event => { if (event.detail === 0) void command({ type: 'show-tools' }); }}>
+    <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="m4 16-1 5 5-1L20 8l-4-4Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" /><path d="m13 7 4 4M4 16l4 4M16 4l2-2 4 4-2 2" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" /></svg>
+  </button>;
 }
 
 function Overlay({ state }: { state: State }) {
@@ -122,7 +161,7 @@ function Overlay({ state }: { state: State }) {
       onPointerCancel={finish} onLostPointerCapture={finish}
     />
     {state.timerEnd && <Timer end={state.timerEnd} />}
-    {state.drawing && <div className="drawing-hint">{toolNames[state.tool]} · {state.holding ? 'Suelta el atajo para interactuar' : 'Esc para interactuar'}</div>}
+    {state.drawing && state.settings.toolbarMode !== 'hidden' && <div className="drawing-hint">{toolNames[state.tool]} · {state.holding ? 'Suelta el atajo para interactuar' : 'Esc para interactuar'}</div>}
   </div>;
 }
 function Timer({ end }: { end: number }) {
@@ -161,6 +200,7 @@ function Toolbar({ state }: { state: State }) {
       <button className={state.background === 'white' ? 'active' : ''} onClick={() => void action('white')} title={tip('Pizarra blanca', 'white')}>Blanca</button>
       <button className={state.background === 'black' ? 'active' : ''} onClick={() => void action('black')} title={tip('Pizarra negra', 'black')}>Negra</button>
       <button className={state.timerEnd ? 'active' : ''} onClick={() => void action('timer')} title={tip('Temporizador', 'timer')}>◷ Temporizador</button>
+      {state.settings.toolbarMode !== 'visible' && <button onClick={() => void command({ type: 'collapse-tools' })}>{state.settings.toolbarMode === 'minimal' ? 'Contraer' : 'Ocultar'}</button>}
       <button onClick={() => void command({ type: 'quit' })}>Salir</button>
     </div>
     {(state.shortcutErrors.length > 0 || state.wayland || state.holdError) && <div className="toolbar-warning" onClick={() => void command({ type: 'preferences' })}>{state.holdError || (state.wayland ? 'Wayland: compatibilidad experimental mediante XWayland. Consulta las preferencias.' : 'Hay atajos no disponibles. Abre Preferencias para revisarlos.')}</div>}
@@ -171,8 +211,22 @@ function Preferences({ state }: { state: State }) {
   const [message, setMessage] = useState('');
   const [saving, setSaving] = useState(false);
   const [changingActivation, setChangingActivation] = useState(false);
+  const [changingToolbar, setChangingToolbar] = useState(false);
   const [recording, setRecording] = useState<Action | null>(null);
   const field = <K extends keyof Settings>(key: K, value: Settings[K]) => { setDraft(previous => ({ ...previous, [key]: value })); setMessage(''); };
+  const busy = saving || changingActivation || changingToolbar;
+  const changeToolbar = async (mode: ToolbarMode) => {
+    setChangingToolbar(true);
+    try {
+      const result = await command({ type: 'toolbar-mode', mode });
+      if (result.ok) {
+        setDraft(previous => ({ ...previous, toolbarMode: mode }));
+        setMessage('Modo de barra aplicado y guardado.');
+      } else setMessage(result.error || 'No se ha podido cambiar la barra.');
+      return result.ok;
+    } catch (error) { setMessage(String(error)); return false; }
+    finally { setChangingToolbar(false); }
+  };
   const changeActivation = async (activation: Settings['activation']) => {
     setChangingActivation(true);
     try {
@@ -194,10 +248,17 @@ function Preferences({ state }: { state: State }) {
   };
   return <main className="preferences-main">
     <header><div className="eyebrow">TEACHERSPEN / PREFERENCIAS</div><h1>Tu pantalla, tu pizarra.</h1><p>Configura las herramientas para acompañar tus clases.</p></header>
+    <section><h2>Barra de dibujo</h2>
+      <div className="toolbar-options" role="radiogroup" aria-label="Barra de dibujo">{(['visible', 'minimal', 'hidden'] as ToolbarMode[]).map(mode => <label className={state.settings.toolbarMode === mode ? 'active' : ''} key={mode}>
+        <input id={`toolbar-${mode}`} type="radio" name="toolbar-mode" checked={state.settings.toolbarMode === mode} disabled={busy} onChange={() => void changeToolbar(mode)} />
+        <span><strong>{({ visible: 'Visible', minimal: 'Mínima', hidden: 'Oculta' })[mode]}</strong><small>{({ visible: 'La barra completa permanece en pantalla.', minimal: 'Un círculo con el icono. Arrastra para moverlo; haz clic para abrir la barra.', hidden: 'Solo el icono del sistema. Dibuja usando los atajos.' })[mode]}</small></span>
+      </label>)}</div>
+      <p className="help">Se aplica y guarda al seleccionarlo. El círculo tiene un 20% de transparencia, y un 40% al pasar el ratón.</p>
+    </section>
     <section><h2>Dibujo</h2><div className="setting-row"><label htmlFor="line-width">Grosor del trazo</label><div><input id="line-width" type="number" min="1" max="40" value={draft.width} onChange={e => field('width', Number(e.target.value))} /> <span className="muted">px</span></div></div>
       <div className="setting-row"><span id="activation-label">Activación</span><div className="activation-options" role="radiogroup" aria-labelledby="activation-label">
-        <label className={state.settings.activation === 'toggle' ? 'active' : ''}><input id="activation-toggle" type="radio" name="activation" checked={state.settings.activation === 'toggle'} disabled={changingActivation || saving} onChange={() => void changeActivation('toggle')} />Pulsar para activar / desactivar</label>
-        <label className={state.settings.activation === 'hold' ? 'active' : ''}><input id="activation-hold" type="radio" name="activation" checked={state.settings.activation === 'hold'} disabled={changingActivation || saving || !state.holdAvailable} onChange={() => void changeActivation('hold')} />Mantener pulsado</label>
+        <label className={state.settings.activation === 'toggle' ? 'active' : ''}><input id="activation-toggle" type="radio" name="activation" checked={state.settings.activation === 'toggle'} disabled={busy} onChange={() => void changeActivation('toggle')} />Pulsar para activar / desactivar</label>
+        <label className={state.settings.activation === 'hold' ? 'active' : ''}><input id="activation-hold" type="radio" name="activation" checked={state.settings.activation === 'hold'} disabled={busy || !state.holdAvailable} onChange={() => void changeActivation('hold')} />Mantener pulsado</label>
       </div></div>
       <p className="help">El modo de activación se aplica y guarda al seleccionarlo.</p>
       {state.settings.activation === 'hold' && <p className="help">Mantén pulsado el atajo de activación, de una herramienta o de un color mientras dibujas. Al soltar cualquiera de sus teclas vuelves a interactuar. Los botones de la barra también permiten activar el dibujo manualmente.</p>}
@@ -225,7 +286,7 @@ function Preferences({ state }: { state: State }) {
     {state.shortcutErrors.length > 0 && <div className="notice" role="alert">{state.shortcutErrors.join('\n')}</div>}
     {state.holdError && <div className="notice" role="alert">{state.holdError}</div>}
     {state.wayland && <div className="notice">Esta versión utiliza X11/XWayland. La superposición sobre aplicaciones Wayland nativas no está garantizada.</div>}
-    <footer className="preferences-footer"><button disabled={changingActivation || saving} onClick={() => { setDraft(defaults()); setMessage('Valores restaurados. Pulsa Guardar para aplicarlos.'); }}>Restaurar valores</button><button className="primary" disabled={saving || changingActivation} onClick={() => void save()}>{saving ? 'Guardando…' : 'Guardar preferencias'}</button></footer>
+    <footer className="preferences-footer"><button disabled={busy} onClick={() => { setDraft(defaults()); void changeToolbar('visible').then(ok => { if (ok) setMessage('Barra visible restaurada. Pulsa Guardar para aplicar los demás valores.'); }); }}>Restaurar valores</button><button className="primary" disabled={busy} onClick={() => void save()}>{saving ? 'Guardando…' : 'Guardar preferencias'}</button></footer>
     <p className="save-message" role="status">{message}</p>
     <p className="version">TeachersPen 0.1 · Todo se guarda en este ordenador.</p>
   </main>;

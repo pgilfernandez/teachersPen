@@ -17,6 +17,16 @@ En **Preferencias → Activación → Mantener pulsado**, el cambio se aplica y 
 
 Los dos modos aparecen como opciones visibles y la opción marcada indica el modo realmente activo. La barra muestra «Mantén el atajo para dibujar» cuando ese modo está activado y «Suelta el atajo para interactuar» durante la pulsación.
 
+## Presentación de la barra
+
+En **Preferencias → Barra de dibujo** puedes elegir un modo, que se aplica y guarda inmediatamente:
+
+- **Visible:** mantiene la barra completa en pantalla.
+- **Mínima:** muestra solo un círculo con el icono de TeachersPen. Tiene un 20% de transparencia (80% de opacidad) y un 40% al pasar el ratón (60% de opacidad). Arrastrarlo cambia su posición; hacer clic abre la barra completa. El botón **Contraer** vuelve al círculo. Su posición se recuerda entre sesiones y se ajusta si se desconecta un monitor.
+- **Oculta:** deja únicamente el icono en la barra de menús de macOS o la bandeja del sistema de Windows/Linux. En macOS también desaparece del Dock y del selector de aplicaciones. Los atajos siguen dibujando sin mostrar la barra, el círculo ni el aviso inferior. Las anotaciones permanecen visibles.
+
+El menú del icono del sistema permite abrir la barra completa, cambiar entre los tres modos, abrir Preferencias o salir. Si abres temporalmente la barra en modo oculto, **Ocultar** vuelve a esconderla. Volver a ejecutar TeachersPen también permite recuperar la barra. En Linux, la ubicación y disponibilidad de los iconos de bandeja dependen del escritorio; la validación de Windows/Linux sigue pendiente.
+
 La liberación se comprueba mediante un pequeño ejecutable nativo, cada 8 ms y solo mientras mantienes un atajo. Usa Core Graphics en macOS, `GetAsyncKeyState` en Windows y X11 en Linux. No instala un monitor permanente de teclado ni registra lo que escribes. El ejecutable macOS se compila para Intel y Apple Silicon con versión mínima 11.0. Windows y Linux siguen pendientes de prueba real.
 
 - `Ctrl+Mayús+Espacio`: activar/salir del dibujo. En Mac es Control, no Command.
@@ -63,11 +73,16 @@ Ese argumento se transmite a Electron y desactiva la aceleración por hardware. 
 npm run typecheck
 npm test
 npm run smoke
+npm run smoke -- --smoke-hidden-start
 npm run test:hold:mac
 npm run pack
 ```
 
 `smoke` abre ventanas reales, prueba dibujo mediante eventos sintéticos, deshacer, cambios de fondo, aislamiento del renderer, preferencias y registro de atajos. Sale al terminar y no escribe preferencias. No equivale a comprobar entrada física, paso de clics, todos los escritorios/fullscreen ni otros sistemas.
+
+También comprueba los modos de barra, la transparencia del círculo, que arrastrarlo no abra las herramientas, que el clic sí lo haga y que el dibujo oculto mantenga la barra y el Dock escondidos. `--smoke-hidden-start` verifica además el arranque directamente en modo oculto.
+
+Verificación de los modos de barra (01/11/2026, Monterey 12.7.6 Intel): nueve pruebas unitarias, smoke con inicio visible y oculto, atajos mantenidos en modo oculto y prueba de clic/arrastre con eventos de ratón enviados a macOS. Se comprobó la escritura de la posición en disco y, en la `.app` empaquetada, que la capa de dibujo recibe el foco sin mostrar barra, círculo, aviso inferior ni Dock. Windows/Linux pendientes de validación.
 
 `test:hold:mac` comprueba además el estado nativo con eventos enviados al sistema (Ctrl+Mayús+F19), la liberación de la tecla y la liberación anticipada de un modificador. Invoca el mismo manejador del atajo para iniciar la prueba: macOS no entrega esos eventos sintetizados al registro global de Carbon. Por tanto, no sustituye la prueba con teclado físico. Solo se ejecuta si ya existe permiso para simular eventos; no solicita permisos automáticamente. Las pruebas unitarias cubren repetición, atajos solapados, cancelación y fallo del comprobador sin necesitar esos permisos.
 
@@ -95,3 +110,5 @@ Para generar instaladores: `npm run dist:mac`, `npm run dist:win`, `npm run dist
 `src/main.ts` gestiona ventanas, monitores, atajos y preferencias. `src/preload.ts` expone un puente IPC limitado. `src/shared.ts` define el contrato y valida preferencias. `src/model.ts` conserva trazos e historial. `src/renderer/` contiene interfaz y Canvas. `scripts/build.mjs` compila sin servidor web. Las preferencias se escriben de forma atómica en `settings.json` dentro del directorio de datos de Electron (`~/Library/Application Support/TeachersPen` en macOS, según el nombre de aplicación).
 
 `src/hold.ts` coordina los atajos mantenidos y su cancelación; `src/native-hold.ts` gestiona el proceso de comprobación. `native/key-state.c` contiene las implementaciones de macOS, Windows y X11 y se compila durante el build.
+
+`src/toolbar.ts` distingue clic y arrastre y ajusta posiciones a los monitores. El círculo utiliza una ventana pequeña independiente; su posición se guarda de forma atómica en `window-state.json`, junto a `settings.json`.

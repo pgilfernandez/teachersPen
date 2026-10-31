@@ -1,6 +1,7 @@
 export const tools = ['freehand', 'line', 'arrow', 'rectangle', 'circle'] as const;
 export type Tool = typeof tools[number];
 export type Background = 'transparent' | 'white' | 'black';
+export type ToolbarMode = 'visible' | 'minimal' | 'hidden';
 export const actionLabels = {
   toggle: 'Activar / salir del dibujo',
   freehand: 'Mano alzada', line: 'Línea', arrow: 'Flecha', rectangle: 'Rectángulo', circle: 'Círculo',
@@ -12,6 +13,7 @@ export type Action = keyof typeof actionLabels;
 export const actions = Object.keys(actionLabels) as Action[];
 export interface Settings {
   activation: 'toggle' | 'hold';
+  toolbarMode: ToolbarMode;
   width: number;
   colors: string[];
   shortcuts: Record<Action, string>;
@@ -31,11 +33,13 @@ export interface State {
   holding: boolean;
   holdAvailable: boolean;
   holdError: string | null;
+  toolbarExpanded: boolean;
 }
 export function defaults(): Settings {
   const keys = ['Space', 'A', 'Q', 'W', 'S', 'O', 'E', 'D', 'C', 'R', 'F', 'Z', 'Y', 'X', 'H', 'T', 'V', 'B'];
   return {
     activation: 'toggle',
+    toolbarMode: 'visible',
     width: 6, colors: ['#ef4444', '#087bff', '#78cc00', '#e2cd00', '#bfc0c2'], timerSeconds: 300,
     shortcuts: Object.fromEntries(actions.map((action, i) => [action, `Control+Shift+${keys[i]}`])) as Record<Action, string>
   };
@@ -45,6 +49,7 @@ export function parseSettings(input: unknown): Settings {
   if (!input || typeof input !== 'object') return base;
   const data = input as Partial<Settings>;
   if (data.activation === 'hold') base.activation = 'hold';
+  if (data.toolbarMode === 'minimal' || data.toolbarMode === 'hidden') base.toolbarMode = data.toolbarMode;
   if (Number.isFinite(data.width)) base.width = Math.max(1, Math.min(40, Math.round(data.width!)));
   if (Number.isFinite(data.timerSeconds)) base.timerSeconds = Math.max(10, Math.min(7200, Math.round(data.timerSeconds!)));
   if (Array.isArray(data.colors) && data.colors.length === 5 && data.colors.every(c => typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c))) base.colors = [...data.colors];
@@ -65,6 +70,11 @@ export type Command =
   | { type: 'width'; width: number }
   | { type: 'settings'; settings: Settings }
   | { type: 'activation'; activation: Settings['activation'] }
+  | { type: 'toolbar-mode'; mode: ToolbarMode }
+  | { type: 'show-tools' }
+  | { type: 'collapse-tools' }
+  | { type: 'mini-hit'; interactive: boolean }
+  | { type: 'mini-pointer'; phase: 'start' | 'move' | 'end' | 'cancel'; x: number; y: number }
   | { type: 'preferences' }
   | { type: 'active-display' }
   | { type: 'record-shortcut'; active: boolean }
