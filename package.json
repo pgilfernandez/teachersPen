@@ -1,0 +1,50 @@
+{
+  "name": "teacherspen",
+  "productName": "TeachersPen",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Anotaciones sobre el escritorio para profesores",
+  "author": "TeachersPen",
+  "main": "dist/main.cjs",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "start": "npm run build && node scripts/run.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test tests/*.test.ts",
+    "smoke": "npm run build && node scripts/run.mjs --smoke-test",
+    "pack": "npm run build && electron-builder --dir",
+    "dist:mac": "npm run build && electron-builder --mac",
+    "dist:win": "npm run build && electron-builder --win",
+    "dist:linux": "npm run build && electron-builder --linux"
+  },
+  "dependencies": {
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "20.19.9",
+    "@types/react": "18.3.23",
+    "@types/react-dom": "18.3.7",
+    "electron": "37.10.3",
+    "electron-builder": "26.18.0",
+    "esbuild": "0.25.5",
+    "tsx": "4.20.3",
+    "typescript": "5.8.3"
+  },
+  "build": {
+    "appId": "org.teacherspen.desktop",
+    "files": ["dist/**/*", "package.json"],
+    "directories": { "output": "release" },
+    "mac": {
+      "category": "public.app-category.education",
+      "identity": null,
+      "minimumSystemVersion": "11.0",
+      "target": [{ "target": "dmg", "arch": ["x64", "arm64"] }]
+    },
+    "win": { "target": [{ "target": "nsis", "arch": ["x64"] }] },
+    "linux": {
+      "category": "Education",
+      "target": [{ "target": "AppImage", "arch": ["x64"] }, "deb"]
+    }
+  }
+}

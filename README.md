@@ -1,0 +1,82 @@
+# TeachersPen
+
+Aplicación de escritorio para dibujar encima de otras aplicaciones mientras su contenido sigue actualizándose. Primera versión de desarrollo; plataforma inicial de pruebas: macOS Monterey 12.7.6, Intel.
+
+## Ejecutar
+
+Para ejecutar el código fuente se utiliza Node.js 20 o posterior; para instalar toda la cadena de empaquetado con sus requisitos oficiales se recomienda Node.js 22.12 o posterior. Node.js es necesario **para desarrollar**, no para usar la aplicación empaquetada.
+
+```sh
+npm ci
+npm start
+```
+
+La barra se puede mover arrastrando el nombre. La aplicación también aparece en la barra de menús/bandeja del sistema. Desde allí puedes recuperar las herramientas o volver al escritorio.
+
+- `Ctrl+Mayús+Espacio`: activar/salir del dibujo. En Mac es Control, no Command.
+- `Esc`: salir cuando la capa de dibujo tiene el foco.
+- `Ctrl+Mayús+A/Q/W/S`: mano alzada/línea/flecha/rectángulo.
+- `Ctrl+Mayús+E/D/C/R/F`: los cinco colores; también activan el dibujo.
+- `Ctrl+Mayús+Z/Y`: deshacer/rehacer en el monitor activo.
+- `Ctrl+Mayús+X`: borrar todos los monitores (se puede deshacer por monitor).
+- `Ctrl+Mayús+H`: ocultar/mostrar trazos.
+- `Ctrl+Mayús+V/B`: alternar pizarra blanca/negra y fondo transparente.
+- `Ctrl+Mayús+T`: iniciar/cancelar el temporizador (5 minutos por defecto).
+
+Las preferencias permiten cambiar el grosor, colores, duración y atajos. Guardar aplica los cambios; si un atajo está ocupado o es inválido se conservan los ajustes anteriores. Los trazos se guardan solo en memoria y permanecen fijos en coordenadas de pantalla. En modo interacción los trazos siguen visibles y los clics atraviesan la capa. Las pizarras tienen un fondo opaco hasta que vuelves a pulsar su botón/atajo.
+
+## Compatibilidad
+
+| Plataforma | Base de esta versión | Estado |
+| --- | --- | --- |
+| macOS | Big Sur 11+, Intel x64 y Apple Silicon arm64 | Pruebas iniciales en Monterey Intel; Big Sur y arm64 pendientes de prueba real |
+| Windows | Windows 10+, x64 | Pendiente de prueba real |
+| Linux | x64, escritorio X11, distribuciones con bibliotecas compatibles con Electron 37 | Pendiente de prueba real; no se fija aún una distribución mínima verificada |
+| Linux Wayland | Se fuerza el backend X11 mediante XWayland | Experimental; no garantiza superposición sobre aplicaciones Wayland nativas |
+
+Electron está fijado exactamente en **37.10.3**, última versión publicada de la rama 37 consultada al iniciar el proyecto. Electron 38 elimina Big Sur. No actualizar Electron de versión mayor sin revisar el requisito macOS 11. `minimumSystemVersion` del paquete macOS también está fijado en 11.0.
+
+**Deuda de mantenimiento:** Electron 37 está fuera de soporte upstream. Preservar Big Sur con Electron implica mantener un runtime antiguo. Antes de distribución pública habrá que decidir cómo mantener esa rama o migrar la integración de escritorio. Se carga solo contenido local, con sandbox, aislamiento de contexto, sin integración Node en la interfaz y sin navegación externa. Estas medidas no sustituyen las actualizaciones de seguridad.
+
+Windows 7/8/8.1 quedan fuera de esta base (Electron dejó de admitirlos en la versión 23). Soportarlos requeriría revisar la tecnología, no simplemente cambiar una opción de empaquetado. No se promete compatibilidad de CPU, GPU o distribución Linux sin probarla.
+
+Canvas 2D, dibujo bajo demanda, sin WebGPU, filtros ni animaciones permanentes. Si un controlador gráfico antiguo da problemas puedes probar:
+
+```sh
+npm start -- --software-rendering
+```
+
+Ese argumento se transmite a Electron y desactiva la aceleración por hardware. No es el modo predeterminado; debe probarse con la transparencia en cada sistema.
+
+## Verificación y empaquetado
+
+```sh
+npm run typecheck
+npm test
+npm run smoke
+npm run pack
+```
+
+`smoke` abre ventanas reales, prueba dibujo mediante eventos sintéticos, deshacer, cambios de fondo, aislamiento del renderer, preferencias y registro de atajos. Sale al terminar y no escribe preferencias. No equivale a comprobar entrada física, paso de clics, todos los escritorios/fullscreen ni otros sistemas.
+
+Primera verificación local (31/10/2026): typecheck, dos pruebas de historial/validación de preferencias y smoke de la aplicación fuente y de la `.app` empaquetada completados en Monterey 12.7.6 x64. Se comprobó que el paquete declara `LSMinimumSystemVersion=11.0`. La aplicación local está en `release/mac/TeachersPen.app`.
+
+Para generar instaladores: `npm run dist:mac`, `npm run dist:win`, `npm run dist:linux`. La configuración macOS genera x64 y arm64 separados. Windows y Linux se deben empaquetar/validar en sus sistemas correspondientes. Los paquetes locales no están firmados ni notarizados.
+
+## Pendiente
+
+- Modo mantener pulsado: integración de pulsación/liberación por sistema; aparece desactivado en preferencias.
+- Validación manual con ratón, pantallas completas, cambios de Spaces y dos monitores con distinto escalado.
+- Pruebas en Big Sur, Apple Silicon, Windows y Linux/X11; backend específico para Wayland.
+- Persistencia/exportación de anotaciones y recuperación tras cierre.
+- Icono definitivo, firma, notarización e instaladores probados.
+
+## Referencias técnicas
+
+- [Electron 38: retirada de Big Sur](https://www.electronjs.org/blog/electron-38-0)
+- [Plataformas de Electron 37](https://github.com/electron/electron/blob/v37.10.3/README.md#platform-support)
+- [Retirada de Windows 7/8](https://www.electronjs.org/blog/electron-23-0)
+
+## Organización
+
+`src/main.ts` gestiona ventanas, monitores, atajos y preferencias. `src/preload.ts` expone un puente IPC limitado. `src/shared.ts` define el contrato y valida preferencias. `src/model.ts` conserva trazos e historial. `src/renderer/` contiene interfaz y Canvas. `scripts/build.mjs` compila sin servidor web. Las preferencias se escriben de forma atómica en `settings.json` dentro del directorio de datos de Electron (`~/Library/Application Support/TeachersPen` en macOS, según el nombre de aplicación).
