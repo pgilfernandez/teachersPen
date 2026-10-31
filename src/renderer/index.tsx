@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { actionLabels, actions, defaults, type Action, type Command, type Settings, type State, type Tool, type ToolbarMode } from '../shared';
 import { MINI_RADIUS, MINI_SIZE } from '../toolbar';
+import { Pencil, PencilLine, Slash, ArrowUpRight, RectangleHorizontal, Circle, Undo2, Redo2, Trash2, Eye, EyeOff, Settings as SettingsIcon, Timer as TimerIcon, GripVertical, MousePointer2, PanelTopClose, Power, X, Square, type LucideIcon } from 'lucide-react';
 import { DrawingHistory, type Stroke } from '../model';
 import { paintStroke } from './draw';
 
@@ -10,7 +11,7 @@ document.body.className = role;
 const command = (value: Command) => window.pen.command(value);
 const action = (value: Action) => command({ type: 'action', action: value });
 const toolNames: Record<Tool, string> = { freehand: 'Lápiz', line: 'Línea', arrow: 'Flecha', rectangle: 'Rectángulo', circle: 'Círculo' };
-const toolIcons: Record<Tool, string> = { freehand: '✎', line: '╱', arrow: '↗', rectangle: '▭', circle: '○' };
+const toolIcons: Record<Tool, LucideIcon> = { freehand: Pencil, line: Slash, arrow: ArrowUpRight, rectangle: RectangleHorizontal, circle: Circle };
 function keyLabel(value: string) { return value.replace(/Control/g, 'Ctrl').replace(/Shift/g, 'Mayús').replace(/Space/g, 'Espacio'); }
 
 function App() {
@@ -70,7 +71,7 @@ function MiniLauncher({ state }: { state: State }) {
     onPointerCancel={event => { if (pointer.current !== null) { pointer.current = null; void send('cancel', event); } }}
     onLostPointerCapture={event => { if (pointer.current !== null) { pointer.current = null; void send('cancel', event); } }}
     onClick={event => { if (event.detail === 0) void command({ type: 'show-tools' }); }}>
-    <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="m4 16-1 5 5-1L20 8l-4-4Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" /><path d="m13 7 4 4M4 16l4 4M16 4l2-2 4 4-2 2" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" /></svg>
+    <PencilLine size={28} aria-hidden="true" />
   </button>;
 }
 
@@ -182,26 +183,26 @@ function Toolbar({ state }: { state: State }) {
   const tip = (label: string, name: Action) => `${label} · ${keyLabel(state.settings.shortcuts[name]) || 'Sin atajo'}`;
   return <main className="toolbar-shell" ref={element}>
     <div className="toolbar">
-      <div className="brand" title="Arrastra para mover la barra"><span className="brand-icon">✎</span><strong>Teachers<span>Pen</span></strong><span className="drag-dots">⠿</span></div>
-      <button className={`mode ${state.drawing ? 'selected' : ''}`} title={tip('Dibujar / interactuar', 'toggle')} onClick={() => void action('toggle')}>{state.drawing ? '✎ Dibujando' : '↖ Interactuar'}</button>
+      <div className="brand" title="Arrastra para mover la barra"><PencilLine className="brand-icon" size={24} aria-hidden="true" /><strong>Teachers<span>Pen</span></strong><GripVertical className="drag-dots" size={16} aria-hidden="true" /></div>
+      <button className={`mode ${state.drawing ? 'selected' : ''}`} title={tip('Dibujar / interactuar', 'toggle')} onClick={() => void action('toggle')}>{state.drawing ? <Pencil size={16} aria-hidden="true" /> : <MousePointer2 size={16} aria-hidden="true" />}{state.drawing ? 'Dibujando' : 'Interactuar'}</button>
       <div className="divider" />
-      <div className="button-group">{(Object.keys(toolNames) as Tool[]).map(tool => <button key={tool} className={`icon-button ${state.tool === tool && state.drawing ? 'selected' : ''}`} title={tip(toolNames[tool], tool)} aria-label={toolNames[tool]} onClick={() => void command({ type: 'tool', tool })}>{toolIcons[tool]}</button>)}</div>
+      <div className="button-group">{(Object.keys(toolNames) as Tool[]).map(tool => { const ToolIcon = toolIcons[tool]; return <button key={tool} className={`icon-button ${state.tool === tool && state.drawing ? 'selected' : ''}`} title={tip(toolNames[tool], tool)} aria-label={toolNames[tool]} onClick={() => void command({ type: 'tool', tool })}><ToolIcon size={21} aria-hidden="true" /></button>; })}</div>
       <div className="divider" />
       <div className="colors">{state.settings.colors.map((color, index) => <button key={index} className={`swatch ${state.color === index ? 'active' : ''}`} style={{ backgroundColor: color }} title={tip(`Color ${index + 1}`, `color${index}` as Action)} aria-label={`Color ${index + 1}`} aria-pressed={state.color === index} onClick={() => void command({ type: 'color', index })} />)}</div>
       <label className="width-control" title="Grosor del trazo"><span>px</span><input aria-label="Grosor" type="number" min="1" max="40" value={state.settings.width} onChange={e => void command({ type: 'width', width: Number(e.target.value) })} /></label>
       <div className="divider" />
-      <button className="icon-button" aria-label="Deshacer" title={tip('Deshacer', 'undo')} onClick={() => void action('undo')}>↶</button>
-      <button className="icon-button" aria-label="Rehacer" title={tip('Rehacer', 'redo')} onClick={() => void action('redo')}>↷</button>
-      <button className="icon-button" aria-label="Borrar todo" title={tip('Borrar todo', 'clear')} onClick={() => void action('clear')}>⌫</button>
-      <button className={`icon-button ${!state.visible ? 'selected' : ''}`} aria-label="Ocultar o mostrar" title={tip('Ocultar / mostrar', 'visible')} onClick={() => void action('visible')}>{state.visible ? '◉' : '◎'}</button>
-      <button className="icon-button" aria-label="Preferencias" title="Preferencias" onClick={() => void command({ type: 'preferences' })}>⚙</button>
+      <button className="icon-button" aria-label="Deshacer" title={tip('Deshacer', 'undo')} onClick={() => void action('undo')}><Undo2 size={21} aria-hidden="true" /></button>
+      <button className="icon-button" aria-label="Rehacer" title={tip('Rehacer', 'redo')} onClick={() => void action('redo')}><Redo2 size={21} aria-hidden="true" /></button>
+      <button className="icon-button" aria-label="Borrar todo" title={tip('Borrar todo', 'clear')} onClick={() => void action('clear')}><Trash2 size={20} aria-hidden="true" /></button>
+      <button className={`icon-button ${!state.visible ? 'selected' : ''}`} aria-label="Ocultar o mostrar" title={tip('Ocultar / mostrar', 'visible')} onClick={() => void action('visible')}>{state.visible ? <Eye size={21} aria-hidden="true" /> : <EyeOff size={21} aria-hidden="true" />}</button>
+      <button className="icon-button" aria-label="Preferencias" title="Preferencias" onClick={() => void command({ type: 'preferences' })}><SettingsIcon size={20} aria-hidden="true" /></button>
     </div>
-    <div className="toolbar-footer"><span className={`status-dot ${state.drawing ? 'on' : ''}`} /><span>{state.holding ? 'Suelta el atajo para interactuar' : state.drawing ? 'Dibuja sobre cualquier aplicación' : state.settings.activation === 'hold' ? 'Mantén el atajo para dibujar' : 'Puedes usar las aplicaciones de debajo'}</span><kbd>{keyLabel(state.settings.shortcuts.toggle)}</kbd><div className="footer-spacer" />
-      <button className={state.background === 'white' ? 'active' : ''} onClick={() => void action('white')} title={tip('Pizarra blanca', 'white')}>Blanca</button>
-      <button className={state.background === 'black' ? 'active' : ''} onClick={() => void action('black')} title={tip('Pizarra negra', 'black')}>Negra</button>
-      <button className={state.timerEnd ? 'active' : ''} onClick={() => void action('timer')} title={tip('Temporizador', 'timer')}>◷ Temporizador</button>
-      {state.settings.toolbarMode !== 'visible' && <button onClick={() => void command({ type: 'collapse-tools' })}>{state.settings.toolbarMode === 'minimal' ? 'Contraer' : 'Ocultar'}</button>}
-      <button onClick={() => void command({ type: 'quit' })}>Salir</button>
+    <div className="toolbar-footer"><Circle className={`status-dot ${state.drawing ? 'on' : ''}`} size={6} fill="currentColor" aria-hidden="true" /><span>{state.holding ? 'Suelta el atajo para interactuar' : state.drawing ? 'Dibuja sobre cualquier aplicación' : state.settings.activation === 'hold' ? 'Mantén el atajo para dibujar' : 'Puedes usar las aplicaciones de debajo'}</span><kbd>{keyLabel(state.settings.shortcuts.toggle)}</kbd><div className="footer-spacer" />
+      <button className={state.background === 'white' ? 'active' : ''} onClick={() => void action('white')} title={tip('Pizarra blanca', 'white')}><Square size={13} fill="#fff" aria-hidden="true" />Blanca</button>
+      <button className={state.background === 'black' ? 'active' : ''} onClick={() => void action('black')} title={tip('Pizarra negra', 'black')}><Square size={13} fill="#15191f" aria-hidden="true" />Negra</button>
+      <button className={state.timerEnd ? 'active' : ''} onClick={() => void action('timer')} title={tip('Temporizador', 'timer')}><TimerIcon size={14} aria-hidden="true" />Temporizador</button>
+      {state.settings.toolbarMode !== 'visible' && <button onClick={() => void command({ type: 'collapse-tools' })}>{state.settings.toolbarMode === 'minimal' ? <PanelTopClose size={14} aria-hidden="true" /> : <EyeOff size={14} aria-hidden="true" />}{state.settings.toolbarMode === 'minimal' ? 'Contraer' : 'Ocultar'}</button>}
+      <button onClick={() => void command({ type: 'quit' })}><Power size={14} aria-hidden="true" />Salir</button>
     </div>
     {(state.shortcutErrors.length > 0 || state.wayland || state.holdError) && <div className="toolbar-warning" onClick={() => void command({ type: 'preferences' })}>{state.holdError || (state.wayland ? 'Wayland: compatibilidad experimental mediante XWayland. Consulta las preferencias.' : 'Hay atajos no disponibles. Abre Preferencias para revisarlos.')}</div>}
   </main>;
@@ -280,7 +281,7 @@ function Preferences({ state }: { state: State }) {
         const parts = [event.ctrlKey && 'Control', event.altKey && 'Alt', event.shiftKey && 'Shift', event.metaKey && (state.platform === 'darwin' ? 'Command' : 'Super'), key].filter(Boolean);
         field('shortcuts', { ...draft.shortcuts, [name]: parts.join('+') });
         event.currentTarget.blur();
-      }} /><button className="remove-shortcut" disabled={name === 'toggle'} aria-label={`Eliminar atajo de ${actionLabels[name]}`} onClick={() => field('shortcuts', { ...draft.shortcuts, [name]: '' })}>×</button></div>)}</div>
+      }} /><button className="remove-shortcut" disabled={name === 'toggle'} aria-label={`Eliminar atajo de ${actionLabels[name]}`} onClick={() => field('shortcuts', { ...draft.shortcuts, [name]: '' })}><X size={16} aria-hidden="true" /></button></div>)}</div>
     </section>
     <section><h2>Temporizador</h2><div className="setting-row"><label htmlFor="timer-duration">Duración en minutos</label><input id="timer-duration" type="number" min="1" max="120" step="1" value={draft.timerSeconds / 60} onChange={e => field('timerSeconds', Math.max(1, Number(e.target.value)) * 60)} /></div><p className="help">El atajo inicia o cancela la cuenta atrás. Cambiar la duración se aplica al siguiente temporizador.</p></section>
     {state.shortcutErrors.length > 0 && <div className="notice" role="alert">{state.shortcutErrors.join('\n')}</div>}

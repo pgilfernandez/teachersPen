@@ -97,13 +97,19 @@ Para generar instaladores: `npm run dist:mac`, `npm run dist:win`, `npm run dist
 - Validación manual con ratón, pantallas completas, cambios de Spaces y dos monitores con distinto escalado.
 - Pruebas en Big Sur, Apple Silicon, Windows y Linux/X11; backend específico para Wayland.
 - Persistencia/exportación de anotaciones y recuperación tras cierre.
-- Icono definitivo, firma, notarización e instaladores probados.
+- Firma, notarización e instaladores probados.
 
 ## Referencias técnicas
 
 - [Electron 38: retirada de Big Sur](https://www.electronjs.org/blog/electron-38-0)
 - [Plataformas de Electron 37](https://github.com/electron/electron/blob/v37.10.3/README.md#platform-support)
 - [Retirada de Windows 7/8](https://www.electronjs.org/blog/electron-23-0)
+
+## Iconos
+
+Los iconos propios de la interfaz son SVG de [Lucide](https://lucide.dev/guide/react/), incluidos en el bundle sin peticiones de red. Se usa `PencilLine` como identidad de TeachersPen en la barra, el círculo mínimo, el Dock y la bandeja del sistema; las herramientas utilizan los símbolos de lápiz, línea, flecha, rectángulo y círculo correspondientes.
+
+`scripts/build-icons.mjs` genera automáticamente PNG, ICNS e ICO a partir del mismo icono oficial. El rasterizador se usa solo al compilar y no se distribuye con la app. Se incluye la licencia de Lucide en `dist/icons/LICENSE-lucide.txt`. Los requisitos de sistema siguen siendo los mismos.
 
 ## Organización
 

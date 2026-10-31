@@ -140,7 +140,7 @@ function rememberMiniPosition() {
 }
 function createWindow(role: string, options: Electron.BrowserWindowConstructorOptions) {
   const win = new BrowserWindow({
-    ...options, show: false,
+    icon: path.join(__dirname, 'icons', 'app-256.png'), ...options, show: false,
     webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, backgroundThrottling: false }
   });
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
@@ -256,14 +256,7 @@ function openPreferences() {
   preferences.on('blur', finishRecording);
 }
 function makeTray() {
-  const pixels = Buffer.alloc(16 * 16 * 4);
-  for (let y = 1; y < 15; y++) for (let x = 1; x < 15; x++) {
-    if (Math.abs(x + y - 15) < 3) {
-      const offset = (y * 16 + x) * 4;
-      pixels[offset] = 40; pixels[offset + 1] = 105; pixels[offset + 2] = 210; pixels[offset + 3] = 255;
-    }
-  }
-  const icon = nativeImage.createFromBitmap(pixels, { width: 16, height: 16, scaleFactor: 1 });
+  const icon = nativeImage.createFromPath(path.join(__dirname, 'icons', process.platform === 'darwin' ? 'trayTemplate.png' : 'tray.png'));
   if (process.platform === 'darwin') icon.setTemplateImage(true);
   tray = new Tray(icon);
   tray.setToolTip('TeachersPen');
@@ -296,6 +289,7 @@ async function start() {
   if (smoke && process.argv.includes('--smoke-hidden-start')) state.settings.toolbarMode = 'hidden';
   state.toolbarExpanded = state.settings.toolbarMode === 'visible';
   updateDock();
+  if (process.platform === 'darwin') app.dock!.setIcon(path.join(__dirname, 'icons', 'app-256.png'));
   activeDisplay = screen.getPrimaryDisplay().id;
   ipcMain.handle('pen:get-state', event => {
     if (!windows().some(win => win.webContents === event.sender)) throw new Error('Ventana no autorizada');
@@ -432,6 +426,9 @@ async function runSmoke() {
   })))`);
   // Give React a turn to install event listeners, then exercise the real renderer/IPC.
   await new Promise(resolve => setTimeout(resolve, 500));
+  for (const icon of ['app-256.png', 'tray.png', 'trayTemplate.png']) {
+    assert.equal(nativeImage.createFromPath(path.join(__dirname, 'icons', icon)).isEmpty(), false, `El icono nativo ${icon} debe poder cargarse`);
+  }
   if (process.argv.includes('--smoke-hidden-start')) {
     assert.equal(toolbar.isVisible(), false, 'El arranque oculto no debe revelar la barra');
     assert.equal(mini!.isVisible(), false);

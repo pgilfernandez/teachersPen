@@ -23,12 +23,14 @@
     "react-dom": "18.3.1"
   },
   "devDependencies": {
+    "@resvg/resvg-js": "2.6.2",
     "@types/node": "20.19.9",
     "@types/react": "18.3.23",
     "@types/react-dom": "18.3.7",
     "electron": "37.10.3",
     "electron-builder": "26.18.0",
     "esbuild": "0.25.5",
+    "lucide-react": "1.66.0",
     "tsx": "4.20.3",
     "typescript": "5.8.3"
   },
@@ -38,13 +40,18 @@
     "asarUnpack": ["dist/native/**"],
     "directories": { "output": "release" },
     "mac": {
+      "icon": "dist/icons/app.icns",
       "category": "public.app-category.education",
       "identity": null,
       "minimumSystemVersion": "11.0",
       "target": [{ "target": "dmg", "arch": ["x64", "arm64"] }]
     },
-    "win": { "target": [{ "target": "nsis", "arch": ["x64"] }] },
+    "win": {
+      "icon": "dist/icons/app.ico",
+      "target": [{ "target": "nsis", "arch": ["x64"] }]
+    },
     "linux": {
+      "icon": "dist/icons/app-512.png",
       "category": "Education",
       "target": [{ "target": "AppImage", "arch": ["x64"] }, "deb"]
     }
