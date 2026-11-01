@@ -16,7 +16,7 @@
     "smoke": "npm run build:electron && node scripts/run.mjs --smoke-test",
     "test:hold:mac": "node scripts/test-hold-mac.mjs",
     "pack": "node scripts/pack-light.mjs",
-    "dist:mac": "tauri build --bundles app,dmg",
+    "dist:mac": "node scripts/dist-mac-light.mjs",
     "dist:win": "tauri build --bundles nsis",
     "dist:linux": "tauri build --bundles appimage,deb",
     "build:electron": "node scripts/build.mjs",
