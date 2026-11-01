@@ -359,14 +359,16 @@ fn main() {
         .add_item(CustomMenuItem::new("preferences", "Preferences…"))
         .add_native_item(SystemTrayMenuItem::Separator)
         .add_item(CustomMenuItem::new("quit", "Quit TeachersPen"));
-    let tray = SystemTray::new()
-        .with_icon(Icon::Raw(icon))
-        .with_icon_as_template(cfg!(target_os = "macos"))
-        .with_menu(menu);
+    let tray = SystemTray::new().with_icon(Icon::Raw(icon)).with_menu(menu);
+    #[cfg(target_os = "macos")]
+    let tray = tray.with_icon_as_template(true);
     tauri::Builder::default().plugin(tauri_plugin_single_instance::init(|app,_,_| { let _=app.emit_to("controller","host-menu","show"); })).manage(Helpers::default()).system_tray(tray)
         .invoke_handler(tauri::generate_handler![host])
         .setup(|app| { create_window(&app.handle(),&json!({"label":"controller","role":"controller","title":"TeachersPen","bounds":{"width":1,"height":1}}))?; Ok(()) })
-        .on_system_tray_event(|app,event| {if let SystemTrayEvent::MenuItemClick{id,..}=event {let _=app.emit_to("controller","host-menu",id);}})
+        .on_system_tray_event(|app,event| {if let SystemTrayEvent::MenuItemClick{id,..}=event {
+            if id=="quit" {tauri::api::process::kill_children();app.exit(0);}
+            let _=app.emit_to("controller","host-menu",id);
+        }})
         .on_window_event(|event| {
             let w=event.window();if w.label()=="controller"{return;}
             let kind=match event.event(){

@@ -193,10 +193,9 @@ pub fn configure(w: &Window, role: &str) -> Result<()> {
         w.run_on_main_thread(move || unsafe {
             use cocoa::{base::id, foundation::NSRect};
             use objc::{
-                declare::ClassDecl,
-                msg_send,
+                class, msg_send,
                 runtime::{Class, Object, Sel},
-                sel, sel_impl,
+                sel, sel_impl, Encode,
             };
             let Ok(ptr) = window.ns_window() else {
                 return;
@@ -215,22 +214,25 @@ pub fn configure(w: &Window, role: &str) -> Result<()> {
                 let _: () = msg_send![ns,setHasShadow:false];
             }
             if role == "toolbar" || role == "overlay" {
-                extern "C" fn free_frame(_: &Object, _: Sel, frame: NSRect, _: id) -> NSRect {
+                // Tao's sendEvent implementation resolves super from the object's
+                // actual class. Changing that class adds an extra level and makes
+                // event dispatch recurse. Add only this missing method to TaoWindow.
+                extern "C" fn free_frame(this: &Object, _: Sel, frame: NSRect, screen: id) -> NSRect {
+                    unsafe {
+                        let style: u64 = msg_send![this, styleMask];
+                        if style & 1 != 0 {
+                            return msg_send![super(this,class!(NSWindow)),constrainFrameRect:frame toScreen:screen];
+                        }
+                    }
                     frame
                 }
                 extern "C" {
-                    fn object_setClass(object: id, class: *const Class) -> *const Class;
+                    fn class_addMethod(class: *const Class, selector: Sel, implementation: *const std::ffi::c_void, types: *const i8) -> i8;
                 }
-                let class = Class::get("TeachersPenFreeWindow").unwrap_or_else(|| {
-                    let base = (&*(ns as *mut Object)).class();
-                    let mut c = ClassDecl::new("TeachersPenFreeWindow", base).unwrap();
-                    c.add_method(
-                        sel!(constrainFrameRect:toScreen:),
-                        free_frame as extern "C" fn(&Object, Sel, NSRect, id) -> NSRect,
-                    );
-                    c.register()
-                });
-                object_setClass(ns, class);
+                let class = (&*(ns as *mut Object)).class();
+                let rect = NSRect::encode();
+                let signature = std::ffi::CString::new(format!("{}@:{}@",rect.as_str(),rect.as_str())).unwrap();
+                class_addMethod(class,sel!(constrainFrameRect:toScreen:),free_frame as *const () as *const std::ffi::c_void,signature.as_ptr());
             }
         })
         .map_err(|e| e.to_string())?;
@@ -279,7 +281,7 @@ pub fn configure(w: &Window, role: &str) -> Result<()> {
                             height: 1,
                         });
                     }
-                    gdk.input_shape_combine_region(Some(&region), 0, 0);
+                    gdk.input_shape_combine_region(&region, 0, 0);
                 }
             }
         })
@@ -304,9 +306,16 @@ pub fn ignore(w: &Window, enabled: bool) -> Result<()> {
                 gtk.set_accept_focus(!enabled);
                 if let Some(gdk) = gtk.window() {
                     if enabled {
-                        gdk.input_shape_combine_region(Some(&gtk::cairo::Region::create()), 0, 0);
+                        gdk.input_shape_combine_region(&gtk::cairo::Region::create(), 0, 0);
                     } else {
-                        gdk.input_shape_combine_region(None, 0, 0);
+                        let region =
+                            gtk::cairo::Region::create_rectangle(&gtk::cairo::RectangleInt {
+                                x: 0,
+                                y: 0,
+                                width: gtk.allocated_width().max(1),
+                                height: gtk.allocated_height().max(1),
+                            });
+                        gdk.input_shape_combine_region(&region, 0, 0);
                     }
                 }
             }
