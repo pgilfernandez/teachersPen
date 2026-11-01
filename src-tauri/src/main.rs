@@ -104,6 +104,7 @@ fn create_window(app: &tauri::AppHandle, v: &Value) -> Result<()> {
         .title(text(v, "title"))
         .visible(false)
         .focused(false)
+        .accept_first_mouse(true)
         .decorations(role == "preferences")
         .transparent(role != "preferences")
         .resizable(role == "preferences")
