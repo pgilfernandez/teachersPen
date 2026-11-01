@@ -380,7 +380,7 @@ function About({ state, onClose }: { state: State; onClose: () => void }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [error, setError] = useState('');
   useEffect(() => { dialog.current?.showModal(); }, []);
-  const open = async (target: 'donate' | 'github') => {
+  const open = async (target: 'donate' | 'paypal' | 'github') => {
     try {
       const result = await command({ type: 'about-link', target });
       if (!result.ok) setError(result.error || t('Abrir en el navegador'));
@@ -395,6 +395,7 @@ function About({ state, onClose }: { state: State; onClose: () => void }) {
       <p className="about-license">PolyForm Noncommercial 1.0.0</p>
       <div className="about-links">
         <button className="donate-button" title="https://github.com/sponsors/pgilfernandez" onClick={() => void open('donate')}>{t('Donar')}</button>
+        <button className="donate-button" title="https://www.paypal.com/donate?hosted_button_id=6N7UZHDQW3J6A" aria-label={t('Donar con PayPal')} onClick={() => void open('paypal')}>PayPal</button>
         <button title="https://github.com/pgilfernandez/teachersPen" onClick={() => void open('github')}>{t('Proyecto en GitHub')}</button>
       </div>
       {error && <p role="alert">{error}</p>}

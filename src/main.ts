@@ -533,6 +533,7 @@ async function start() {
         case 'about-link': {
           if (event.sender !== preferences?.webContents) return { ok: false, error: t('Ventana no autorizada') };
           const url = command.target === 'donate' ? 'https://github.com/sponsors/pgilfernandez'
+            : command.target === 'paypal' ? 'https://www.paypal.com/donate?hosted_button_id=6N7UZHDQW3J6A'
             : command.target === 'github' ? 'https://github.com/pgilfernandez/teachersPen' : null;
           if (!url) return { ok: false, error: t('Comando desconocido') };
           await shell.openExternal(url);

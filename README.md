@@ -122,7 +122,7 @@ The information button is on the left of the Restore defaults/Save row. Its popu
 
 > developed with love by Pablo Gil Fernández
 
-It also includes buttons for [donations](https://github.com/sponsors/pgilfernandez) and the [GitHub project](https://github.com/pgilfernandez/teachersPen), opened in the default browser.
+It also includes adjacent donation buttons for [GitHub Sponsors](https://github.com/sponsors/pgilfernandez) and [PayPal](https://www.paypal.com/donate?hosted_button_id=6N7UZHDQW3J6A), plus the [GitHub project](https://github.com/pgilfernandez/teachersPen), opened in the default browser.
 
 ## Compatibility
 
