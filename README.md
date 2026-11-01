@@ -19,7 +19,7 @@ Los dos modos aparecen como opciones visibles y la opción marcada indica el mod
 
 ## Presentación de la barra
 
-Por defecto, la barra completa es una sola fila sin logotipo ni botón de interacción: asa de seis puntos, herramientas, fondos blanco/negro, temporizador con un 5, colores, diámetro del trazo y acciones. Preferencias, Contraer, Girar y Salir están juntos al final y usan iconos Lucide. El campo del diámetro tiene 68 px de ancho. Contraer una barra visible pasa al modo mínimo.
+Por defecto, la barra horizontal mide 40 px de alto y es una sola fila sin logotipo ni botón de interacción: asa de seis puntos, herramientas, fondos blanco/negro, temporizador con un 5, colores, diámetro del trazo y acciones. Preferencias, Contraer, Girar y Salir están juntos al final y usan iconos Lucide. El campo del diámetro tiene 68 px de ancho. Contraer una barra visible pasa al modo mínimo.
 
 A la derecha del ancho del trazo está su opacidad, de 100% (opaco) a 0% (invisible); al bajar el valor aumenta la transparencia. Se guarda automáticamente y se aplica a los trazos nuevos; cada trazo conserva su propio valor al deshacer o rehacer.
 

@@ -128,7 +128,7 @@ function prepareToolbarLayout(anchor?: Point, workArea?: Electron.Rectangle) {
   state.toolbarAvailableHeight = area.height;
   const vertical = state.settings.toolbarOrientation === 'vertical';
   // Give the column room to measure itself before the renderer fits the final size.
-  const size = { width: Math.min(vertical ? 56 : 1000, area.width), height: vertical ? area.height : Math.min(72, area.height) };
+  const size = { width: Math.min(vertical ? 56 : 1000, area.width), height: vertical ? area.height : Math.min(56, area.height) };
   const position = fitPosition(anchor || bounds, size, area);
   toolbar.setBounds({ ...position, ...size });
   if (areaChanged) broadcast();
@@ -550,7 +550,7 @@ async function start() {
   const initialWidth = initialVertical ? 56 : 965;
   toolbar = createWindow('toolbar', {
     x: area.x + Math.round((area.width - initialWidth) / 2), y: initialVertical ? area.y : area.y + 18,
-    width: initialWidth, height: initialVertical ? area.height : 72, frame: false, transparent: true, backgroundColor: '#00000000',
+    width: initialWidth, height: initialVertical ? area.height : 56, frame: false, transparent: true, backgroundColor: '#00000000',
     resizable: false, hasShadow: false, skipTaskbar: true
   });
   toolbar.setAlwaysOnTop(true, 'screen-saver', 1);
