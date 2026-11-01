@@ -54,7 +54,7 @@ canvas { width: 100%; height: 100%; display: block; touch-action: none; }
 .icon-button { width: 32px; height: 34px; padding: 0; border-radius: 6px; background: transparent; color: #44515d; display: inline-flex; align-items: center; justify-content: center; }
 .icon-button:hover { background: #edf1f5; }
 .icon-button.has-warning { color: #9b680c; background: #fff2d2; }
-.board-button { width: 26px; height: 26px; margin: 0 3px; padding: 0; overflow: hidden; border: 1px solid #aab6c2; border-radius: 3px; }
+.board-button { width: 20px; height: 20px; margin: 0 3px; padding: 0; overflow: hidden; border: 1px solid #aab6c2; border-radius: 3px; }
 .board-white { background: #fff; }
 .board-black { background: #15191f; }
 .board-button.active { outline: 2px solid #2474df; outline-offset: 2px; }
@@ -76,7 +76,7 @@ canvas { width: 100%; height: 100%; display: block; touch-action: none; }
 .toolbar-vertical .colors { gap: 4px; padding: 3px 0; }
 .toolbar-vertical .drag-handle { width: 34px; height: 22px; margin: 0; flex-shrink: 0; }
 .toolbar-vertical .icon-button { height: 28px; flex-shrink: 0; }
-.toolbar-vertical .board-button { width: 24px; height: 24px; margin: 2px 0; flex-shrink: 0; }
+.toolbar-vertical .board-button { width: 20px; height: 20px; margin: 2px 0; flex-shrink: 0; }
 .toolbar-vertical .divider { width: 28px; height: 1px; margin: 4px 0; }
 .toolbar-vertical .width-control { margin: 0; gap: 0; }
 .toolbar-vertical .width-control span { display: none; }
