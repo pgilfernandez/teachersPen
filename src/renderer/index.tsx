@@ -252,7 +252,13 @@ function Toolbar({ state }: { state: State }) {
   }, [state.settings.toolbarOrientation]);
   const tip = (label: string, name: Action) => `${label}\n${t('Atajo: {shortcut}', { shortcut: keyLabel(state.settings.shortcuts[name], state.settings.language) || t('Sin asignar') })}`;
   const warning = (state.holdError ? t(state.holdError) : '') || state.shortcutErrors.join('\n') || (state.wayland ? t("Compatibilidad experimental con Wayland") : '');
-  return <main className={`toolbar-shell ${state.settings.toolbarOrientation === 'vertical' ? 'toolbar-vertical' : ''}`} style={state.settings.toolbarOrientation === 'vertical' ? { maxHeight: Math.max(48, state.toolbarAvailableHeight - 16) } : undefined} ref={element}>
+  const collapsed = state.settings.toolbarMode !== 'visible' && !state.toolbarExpanded;
+  const reveal = !collapsed ? state.toolbarReveal : null;
+  const shellStyle = {
+    ...(state.settings.toolbarOrientation === 'vertical' ? { maxHeight: Math.max(48, state.toolbarAvailableHeight - 16) } : {}),
+    '--reveal-start': `${reveal?.start ?? 0}%`, '--reveal-end': `${reveal?.end ?? 0}%`
+  } as React.CSSProperties;
+  return <main className={`toolbar-shell ${state.settings.toolbarOrientation === 'vertical' ? 'toolbar-vertical' : ''} ${collapsed ? 'toolbar-collapsed' : ''} ${reveal ? 'toolbar-revealing' : ''}`} data-reveal={reveal?.direction} style={shellStyle} ref={element}>
     <div className="toolbar">
       <div className="drag-handle" title={t("Arrastra para mover la barra")} role="img" aria-label={t("Mover barra")}><GripVertical size={18} aria-hidden="true" /></div>
       <div className="button-group">

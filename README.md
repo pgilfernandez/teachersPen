@@ -81,7 +81,7 @@ Drag the six-dot handle to move the toolbar, including to the top edge of the sc
 In **Preferences → Drawing toolbar**, select a mode. Changes are applied and saved immediately:
 
 - **Visible:** keeps the full toolbar on screen.
-- **Minimal:** shows the editable TeachersPen SVG launcher at 42 px in diameter. Its alpha is **0.15** at rest and **0.4** on hover. Drag to move it; click to open the full toolbar. Collapse returns to the launcher. Its position is remembered between sessions and adjusted when a monitor is disconnected.
+- **Minimal:** shows the editable TeachersPen SVG launcher at 42 px in diameter. Its alpha is **0.15** at rest and **0.4** on hover. Drag to move it; click to reveal the full toolbar from the launcher. The 240 ms opening animation follows the available space: right/left in horizontal layout and down/up in vertical layout. Reduced-motion preferences are respected. Collapse returns to the launcher. Its position is remembered between sessions and adjusted when a monitor is disconnected.
 - **Hidden:** leaves only the macOS menu-bar icon or Windows/Linux system-tray icon. On macOS, the app also disappears from the Dock and app switcher. Shortcuts continue to work without the toolbar, launcher, or drawing hint. Annotations and the stroke cursor preview remain available.
 
 Collapsing a visible toolbar switches to Minimal mode. If you temporarily open the toolbar in Hidden mode, the collapse control hides it again.

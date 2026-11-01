@@ -123,3 +123,16 @@ input[type="color"] { width: 35px; height: 23px; padding: 1px; cursor: pointer; 
 .about-links { display: flex; justify-content: center; gap: 8px; }
 .about-links button { padding: 7px 12px; font-size: 12px; border-radius: 6px; background: #d9d6df; color: #33414d; }
 .about-links .donate-button { background: #256ed1; color: #fff; }
+
+.toolbar-collapsed { opacity: 0; clip-path: inset(0 100% 0 0); }
+.toolbar-revealing[data-reveal="left"], .toolbar-revealing[data-reveal="right"] { animation: toolbar-reveal-horizontal 240ms cubic-bezier(.2, .7, .2, 1) both; }
+.toolbar-revealing[data-reveal="up"], .toolbar-revealing[data-reveal="down"] { animation: toolbar-reveal-vertical 240ms cubic-bezier(.2, .7, .2, 1) both; }
+@keyframes toolbar-reveal-horizontal {
+  from { opacity: .3; clip-path: inset(0 var(--reveal-end) 0 var(--reveal-start) round 12px); }
+  to { opacity: 1; clip-path: inset(0 0 0 0 round 12px); }
+}
+@keyframes toolbar-reveal-vertical {
+  from { opacity: .3; clip-path: inset(var(--reveal-start) 0 var(--reveal-end) 0 round 12px); }
+  to { opacity: 1; clip-path: inset(0 0 0 0 round 12px); }
+}
+@media (prefers-reduced-motion: reduce) { .toolbar-revealing { animation-duration: 1ms !important; } }

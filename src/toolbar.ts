@@ -3,6 +3,27 @@ import type { Point } from './model';
 export const MINI_SIZE = 48;
 export const MINI_RADIUS = 21;
 export interface Area extends Point { width: number; height: number }
+export function toolbarOpening(launcher: Point, size: { width: number; height: number }, area: Area, vertical: boolean) {
+  const center = { x: launcher.x + MINI_SIZE / 2, y: launcher.y + MINI_SIZE / 2 };
+  const before = vertical ? center.y - area.y : center.x - area.x;
+  const after = vertical ? area.y + area.height - center.y : area.x + area.width - center.x;
+  const length = (vertical ? size.height : size.width) - 16;
+  const forward = after >= length - MINI_RADIUS || after >= before;
+  const position = fitPosition(vertical ? {
+    x: center.x - size.width / 2,
+    y: forward ? center.y - MINI_RADIUS - 8 : center.y + MINI_RADIUS + 8 - size.height
+  } : {
+    x: forward ? center.x - MINI_RADIUS - 8 : center.x + MINI_RADIUS + 8 - size.width,
+    y: center.y - size.height / 2
+  }, size, area);
+  const origin = vertical ? center.y - position.y - 8 : center.x - position.x - 8;
+  return {
+    position,
+    direction: (vertical ? (forward ? 'down' : 'up') : (forward ? 'right' : 'left')) as 'down' | 'up' | 'right' | 'left',
+    start: Math.max(0, Math.min(100, (origin - MINI_RADIUS) / Math.max(1, length) * 100)),
+    end: Math.max(0, Math.min(100, (length - origin - MINI_RADIUS) / Math.max(1, length) * 100))
+  };
+}
 export function fitPosition(point: Point, size: { width: number; height: number }, area: Area): Point {
   return {
     x: Math.round(Math.max(area.x, Math.min(point.x, area.x + area.width - size.width))),

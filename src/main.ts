@@ -3,7 +3,7 @@ import { app, BrowserWindow, globalShortcut, ipcMain, Menu, nativeImage, powerMo
 import { readFileSync, writeFileSync, mkdirSync, renameSync } from 'node:fs';
 import path from 'node:path';
 import { actions, actionLabels, defaults, parseSettings, tools, type Action, type Command, type Settings, type State, type ToolbarMode } from './shared';
-import { MiniDrag, MINI_RADIUS, MINI_SIZE, fitPosition, readPosition } from './toolbar';
+import { MiniDrag, MINI_RADIUS, MINI_SIZE, fitPosition, readPosition, toolbarOpening } from './toolbar';
 import type { Point } from './model';
 import { HoldActivation, isDrawingShortcut } from './hold';
 import { NativeHoldMonitor } from './native-hold';
@@ -29,6 +29,8 @@ let activeDisplay: number;
 let quitting = false;
 let rebuilding = false;
 let toolbarSized = false;
+let toolbarRevealAnchor: { point: Point; area: Electron.Rectangle } | null = null;
+let toolbarRevealTimeout: ReturnType<typeof setTimeout> | undefined;
 let recordingShortcut = false;
 let timerTimeout: ReturnType<typeof setTimeout> | undefined;
 const nativeDirectory = app.isPackaged ? path.join(process.resourcesPath, 'app.asar.unpacked', 'dist', 'native') : path.join(__dirname, 'native');
@@ -38,7 +40,7 @@ const state: State = {
   timer: { visible: false, running: false, elapsedMs: 0, startedAt: null },
   settings: defaults(), shortcutErrors: [], platform: process.platform,
   wayland: process.platform === 'linux' && !!process.env.WAYLAND_DISPLAY,
-  holding: false, holdAvailable: holdMonitor.available, holdError: null, toolbarExpanded: true, toolbarAvailableHeight: 0
+  holding: false, holdAvailable: holdMonitor.available, holdError: null, toolbarExpanded: true, toolbarReveal: null, toolbarAvailableHeight: 0
 };
 const hold = new HoldActivation(holdMonitor, action => {
   state.holding = true;
@@ -111,13 +113,16 @@ function applyToolbarPresentation() {
 }
 function showTools() {
   if (!toolbar) return;
-  if (state.settings.toolbarMode === 'minimal' && mini) {
+  if (state.settings.toolbarMode === 'minimal' && !state.toolbarExpanded && mini) {
     const point = mini.getBounds();
     const area = screen.getDisplayMatching(point).workArea;
-    const size = toolbar.getBounds();
-    const position = fitPosition({ x: point.x, y: point.y + MINI_SIZE + 8 }, size, area);
-    toolbar.setPosition(position.x, position.y);
-    if (state.settings.toolbarOrientation === 'vertical') prepareToolbarLayout(position, area);
+    const opening = toolbarOpening(point, toolbar.getBounds(), area, state.settings.toolbarOrientation === 'vertical');
+    clearTimeout(toolbarRevealTimeout);
+    toolbarRevealAnchor = { point, area };
+    toolbarRevealTimeout = setTimeout(() => { toolbarRevealAnchor = null; }, 300);
+    state.toolbarAvailableHeight = area.height;
+    state.toolbarReveal = { direction: opening.direction, start: opening.start, end: opening.end };
+    toolbar.setPosition(opening.position.x, opening.position.y);
   }
   state.toolbarExpanded = true;
   applyToolbarPresentation(); broadcast();
@@ -138,6 +143,8 @@ function prepareToolbarLayout(anchor?: Point, workArea?: Electron.Rectangle) {
   if (areaChanged) broadcast();
 }
 function collapseTools() {
+  toolbarRevealAnchor = null; state.toolbarReveal = null;
+  clearTimeout(toolbarRevealTimeout);
   if (state.settings.toolbarMode === 'visible') return setToolbarMode('minimal');
   state.toolbarExpanded = false;
   miniDrag.cancel();
@@ -150,6 +157,8 @@ function setToolbarMode(mode: ToolbarMode) {
     const next = { ...state.settings, toolbarMode: mode };
     saveSettings(next);
     state.settings = next;
+    toolbarRevealAnchor = null; state.toolbarReveal = null;
+    clearTimeout(toolbarRevealTimeout);
     state.toolbarExpanded = mode === 'visible';
     miniDrag.cancel();
     applyToolbarPresentation(); broadcast();
@@ -449,7 +458,11 @@ async function start() {
             const width = Math.max(vertical ? 56 : 200, Math.min(1600, Math.ceil(command.width)));
             const height = Math.max(48, Math.min(vertical ? area.height : 180, Math.ceil(command.height)));
             const anchor = { x: toolbarSized ? bounds.x : Math.round(bounds.x + (bounds.width - width) / 2), y: bounds.y };
-            toolbar.setBounds({ ...anchor, width, height });
+            if (toolbarRevealAnchor && state.toolbarReveal) {
+              const opening = toolbarOpening(toolbarRevealAnchor.point, { width, height }, toolbarRevealAnchor.area, vertical);
+              state.toolbarReveal = { ...state.toolbarReveal, direction: opening.direction, start: opening.start, end: opening.end };
+              toolbar.setBounds({ ...opening.position, width, height });
+            } else toolbar.setBounds({ ...anchor, width, height });
             toolbarSized = true;
           }
           break;
@@ -457,6 +470,8 @@ async function start() {
         case 'show-tools': showTools(); break;
         case 'collapse-tools': return collapseTools();
         case 'toggle-toolbar-orientation': {
+          toolbarRevealAnchor = null; state.toolbarReveal = null;
+          clearTimeout(toolbarRevealTimeout);
           const toolbarOrientation = state.settings.toolbarOrientation === 'horizontal' ? 'vertical' : 'horizontal';
           const next: Settings = { ...state.settings, toolbarOrientation };
           saveSettings(next); state.settings = next;
@@ -577,6 +592,7 @@ async function start() {
   });
   toolbar.setAlwaysOnTop(true, 'screen-saver', 1);
   if (process.platform === 'darwin') toolbar.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: state.settings.toolbarMode === 'hidden' });
+  toolbar.on('will-move', () => { toolbarRevealAnchor = null; });
   toolbar.on('close', event => { if (!quitting) { event.preventDefault(); collapseTools(); } });
   let toolbarDisplay = screen.getDisplayMatching(toolbar.getBounds()).id;
   toolbar.on('moved', () => {
@@ -886,5 +902,5 @@ async function runSmoke() {
   console.log('SMOKE OK: ventanas reales, dibujo Canvas, deshacer, IPC, pizarras, modo interacción, preferencias y atajos registrados.');
   app.quit();
 }
-app.on('before-quit', () => { quitting = true; hold.stop(); clearTimeout(timerTimeout); clearTimeout(timerGeometrySave); rememberTimerBounds(); globalShortcut.unregisterAll(); });
+app.on('before-quit', () => { quitting = true; clearTimeout(toolbarRevealTimeout); hold.stop(); clearTimeout(timerTimeout); clearTimeout(timerGeometrySave); rememberTimerBounds(); globalShortcut.unregisterAll(); });
 app.on('window-all-closed', () => { if (quitting) app.quit(); });

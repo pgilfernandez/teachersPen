@@ -42,6 +42,7 @@ export interface State {
   holdAvailable: boolean;
   holdError: string | null;
   toolbarExpanded: boolean;
+  toolbarReveal: { direction: 'left' | 'right' | 'up' | 'down'; start: number; end: number } | null;
   toolbarAvailableHeight: number;
 }
 export function defaults(): Settings {
