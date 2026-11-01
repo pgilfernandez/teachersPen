@@ -1,3 +1,4 @@
+import { translate, isLanguage, defaultTimerText, isDefaultTimerText } from './i18n';
 import { app, BrowserWindow, dialog, globalShortcut, ipcMain, Menu, nativeImage, powerMonitor, screen, Tray } from 'electron';
 import { readFileSync, writeFileSync, mkdirSync, renameSync } from 'node:fs';
 import path from 'node:path';
@@ -54,6 +55,7 @@ else {
   app.on('second-instance', () => { if (toolbar) showTools(); });
   app.whenReady().then(start).catch(error => { console.error(error); app.exit(1); });
 }
+const t = (source: string, values?: Record<string, string | number>) => translate(state.settings.language, source, values);
 function windows() { return [...overlays.values(), toolbar, mini, preferences, timerWindow].filter((win): win is BrowserWindow => !!win && !win.isDestroyed()); }
 function broadcast() { for (const win of windows()) win.webContents.send('pen:state', state); }
 function settingsPath() { return path.join(app.getPath('userData'), 'settings.json'); }
@@ -143,7 +145,7 @@ function collapseTools() {
   return { ok: true };
 }
 function setToolbarMode(mode: ToolbarMode) {
-  if (!['visible', 'minimal', 'hidden'].includes(mode)) return { ok: false, error: 'Modo de barra no válido' };
+  if (!['visible', 'minimal', 'hidden'].includes(mode)) return { ok: false, error: t("Modo de barra no válido") };
   try {
     const next = { ...state.settings, toolbarMode: mode };
     saveSettings(next);
@@ -193,7 +195,7 @@ function timerBounds(): Electron.Rectangle {
 async function showTimer() {
   if (!timerWindow || timerWindow.isDestroyed()) {
     const win = createWindow('timer-window', {
-      ...timerBounds(), title: 'Temporizador · TeachersPen', frame: false, transparent: true,
+      ...timerBounds(), title: `${t('Temporizador')} · TeachersPen`, frame: false, transparent: true,
       backgroundColor: '#00000000', hasShadow: false, resizable: false, focusable: true,
       skipTaskbar: true, roundedCorners: false, acceptFirstMouse: true
     });
@@ -322,15 +324,15 @@ function registerShortcuts(settings: Settings): string[] {
     const accelerator = settings.shortcuts[action];
     if (!accelerator) continue;
     const normalized = accelerator.toLowerCase();
-    if (seen.has(normalized)) { errors.push(`${actionLabels[action]}: atajo duplicado (${accelerator})`); continue; }
+    if (seen.has(normalized)) { errors.push(translate(settings.language, '{action}: atajo duplicado ({shortcut})', { action: translate(settings.language, actionLabels[action]), shortcut: accelerator })); continue; }
     seen.add(normalized);
     if (settings.activation === 'hold' && isDrawingShortcut(action)) {
       const error = holdMonitor.validate(accelerator);
-      if (error) { errors.push(`${actionLabels[action]}: ${error}`); continue; }
+      if (error) { errors.push(`${translate(settings.language, actionLabels[action])}: ${translate(settings.language, error)}`); continue; }
     }
     try {
-      if (!globalShortcut.register(accelerator, () => handleShortcut(action, settings))) errors.push(`${actionLabels[action]}: no se puede registrar ${accelerator}`);
-    } catch { errors.push(`${actionLabels[action]}: combinación no válida (${accelerator})`); }
+      if (!globalShortcut.register(accelerator, () => handleShortcut(action, settings))) errors.push(translate(settings.language, '{action}: no se puede registrar {shortcut}', { action: translate(settings.language, actionLabels[action]), shortcut: accelerator }));
+    } catch { errors.push(translate(settings.language, '{action}: combinación no válida ({shortcut})', { action: translate(settings.language, actionLabels[action]), shortcut: accelerator })); }
   }
   return errors;
 }
@@ -356,7 +358,7 @@ function openPreferences() {
   setDrawing(false);
   if (preferences && !preferences.isDestroyed()) { preferences.show(); return; }
   const area = screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea;
-  preferences = createWindow('preferences', { width: Math.min(430, area.width), height: Math.min(750, area.height - 40), minWidth: 380, minHeight: 400, title: 'Preferencias · TeachersPen', backgroundColor: '#eeecf0', autoHideMenuBar: true, skipTaskbar: state.settings.toolbarMode === 'hidden' });
+  preferences = createWindow('preferences', { width: Math.min(430, area.width), height: Math.min(750, area.height - 40), minWidth: 380, minHeight: 400, title: `${t('Preferencias')} · TeachersPen`, backgroundColor: '#eeecf0', autoHideMenuBar: true, skipTaskbar: state.settings.toolbarMode === 'hidden' });
   preferences.once('ready-to-show', () => preferences?.show());
   const finishRecording = () => {
     if (!recordingShortcut) return;
@@ -378,16 +380,22 @@ function makeTray() {
 function refreshTrayMenu() {
   if (!tray) return;
   tray.setContextMenu(Menu.buildFromTemplate([
-    { label: 'Mostrar barra completa', click: showTools },
-    { label: 'Contraer / ocultar barra', enabled: state.toolbarExpanded, click: () => { collapseTools(); } },
-    { label: 'Barra de dibujo', submenu: (['visible', 'minimal', 'hidden'] as ToolbarMode[]).map(mode => ({
-      label: ({ visible: 'Visible', minimal: 'Mínima', hidden: 'Oculta' })[mode], type: 'radio' as const, checked: state.settings.toolbarMode === mode,
-      click: () => { const result = setToolbarMode(mode); if (!result.ok) dialog.showErrorBox('TeachersPen', result.error || 'No se pudo cambiar la barra'); }
+    { label: t("Mostrar barra completa"), click: showTools },
+    { label: t("Contraer / ocultar barra"), enabled: state.toolbarExpanded, click: () => { collapseTools(); } },
+    { label: t("Barra de dibujo"), submenu: (['visible', 'minimal', 'hidden'] as ToolbarMode[]).map(mode => ({
+      label: ({ visible: t("Visible"), minimal: t("Mínima"), hidden: t("Oculta") })[mode], type: 'radio' as const, checked: state.settings.toolbarMode === mode,
+      click: () => { const result = setToolbarMode(mode); if (!result.ok) dialog.showErrorBox('TeachersPen', result.error || t("No se pudo cambiar la barra")); }
     })) },
-    { label: 'Dibujar / interactuar', click: () => perform('toggle') },
-    { label: 'Volver al escritorio', click: () => { state.background = 'transparent'; setDrawing(false); } },
-    { label: 'Preferencias…', click: openPreferences },
-    { type: 'separator' }, { label: 'Salir de TeachersPen', click: () => app.quit() }
+    { label: t("Dibujar / interactuar"), click: () => perform('toggle') },
+    { label: t("Volver al escritorio"), click: () => { state.background = 'transparent'; setDrawing(false); } },
+    { label: t("Preferencias…"), click: openPreferences },
+    { type: 'separator' }, { label: t("Salir de TeachersPen"), click: () => app.quit() }
+  ]));
+}
+function refreshApplicationMenu() {
+  Menu.setApplicationMenu(Menu.buildFromTemplate([
+    { label: 'TeachersPen', submenu: [ { label: t("Preferencias…"), click: openPreferences }, { type: 'separator' }, { role: 'quit', label: t("Salir de TeachersPen") } ] },
+    { label: t("Edición"), submenu: [{ role: 'undo', label: t('Deshacer') }, { role: 'redo', label: t('Rehacer') }, { type: 'separator' }, { role: 'cut', label: t('Cortar') }, { role: 'copy', label: t('Copiar') }, { role: 'paste', label: t('Pegar') }, { role: 'selectAll', label: t('Seleccionar todo') }] }
   ]));
 }
 async function start() {
@@ -403,11 +411,11 @@ async function start() {
   if (process.platform === 'darwin') app.dock!.setIcon(path.join(__dirname, 'icons', 'app-256.png'));
   activeDisplay = screen.getPrimaryDisplay().id;
   ipcMain.handle('pen:get-state', event => {
-    if (!windows().some(win => win.webContents === event.sender)) throw new Error('Ventana no autorizada');
+    if (!windows().some(win => win.webContents === event.sender)) throw new Error(t("Ventana no autorizada"));
     return state;
   });
   ipcMain.handle('pen:command', (event, command: Command) => {
-    if (!windows().some(win => win.webContents === event.sender) || !command || typeof command !== 'object') return { ok: false, error: 'Comando no autorizado' };
+    if (!windows().some(win => win.webContents === event.sender) || !command || typeof command !== 'object') return { ok: false, error: t("Comando no autorizado") };
     try {
       switch (command.type) {
         case 'active-display':
@@ -435,7 +443,7 @@ async function start() {
           saveSettings(next); state.settings = next; break;
         }
         case 'record-shortcut':
-          if (event.sender !== preferences?.webContents) return { ok: false, error: 'Solo se pueden editar atajos desde Preferencias' };
+          if (event.sender !== preferences?.webContents) return { ok: false, error: t("Solo se pueden editar atajos desde Preferencias") };
           recordingShortcut = command.active === true;
           if (command.active) { hold.stop(); setDrawing(false); globalShortcut.unregisterAll(); }
           else state.shortcutErrors = registerShortcuts(state.settings);
@@ -483,9 +491,9 @@ async function start() {
           break;
         }
         case 'timer-resize': {
-          if (event.sender !== timerWindow?.webContents || !timerWindow) return { ok: false, error: 'Ventana no autorizada' };
+          if (event.sender !== timerWindow?.webContents || !timerWindow) return { ok: false, error: t("Ventana no autorizada") };
           const pointer = readPosition(command);
-          if (!pointer) return { ok: false, error: 'Posición no válida' };
+          if (!pointer) return { ok: false, error: t("Posición no válida") };
           if (command.phase === 'start') timerResize = { pointer, bounds: timerWindow.getBounds() };
           else if (command.phase === 'move') resizeTimer(pointer);
           else {
@@ -498,9 +506,9 @@ async function start() {
           if (event.sender === mini?.webContents) updateMiniHit(command.interactive === true);
           return { ok: true };
         case 'mini-pointer': {
-          if (event.sender !== mini?.webContents || !mini) return { ok: false, error: 'Ventana no autorizada' };
+          if (event.sender !== mini?.webContents || !mini) return { ok: false, error: t("Ventana no autorizada") };
           const pointer = readPosition(command);
-          if (!pointer) return { ok: false, error: 'Posición no válida' };
+          if (!pointer) return { ok: false, error: t("Posición no válida") };
           if (command.phase === 'start') {
             const { x, y } = mini.getBounds(); miniDrag.begin(pointer, { x, y });
           } else if (command.phase === 'move') {
@@ -515,7 +523,7 @@ async function start() {
         }
         case 'preferences': openPreferences(); break;
         case 'activation': {
-          if (command.activation !== 'toggle' && command.activation !== 'hold') return { ok: false, error: 'Modo de activación no válido' };
+          if (command.activation !== 'toggle' && command.activation !== 'hold') return { ok: false, error: t("Modo de activación no válido") };
           const next = { ...state.settings, activation: command.activation };
           const errors = registerShortcuts(next);
           if (errors.length) { state.shortcutErrors = registerShortcuts(state.settings); broadcast(); return { ok: false, error: errors.join('\n') }; }
@@ -524,9 +532,20 @@ async function start() {
           setDrawing(false);
           state.settings = next; state.shortcutErrors = []; state.holdError = null; break;
         }
+        case 'language': {
+          if (!isLanguage(command.language)) return { ok: false, error: t('Idioma no válido') };
+          const next = { ...state.settings, language: command.language };
+          if (isDefaultTimerText(next.timerText)) next.timerText = defaultTimerText(next.language);
+          saveSettings(next); state.settings = next;
+          state.shortcutErrors = registerShortcuts(next);
+          preferences?.setTitle(`${t('Preferencias')} · TeachersPen`);
+          timerWindow?.setTitle(`${t('Temporizador')} · TeachersPen`);
+          refreshApplicationMenu(); refreshTrayMenu();
+          break;
+        }
         case 'settings': {
           // Presentation is applied immediately by its own control, including tray changes.
-          const next = parseSettings({ ...command.settings, toolbarMode: state.settings.toolbarMode });
+          const next = parseSettings({ ...command.settings, language: state.settings.language, toolbarMode: state.settings.toolbarMode });
           const orientationChanged = next.toolbarOrientation !== state.settings.toolbarOrientation;
           const errors = registerShortcuts(next);
           if (errors.length) { state.shortcutErrors = registerShortcuts(state.settings); broadcast(); return { ok: false, error: errors.join('\n') }; }
@@ -538,7 +557,7 @@ async function start() {
           break;
         }
         case 'quit': app.quit(); break;
-        default: return { ok: false, error: 'Comando desconocido' };
+        default: return { ok: false, error: t("Comando desconocido") };
       }
       broadcast();
       return { ok: true };
@@ -580,10 +599,7 @@ async function start() {
   state.shortcutErrors = registerShortcuts(state.settings);
   makeTray();
   applyToolbarPresentation();
-  Menu.setApplicationMenu(Menu.buildFromTemplate([
-    { label: 'TeachersPen', submenu: [ { label: 'Preferencias…', click: openPreferences }, { type: 'separator' }, { role: 'quit', label: 'Salir de TeachersPen' } ] },
-    { label: 'Edición', submenu: [{ role: 'undo' }, { role: 'redo' }, { type: 'separator' }, { role: 'cut' }, { role: 'copy' }, { role: 'paste' }, { role: 'selectAll' }] }
-  ]));
+  refreshApplicationMenu();
   screen.on('display-added', () => { void createOverlays(); });
   screen.on('display-removed', (_event, display) => {
     overlays.get(display.id)?.destroy();

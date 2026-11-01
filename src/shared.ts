@@ -1,3 +1,4 @@
+import { isLanguage, defaultTimerText, isDefaultTimerText, type Language } from './i18n';
 export const tools = ['freehand', 'line', 'arrow', 'rectangle', 'circle'] as const;
 export type Tool = typeof tools[number];
 export type Background = 'transparent' | 'white' | 'black';
@@ -12,6 +13,7 @@ export const actionLabels = {
 export type Action = keyof typeof actionLabels;
 export const actions = Object.keys(actionLabels) as Action[];
 export interface Settings {
+  language: Language;
   activation: 'toggle' | 'hold';
   toolbarMode: ToolbarMode;
   toolbarOrientation: 'horizontal' | 'vertical';
@@ -45,11 +47,11 @@ export interface State {
 export function defaults(): Settings {
   const keys = ['Space', 'A', 'Q', 'W', 'S', 'O', 'E', 'D', 'C', 'R', 'F', 'Z', 'Y', 'X', 'H', 'T', 'V', 'B'];
   return {
-    activation: 'toggle',
+    language: 'en', activation: 'toggle',
     toolbarMode: 'visible',
     toolbarOrientation: 'horizontal',
     width: 6, transparency: 0, colors: ['#ef4444', '#087bff', '#78cc00', '#e2cd00', '#bfc0c2'], timerSeconds: 300,
-    timerText: 'continuamos en', timerColor: '#ffffff', timerDirection: 'down',
+    timerText: defaultTimerText('en'), timerColor: '#ffffff', timerDirection: 'down',
     shortcuts: Object.fromEntries(actions.map((action, i) => [action, `Control+Shift+${keys[i]}`])) as Record<Action, string>
   };
 }
@@ -57,13 +59,15 @@ export function parseSettings(input: unknown): Settings {
   const base = defaults();
   if (!input || typeof input !== 'object') return base;
   const data = input as Partial<Settings>;
+  if (isLanguage(data.language)) base.language = data.language;
+  base.timerText = defaultTimerText(base.language);
   if (data.activation === 'hold') base.activation = 'hold';
   if (data.toolbarMode === 'minimal' || data.toolbarMode === 'hidden') base.toolbarMode = data.toolbarMode;
   if (data.toolbarOrientation === 'vertical') base.toolbarOrientation = 'vertical';
   if (Number.isFinite(data.width)) base.width = Math.max(1, Math.min(40, Math.round(data.width!)));
   if (Number.isFinite(data.transparency)) base.transparency = Math.max(0, Math.min(100, Math.round(data.transparency!)));
   if (Number.isFinite(data.timerSeconds)) base.timerSeconds = Math.max(10, Math.min(7200, Math.round(data.timerSeconds!)));
-  if (typeof data.timerText === 'string') base.timerText = data.timerText.slice(0, 120);
+  if (typeof data.timerText === 'string') base.timerText = isDefaultTimerText(data.timerText) ? defaultTimerText(base.language) : data.timerText.slice(0, 120);
   if (typeof data.timerColor === 'string' && /^#[0-9a-f]{6}$/i.test(data.timerColor)) base.timerColor = data.timerColor;
   if (data.timerDirection === 'up') base.timerDirection = 'up';
   if (Array.isArray(data.colors) && data.colors.length === 5 && data.colors.every(c => typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c))) base.colors = [...data.colors];
@@ -84,6 +88,7 @@ export type Command =
   | { type: 'width'; width: number }
   | { type: 'transparency'; transparency: number }
   | { type: 'settings'; settings: Settings }
+  | { type: 'language'; language: Language }
   | { type: 'activation'; activation: Settings['activation'] }
   | { type: 'toolbar-mode'; mode: ToolbarMode }
   | { type: 'show-tools' }
