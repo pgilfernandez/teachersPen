@@ -143,10 +143,14 @@ function Overlay({ state }: { state: State }) {
     };
   }, []);
   useEffect(() => { if (!state.drawing) finish(); redraw(); }, [state.drawing, state.visible]);
-  return <div className={`overlay-surface ${state.background} ${state.drawing ? 'drawing' : ''}`}>
+  return <div className={`overlay-surface ${state.background} ${state.drawing ? 'drawing' : ''}`}
+    onContextMenuCapture={event => event.preventDefault()}>
     <canvas ref={canvas} style={{ cursor: state.drawing && !tracing ? strokeCursor(state.settings.colors[state.color], state.settings.width, state.settings.transparency) : undefined }}
       onPointerDown={event => {
-        if (!state.drawing || event.button !== 0 || pointerId.current !== null) return;
+        // macOS Control-click must draw while a Control shortcut is held,
+        // rather than opening WebKit's Reload/Back context menu.
+        const primary = event.button === 0 || (state.platform === 'darwin' && event.ctrlKey && event.button === 2);
+        if (!state.drawing || !primary || pointerId.current !== null) return;
         event.preventDefault();
         void command({ type: 'active-display' });
         pointerId.current = event.pointerId;
