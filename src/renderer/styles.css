@@ -80,25 +80,26 @@ canvas { width: 100%; height: 100%; display: block; touch-action: none; }
 .toolbar-vertical .width-control span { display: none; }
 .toolbar-vertical .width-control input { width: 36px; padding: 3px 0 3px 1px; font-size: 11px; }
 .preferences { background: #eeecf0; }
-.preferences-main { width: 100%; max-width: 440px; padding: 12px 18px; margin: auto; }
-.preferences-main section { margin-bottom: 12px; }
+.preferences-main { width: 100%; max-width: 440px; padding: 10px 18px; margin: auto; }
+.preferences-main section { margin-bottom: 8px; }
 .preferences-main h2 { font-size: 14px; font-weight: 650; border-bottom: 1px solid #bcbac0; padding-bottom: 4px; margin: 0 0 6px; }
 input, select { border: 1px solid #c3c1c7; border-radius: 5px; padding: 3px 6px; background: #f7f6f8; color: #33414d; }
-.setting-row { display: grid; grid-template-columns: 148px minmax(0, 1fr); align-items: center; margin: 4px 0; gap: 10px; font-size: 12px; min-height: 24px; }
-.setting-row > label { text-align: right; }
-.setting-row input { width: 60px; height: 24px; }
-.setting-row select { width: 100%; min-width: 0; height: 24px; font-size: 12px; padding: 2px 5px; }
-.number-with-unit { display: flex; align-items: center; gap: 6px; color: #74717b; font-size: 11px; }
+.setting-row { display: grid; grid-template-columns: 148px minmax(0, 1fr); align-items: center; margin: 2px 0; gap: 10px; font-size: 12px; min-height: 22px; }
+.setting-row > label, .setting-label { text-align: right; }
+.setting-row input { width: 52px; height: 22px; }
+.setting-row select { width: 100%; min-width: 0; height: 22px; font-size: 12px; padding: 1px 4px; }
+.stroke-settings { display: flex; align-items: center; gap: 10px; }
+.preferences-main input { padding: 1px 3px; margin: 0; }
+.number-with-unit { display: flex; align-items: center; gap: 3px; color: #74717b; font-size: 11px; }
 .help { font-size: 10px; color: #74717b; line-height: 1.4; margin: 5px 0 0; }
-.setting-help { margin: 0 0 5px 158px; }
-.shortcut-row { display: grid; grid-template-columns: 148px minmax(0, 1fr) 22px; align-items: center; margin: 2px 0; gap: 6px; min-height: 23px; }
+.shortcut-row { display: grid; grid-template-columns: 148px minmax(0, 1fr) 22px; align-items: center; margin: 0; gap: 6px; min-height: 21px; }
 .shortcut-label { text-align: right; min-width: 0; font-size: 12px; }
-.shortcut-row input:not([type="color"]) { width: 100%; min-width: 0; height: 23px; text-align: center; font-size: 11px; cursor: pointer; padding: 2px 4px; }
+.shortcut-row input:not([type="color"]) { width: 100%; min-width: 0; height: 20px; text-align: center; font-size: 11px; cursor: pointer; padding: 0 3px; }
 .shortcut-row input:focus { background: #edf4ff; }
-.remove-shortcut { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 23px; padding: 0; color: #74717b; background: transparent; }
+.remove-shortcut { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 20px; padding: 0; color: #74717b; background: transparent; }
 .color-preset { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
 input[type="color"] { width: 35px; height: 23px; padding: 1px; cursor: pointer; }
-.color-preset input[type="color"] { width: 48px; }
+.color-preset input[type="color"] { width: 48px; height: 20px; padding: 0; }
 .preferences-footer { display: flex; justify-content: flex-end; gap: 8px; }
 .preferences-footer button { background: #d9d6df; padding: 5px 10px; color: #4e4a57; border-radius: 5px; font-size: 12px; }
 .preferences-footer button.primary { background: #256ed1; color: #fff; }
