@@ -467,6 +467,12 @@ async function start() {
           }
           break;
         case 'toolbar-mode': return setToolbarMode(command.mode);
+        case 'drawing-hints': {
+          if (typeof command.enabled !== 'boolean') return { ok: false, error: t('Comando desconocido') };
+          const next = { ...state.settings, drawingHints: command.enabled };
+          saveSettings(next); state.settings = next;
+          break;
+        }
         case 'show-tools': showTools(); break;
         case 'collapse-tools': return collapseTools();
         case 'toggle-toolbar-orientation': {

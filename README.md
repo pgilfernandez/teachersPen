@@ -90,7 +90,7 @@ In **Preferences → Drawing toolbar**, select a mode. Changes are applied and s
 
 - **Visible:** keeps the full toolbar on screen.
 - **Minimal:** shows the editable TeachersPen SVG launcher at 42 px in diameter. Its alpha is **0.15** at rest and **0.4** on hover. Drag to move it; click to reveal the full toolbar from the launcher. The 240 ms opening animation follows the available space: right/left in horizontal layout and down/up in vertical layout. Reduced-motion preferences are respected. Collapse returns to the launcher. Its position is remembered between sessions and adjusted when a monitor is disconnected.
-- **Hidden:** leaves only the macOS menu-bar icon or Windows/Linux system-tray icon. On macOS, the app also disappears from the Dock and app switcher. Shortcuts continue to work without the toolbar, launcher, or drawing hint. Annotations and the stroke cursor preview remain available.
+- **Hidden:** leaves only the macOS menu-bar icon or Windows/Linux system-tray icon. On macOS, the app also disappears from the Dock and app switcher. Shortcuts continue to work without the toolbar or launcher. Drawing hints follow their independent preference. Annotations and the stroke cursor preview remain available.
 
 Collapsing a visible toolbar switches to Minimal mode. If you temporarily open the toolbar in Hidden mode, the collapse control hides it again.
 
@@ -116,7 +116,7 @@ The first row in Preferences selects **English (default), Español, Italiano, Fr
 
 The compact preferences panel is 430 px wide and organized into **Drawing**, **Colors**, and **Functions**. The Stroke row combines width and opacity, and each color shares a row with its shortcut. Timer duration is configured in the timer popup.
 
-Save applies changes to stroke settings, colors, and shortcuts. Invalid or occupied shortcuts leave the previous settings in place. Activation, toolbar mode, and language are saved immediately when selected.
+Save applies changes to stroke settings, colors, and shortcuts. Invalid or occupied shortcuts leave the previous settings in place. Activation, toolbar mode, language, and Drawing hints are saved immediately when selected. Drawing hints are enabled by default and show the selected tool and how to return to interaction mode; they can be enabled or disabled independently of the Visible, Minimal, or Hidden toolbar mode.
 
 The information button is on the left of the Restore defaults/Save row. Its popup shows the app icon, **TeachersPen v1.0**, the short build commit, and:
 

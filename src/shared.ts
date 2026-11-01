@@ -17,6 +17,7 @@ export interface Settings {
   activation: 'toggle' | 'hold';
   toolbarMode: ToolbarMode;
   toolbarOrientation: 'horizontal' | 'vertical';
+  drawingHints: boolean;
   width: number;
   transparency: number;
   colors: string[];
@@ -50,7 +51,7 @@ export function defaults(): Settings {
   return {
     language: 'en', activation: 'toggle',
     toolbarMode: 'visible',
-    toolbarOrientation: 'horizontal',
+    toolbarOrientation: 'horizontal', drawingHints: true,
     width: 6, transparency: 0, colors: ['#ef4444', '#087bff', '#78cc00', '#e2cd00', '#bfc0c2'], timerSeconds: 300,
     timerText: defaultTimerText('en'), timerColor: '#ffffff', timerDirection: 'down',
     shortcuts: Object.fromEntries(actions.map((action, i) => [action, `Control+Shift+${keys[i]}`])) as Record<Action, string>
@@ -64,6 +65,7 @@ export function parseSettings(input: unknown): Settings {
   base.timerText = defaultTimerText(base.language);
   if (data.activation === 'hold') base.activation = 'hold';
   if (data.toolbarMode === 'minimal' || data.toolbarMode === 'hidden') base.toolbarMode = data.toolbarMode;
+  if (typeof data.drawingHints === 'boolean') base.drawingHints = data.drawingHints;
   if (data.toolbarOrientation === 'vertical') base.toolbarOrientation = 'vertical';
   if (Number.isFinite(data.width)) base.width = Math.max(1, Math.min(40, Math.round(data.width!)));
   if (Number.isFinite(data.transparency)) base.transparency = Math.max(0, Math.min(100, Math.round(data.transparency!)));
@@ -92,6 +94,7 @@ export type Command =
   | { type: 'language'; language: Language }
   | { type: 'activation'; activation: Settings['activation'] }
   | { type: 'toolbar-mode'; mode: ToolbarMode }
+  | { type: 'drawing-hints'; enabled: boolean }
   | { type: 'show-tools' }
   | { type: 'collapse-tools' }
   | { type: 'toggle-toolbar-orientation' }

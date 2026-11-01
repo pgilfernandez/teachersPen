@@ -90,6 +90,7 @@ input, select { border: 1px solid #c3c1c7; border-radius: 5px; padding: 3px 6px;
 .language-row { margin-bottom: 10px; }
 .setting-row > label, .setting-label { text-align: right; }
 .setting-row input { width: 52px; height: 22px; }
+.setting-row input[type="checkbox"] { width: 14px; height: 14px; justify-self: start; margin: 0; padding: 0; }
 .setting-row select { width: 100%; min-width: 0; height: 22px; font-size: 12px; padding: 1px 4px; }
 .stroke-settings { display: flex; align-items: center; gap: 10px; }
 .preferences-main input { padding: 1px 3px; margin: 0; }

@@ -173,7 +173,7 @@ function Overlay({ state }: { state: State }) {
       }}
       onPointerCancel={finish} onLostPointerCapture={finish}
     />
-    {state.drawing && state.settings.toolbarMode !== 'hidden' && <div className="drawing-hint">{t(toolNames[state.tool])} · {state.holding ? t("Suelta el atajo para interactuar") : t("Esc para interactuar")}</div>}
+    {state.drawing && state.settings.drawingHints && <div className="drawing-hint">{t(toolNames[state.tool])} · {state.holding ? t("Suelta el atajo para interactuar") : t("Esc para interactuar")}</div>}
   </div>;
 }
 function Timer({ state }: { state: State }) {
@@ -295,10 +295,12 @@ function Preferences({ state }: { state: State }) {
   const [saving, setSaving] = useState(false);
   const [changingActivation, setChangingActivation] = useState(false);
   const [changingToolbar, setChangingToolbar] = useState(false);
+  const [changingHints, setChangingHints] = useState(false);
+  useEffect(() => { setDraft(previous => ({ ...previous, drawingHints: state.settings.drawingHints })); }, [state.settings.drawingHints]);
   const [recording, setRecording] = useState<Action | null>(null);
   const field = <K extends keyof Settings>(key: K, value: Settings[K]) => { setDraft(previous => ({ ...previous, [key]: value })); setMessage(''); };
   const [changingLanguage, setChangingLanguage] = useState(false);
-  const busy = saving || changingActivation || changingToolbar || changingLanguage;
+  const busy = saving || changingActivation || changingToolbar || changingLanguage || changingHints;
   useEffect(() => { setDraft(previous => ({ ...previous, language: state.settings.language })); setMessage(''); }, [state.settings.language]);
   const changeLanguage = async (next: Language) => {
     setChangingLanguage(true);
@@ -307,6 +309,14 @@ function Preferences({ state }: { state: State }) {
       if (!result.ok) setMessage(result.error || t('No se han podido guardar.'));
     } catch (error) { setMessage(String(error)); }
     finally { setChangingLanguage(false); }
+  };
+  const changeHints = async (enabled: boolean) => {
+    setChangingHints(true);
+    try {
+      const result = await command({ type: 'drawing-hints', enabled });
+      setMessage(result.ok ? t('Preferencias guardadas.') : result.error || t('No se han podido guardar.'));
+    } catch (error) { setMessage(String(error)); }
+    finally { setChangingHints(false); }
   };
   const changeToolbar = async (mode: ToolbarMode) => {
     setChangingToolbar(true);
@@ -363,6 +373,7 @@ function Preferences({ state }: { state: State }) {
       </div></div>
       <div className="setting-row"><label htmlFor="activation-mode">{t("Activación")}</label><select id="activation-mode" value={state.settings.activation} disabled={busy} onChange={e => void changeActivation(e.target.value as Settings['activation'])}><option value="toggle">{t("Pulsar para alternar")}</option><option value="hold" disabled={!state.holdAvailable}>{t("Mantener pulsado")}</option></select></div>
       <div className="setting-row"><label htmlFor="toolbar-mode">{t("Barra de dibujo")}</label><select id="toolbar-mode" value={state.settings.toolbarMode} disabled={busy} onChange={e => void changeToolbar(e.target.value as ToolbarMode)}><option value="visible">{t("Visible")}</option><option value="minimal">{t("Mínima")}</option><option value="hidden">{t("Oculta")}</option></select></div>
+      <div className="setting-row"><label htmlFor="drawing-hints">{t('Ayuda al dibujar')}</label><input id="drawing-hints" type="checkbox" checked={state.settings.drawingHints} disabled={busy} onChange={event => void changeHints(event.target.checked)} /></div>
     </section>
     <section><h2>{t("Colores")}</h2><div className="shortcut-list color-shortcuts">{draft.colors.map((color, index) => shortcutRow(`color${index}` as Action, <span className="color-preset"><span>{t("Color")} {index + 1}</span><input aria-label={t('Color {number}', { number: index + 1 })} type="color" value={color} onChange={e => field('colors', draft.colors.map((old, i) => i === index ? e.target.value : old))} /></span>))}</div></section>
     <section><h2>{t("Funciones")}</h2><div className="shortcut-list">{actions.filter(name => !name.startsWith('color')).map(name => shortcutRow(name, name === 'toggle' ? t("Activar / salir") : t(actionLabels[name])))}</div>
