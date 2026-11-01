@@ -6,7 +6,7 @@ button, input, select { font: inherit; }
 button { cursor: pointer; border: 1px solid transparent; }
 button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid #2573e7; outline-offset: 3px; }
 button:disabled { cursor: default; opacity: .4; }
-.overlay-surface { position: fixed; inset: 0; background: transparent; user-select: none; }
+.overlay-surface { position: fixed; top: 0; right: 0; bottom: 0; left: 0; background: transparent; user-select: none; }
 .overlay-surface.white { background: #fff; }
 .overlay-surface.black { background: #15191f; }
 .overlay-surface.drawing { cursor: crosshair; }
@@ -32,7 +32,7 @@ canvas { width: 100%; height: 100%; display: block; touch-action: none; }
 .timer-controls svg { width: 4.5vw; height: 4.5vw; }
 .timer-gear { position: absolute; top: 2vw; right: 2vw; padding: 1vw; background: transparent; opacity: .4; }
 .timer-gear svg, .timer-config-heading svg { width: 5vw; height: 5vw; }
-.timer-config { -webkit-app-region: no-drag; position: absolute; z-index: 1; inset: 2vw; padding: 3vw; border: 1px solid #ffffff40; border-radius: 3vw; background: #243345; color: #fff; box-shadow: 0 1vw 3vw #0005; font-size: 4vw; display: flex; flex-direction: column; justify-content: space-between; }
+.timer-config { -webkit-app-region: no-drag; position: absolute; z-index: 1; top: 2vw; right: 2vw; bottom: 2vw; left: 2vw; padding: 3vw; border: 1px solid #ffffff40; border-radius: 3vw; background: #243345; color: #fff; box-shadow: 0 1vw 3vw #0005; font-size: 4vw; display: flex; flex-direction: column; justify-content: space-between; }
 .timer-config-heading { display: flex; justify-content: space-between; align-items: center; }
 .timer-config-heading button { padding: .5vw; }
 .timer-config label { display: flex; align-items: center; justify-content: space-between; gap: 2vw; }
@@ -137,3 +137,24 @@ input[type="color"] { width: 35px; height: 23px; padding: 1px; cursor: pointer; 
   to { opacity: 1; clip-path: inset(0 0 0 0 round 12px); }
 }
 @media (prefers-reduced-motion: reduce) { .toolbar-revealing { animation-duration: 1ms !important; } }
+
+/* Original Big Sur / older WebKitGTK flex-gap fallback. */
+.legacy-flex-gap .toolbar > * + *, .legacy-flex-gap .button-group > * + * { margin-left: 3px; }
+.legacy-flex-gap .toolbar > .divider { margin-left: 9px; }
+.legacy-flex-gap .toolbar > .width-control { margin-left: 9px; }
+.legacy-flex-gap .button-group > .board-button { margin-left: 6px; }
+.legacy-flex-gap .colors > * + * { margin-left: 6px; }
+.legacy-flex-gap .width-control > * + * { margin-left: 2px; }
+.legacy-flex-gap .stroke-settings > * + *, .legacy-flex-gap .color-preset > * + * { margin-left: 10px; }
+.legacy-flex-gap .number-with-unit > * + * { margin-left: 3px; }
+.legacy-flex-gap .preferences-footer > * + *, .legacy-flex-gap .about-links > * + * { margin-left: 8px; }
+.legacy-flex-gap .timer-panel > * + * { margin-left: 1vw; }
+.legacy-flex-gap .timer-content > * + * { margin-top: 2vw; }
+.legacy-flex-gap .timer-controls > * + * { margin-left: 1vw; }
+.legacy-flex-gap .timer-config label > * + * { margin-left: 2vw; }
+.legacy-flex-gap .toolbar-vertical .toolbar > * + *, .legacy-flex-gap .toolbar-vertical .button-group > * + * { margin-left: 0; margin-top: 2px; }
+.legacy-flex-gap .toolbar-vertical .colors > * + * { margin-left: 0; margin-top: 4px; }
+.legacy-flex-gap .toolbar-vertical .toolbar > .divider { margin-top: 6px; }
+.legacy-flex-gap .toolbar-vertical .button-group > .board-button { margin-top: 4px; }
+.legacy-flex-gap .toolbar-vertical .width-control > * + * { margin-left: 0; }
+.about-dialog + .backdrop { background: #17253666; }

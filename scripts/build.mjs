@@ -15,3 +15,5 @@ await build({ define, entryPoints: ['src/renderer/index.tsx'], outfile: 'dist/re
 await copyFile('src/renderer/index.html', 'dist/index.html');
 await copyFile('src/renderer/styles.css', 'dist/styles.css');
 await copyFile('src/renderer/assets/mini-launcher.svg', 'dist/mini-launcher.svg');
+
+await copyFile('node_modules/dialog-polyfill/dist/dialog-polyfill.css', 'dist/dialog-polyfill.css');

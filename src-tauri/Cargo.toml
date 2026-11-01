@@ -1,0 +1,32 @@
+[package]
+name = "teacherspen"
+version = "1.0.0"
+edition = "2021"
+license = "PolyForm-Noncommercial-1.0.0"
+authors = ["Pablo Gil Fernández"]
+
+[build-dependencies]
+tauri-build = { version = "=1.5.6", features = [] }
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tauri-plugin-single-instance = { git = "https://github.com/tauri-apps/plugins-workspace", rev = "1e407ed56455558cf751022fd68eca3b9e3713a0" }
+tauri = { version = "=1.8.3", features = ["system-tray", "global-shortcut", "macos-private-api", "process-command-api", "shell-open-api", "icon-png"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+objc = "0.2"
+cocoa = "0.24"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+gtk = "0.15"
+
+[features]
+custom-protocol = ["tauri/custom-protocol"]
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"
+opt-level = "s"

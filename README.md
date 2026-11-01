@@ -109,68 +109,75 @@ The information button is on the left of the footer, with Restore defaults align
 
 It also includes adjacent donation buttons for [GitHub Sponsors](https://github.com/sponsors/pgilfernandez) and [PayPal](https://www.paypal.com/donate?hosted_button_id=6N7UZHDQW3J6A), plus the [GitHub project](https://github.com/pgilfernandez/teachersPen), opened in the default browser.
 
+## Lightweight desktop host
+
+The default build uses **Tauri 1.8.3** and the operating system's WebView, instead of shipping Electron, Chromium, and Node.js with each app. The React interface, editable SVG assets, Canvas 2D drawing, and native key-release helper are shared with the Electron fallback. Preferences and saved window geometry use the same `TeachersPen` data directory as before.
+
+The migration needs manual device checks before replacing an existing installation. A successful package build does not verify drawing, transparency, global shortcuts, full-screen behavior, or multiple monitors.
+
 ## Compatibility
 
 | Platform | Target baseline | Validation status |
 | --- | --- | --- |
-| macOS | Big Sur 11+, Intel x64 and Apple Silicon arm64 | Initial testing on Monterey Intel; Big Sur and arm64 still need device testing |
-| Windows | Windows 10+, x64 | Device testing pending |
-| Linux | x64, X11 desktop, libraries compatible with Electron 37 | Device testing pending; no minimum distribution has been verified |
+| macOS | Big Sur 11+, Intel x64 and Apple Silicon arm64; system WKWebView | Lightweight Intel package builds on Monterey; runtime checks, Big Sur and arm64 checks pending |
+| Windows | Windows 10+, x64, Microsoft WebView2 | Installer downloads WebView2 if missing; device testing pending |
+| Linux | x64, X11, GTK 3 and WebKitGTK **4.0**; packages built on Ubuntu 20.04 | Runtime and distribution compatibility pending |
 | Linux Wayland | X11 backend through XWayland | Experimental; overlays over native Wayland applications are not guaranteed |
 
-Electron is pinned to **37.10.3** to retain macOS Big Sur support. Electron 38 drops Big Sur. Do not upgrade the Electron major version without reviewing the macOS 11 requirement. The macOS package also declares `minimumSystemVersion: 11.0`.
+Tauri 1 is pinned to retain the older WebKitGTK 4.0 baseline. Linux distributions that provide only WebKitGTK 4.1 need a compatible 4.0 package or a different desktop build; 4.1 is not a drop-in runtime replacement. The macOS deployment target and bundle minimum are both **11.0**. The frontend targets Safari 14 and includes compatibility handling for the original Big Sur WebView.
 
-**Maintenance consideration:** Electron 37 is outside upstream support. Retaining Big Sur requires an older runtime; maintaining that runtime or changing the desktop integration needs to be addressed before public distribution. The app loads local content with sandboxing, context isolation, no renderer Node integration, and blocked external navigation. These measures do not replace security updates. The About popup opens only the two configured project links in the external browser.
+The WebView is supplied and updated by the operating system (WebView2 on Windows). A small installer does not remove the disk space used by that shared runtime. The Windows installer can require an internet connection to install WebView2. Linux may need system WebKit/GTK dependencies installed; an AppImage does not guarantee portability across all distributions.
 
-Windows 7/8/8.1 are outside this baseline; Electron dropped them in version 23. Supporting those systems would require revisiting the technology. CPU, GPU, and Linux distribution compatibility require real-device testing.
+Windows 7/8/8.1 are outside the target baseline. Older hardware, graphics drivers, full-screen applications, and multiple monitors still require checks on the actual devices. Drawing uses Canvas 2D and on-demand rendering, without WebGPU or continuous animation.
 
-Drawing uses Canvas 2D and on-demand rendering, without WebGPU, filters, or continuous animation. If an older graphics driver causes problems, try:
-
-```sh
-npm start -- --software-rendering
-```
-
-This passes the flag to Electron and disables hardware acceleration. It is not the default; transparent windows still need validation on each system.
-
+The Electron fallback remains pinned to **37.10.3**, the last Electron major supporting Big Sur. That runtime is outside upstream support and is retained as a migration fallback. Upgrading either desktop host requires reviewing the compatibility baseline. The app loads local content and allows only the three configured project/donation links to open externally.
 
 ## Run from source
 
-Node.js 20 or later is required to run the source. Node.js 22.12 or later is recommended for the packaging toolchain's published requirements. Node.js is needed for development, not to use a packaged app.
+Use **Node.js 22.12+**, **Rust 1.91.1** (the CI version), and the native prerequisites in the [Tauri 1 setup guide](https://v1.tauri.app/v1/guides/getting-started/prerequisites/):
+
+- **macOS:** Xcode Command Line Tools.
+- **Windows:** Visual Studio C++ x64 Build Tools, Windows SDK, and WebView2. Run the build from the x64 Native Tools command prompt.
+- **Linux:** a C compiler, `pkg-config`, X11 development headers, GTK 3, WebKitGTK 4.0, OpenSSL, AppIndicator/Ayatana, and SVG development libraries. The workflow contains the Ubuntu 20.04 dependency list.
 
 ```sh
 npm ci
 npm start
 ```
 
-Building requires native compiler tools:
+`npm start` builds a release app and opens it normally; it does not run tests. On macOS it opens `src-tauri/target/release/bundle/macos/TeachersPen.app`. The packaged app includes its native helper and does not need Node.js, Rust, or a compiler on the destination computer.
 
-- **macOS:** Xcode Command Line Tools.
-- **Windows:** Visual Studio x64 Native Tools.
-- **Linux:** a C compiler and X11 development headers (`libx11-dev` or equivalent).
+To run the Electron fallback:
 
-The packaged app includes the native helper and does not require a compiler.
+```sh
+npm run start:electron
+```
 
+Its optional `--software-rendering` argument disables Electron hardware acceleration. This option is specific to the fallback host.
 
 ## Build and package
 
 ```sh
-npm run build
-npm run pack
+npm run build       # Frontend, icons, helper, and third-party notices
+npm run pack        # Release application
+npm run dist:mac    # DMG
+npm run dist:win    # NSIS installer
+npm run dist:linux  # AppImage and DEB
 ```
 
-To generate installers:
+Build each platform on its own operating system. For an explicit macOS architecture, append `-- --target x86_64-apple-darwin` or `-- --target aarch64-apple-darwin`. Install the corresponding Rust target when cross-compiling. Each job builds and uploads only its own architecture's installer.
 
-```sh
-npm run dist:mac
-npm run dist:win
-npm run dist:linux
-```
+Packages are written under `src-tauri/target/release/bundle/`, or `src-tauri/target/<target>/release/bundle/` when an explicit target is selected. The macOS installer command also keeps the `.app` for local use. Local macOS builds are unsigned and not notarized.
 
-The macOS workflow produces one installer per job and uploads only the matching architecture, rather than bundling both DMGs into each artifact. For a local build, select `--x64` or `--arm64` explicitly. Windows and Linux packages should be built and validated on their respective systems. Build Linux packages on the oldest distribution you intend to support to avoid unnecessarily raising the glibc requirement.
+Electron packaging remains available through `npm run pack:electron` and `npm run dist:electron:mac`, `dist:electron:win`, or `dist:electron:linux`; those packages go to `release/`.
 
-The local macOS app is placed in `release/mac/TeachersPen.app`. Local packages are not signed or notarized.
+### GitHub Actions
 
-The version comes from `package.json` (currently `1.0.0`, displayed as `1.0`). The build automatically embeds the current short Git commit. Builds made from source archives without Git metadata display `unknown` for the commit.
+The **Build desktop apps** workflow runs on pushes to `main`, `v*` tags, pull requests, and manual dispatch. It builds Intel/Apple Silicon DMGs, a Windows x64 NSIS installer, and Linux x64 AppImage/DEB packages. Artifacts are retained for 14 days. The workflow compiles and packages; it does not run tests, sign packages, or publish releases.
+
+The Linux job uses Ubuntu 20.04 to avoid raising glibc and WebKitGTK requirements to those of a newer runner. Rust dependencies are locked in `src-tauri/Cargo.lock`, and build output is cached per platform and architecture.
+
+The version comes from `package.json` (currently `1.0.0`, displayed as `1.0`). The build embeds the current short Git commit; source archives without Git metadata display `unknown`.
 
 ## License
 

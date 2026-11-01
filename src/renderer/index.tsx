@@ -1,3 +1,5 @@
+import './compat';
+import dialogPolyfill from 'dialog-polyfill';
 import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { actionLabels, actions, defaults, type Action, type Command, type Settings, type State, type Tool, type ToolbarMode } from '../shared';
@@ -11,7 +13,7 @@ import { translate, languages, languageNames, type Language } from '../i18n';
 
 const translator = (language: Language) => (source: string, values?: Record<string, string | number>) => translate(language, source, values);
 
-const role = new URLSearchParams(location.search).get('role') || 'toolbar';
+const role = (window as Window & { __PEN_ROLE__?: string }).__PEN_ROLE__ || new URLSearchParams(location.search).get('role') || 'toolbar';
 document.body.className = role;
 const command = (value: Command) => window.pen.command(value);
 const action = (value: Action) => command({ type: 'action', action: value });
@@ -360,7 +362,11 @@ function About({ state, onClose }: { state: State; onClose: () => void }) {
   const t = translator(state.settings.language);
   const dialog = useRef<HTMLDialogElement>(null);
   const [error, setError] = useState('');
-  useEffect(() => { dialog.current?.showModal(); }, []);
+  useEffect(() => {
+    if (!dialog.current) return;
+    if (!dialog.current.showModal) dialogPolyfill.registerDialog(dialog.current);
+    dialog.current.showModal();
+  }, []);
   const open = async (target: 'donate' | 'paypal' | 'github') => {
     try {
       const result = await command({ type: 'about-link', target });
