@@ -18,6 +18,9 @@
 enum { MOD_CTRL = 1, MOD_SHIFT = 2, MOD_ALT = 4, MOD_META = 8 };
 static unsigned int modifiers;
 static int keycode = -1;
+#if defined(__APPLE__)
+static CGEventSourceStateID key_state_source = kCGEventSourceStateHIDSystemState;
+#endif
 #if !defined(__APPLE__) && !defined(_WIN32)
 static Display *display;
 #endif
@@ -125,12 +128,14 @@ static int parse_shortcut(const char *shortcut) {
 
 static int shortcut_down(void) {
 #if defined(__APPLE__)
-  CGEventFlags flags = CGEventSourceFlagsState(kCGEventSourceStateCombinedSessionState);
-  if ((modifiers & MOD_CTRL) && !(flags & kCGEventFlagMaskControl)) return 0;
-  if ((modifiers & MOD_SHIFT) && !(flags & kCGEventFlagMaskShift)) return 0;
-  if ((modifiers & MOD_ALT) && !(flags & kCGEventFlagMaskAlternate)) return 0;
-  if ((modifiers & MOD_META) && !(flags & kCGEventFlagMaskCommand)) return 0;
-  return CGEventSourceKeyState(kCGEventSourceStateCombinedSessionState, (CGKeyCode)keycode);
+  /* Read keys and modifiers from the same state table. Prefer physical HID
+     state so session events/auto-repeat cannot look like a physical release. */
+  #define MAC_DOWN(code) CGEventSourceKeyState(key_state_source, (CGKeyCode)(code))
+  if ((modifiers & MOD_CTRL) && !(MAC_DOWN(kVK_Control) || MAC_DOWN(kVK_RightControl))) return 0;
+  if ((modifiers & MOD_SHIFT) && !(MAC_DOWN(kVK_Shift) || MAC_DOWN(kVK_RightShift))) return 0;
+  if ((modifiers & MOD_ALT) && !(MAC_DOWN(kVK_Option) || MAC_DOWN(kVK_RightOption))) return 0;
+  if ((modifiers & MOD_META) && !(MAC_DOWN(kVK_Command) || MAC_DOWN(kVK_RightCommand))) return 0;
+  return MAC_DOWN(keycode);
 #elif defined(_WIN32)
   if ((modifiers & MOD_CTRL) && !(GetAsyncKeyState(VK_CONTROL) & 0x8000)) return 0;
   if ((modifiers & MOD_SHIFT) && !(GetAsyncKeyState(VK_SHIFT) & 0x8000)) return 0;
@@ -163,8 +168,14 @@ int main(int argc, char **argv) {
 #else
   pid_t parent = getppid();
 #endif
+#if defined(__APPLE__)
+  /* Remote/session input may not be represented in the physical HID table.
+     Select its table once, before activation; do not switch while held. */
+  if (!shortcut_down()) key_state_source = kCGEventSourceStateCombinedSessionState;
+#endif
   if (shortcut_down()) {
     puts("down"); fflush(stdout);
+    unsigned int released_samples = 0;
     do {
 #if defined(_WIN32)
       Sleep(8);
@@ -173,7 +184,10 @@ int main(int argc, char **argv) {
       usleep(8000);
       if (getppid() != parent) return 0;
 #endif
-    } while (shortcut_down());
+      /* Require a stable release (four 8 ms samples), not a transient key-up
+         during repeat or a focus transition. There is no maximum hold time. */
+      released_samples = shortcut_down() ? 0 : released_samples + 1;
+    } while (released_samples < 4);
   }
   puts("up"); fflush(stdout);
 #if !defined(__APPLE__) && !defined(_WIN32)

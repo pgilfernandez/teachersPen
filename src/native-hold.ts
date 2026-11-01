@@ -26,6 +26,7 @@ export class NativeHoldMonitor implements HoldMonitor {
       settled = true; clearTimeout(readyTimeout); child.kill();
       error(message);
     };
+    // Startup watchdog only: once "down" arrives, holding has no time limit.
     const readyTimeout = setTimeout(() => fail('No se puede comprobar el atajo. Se ha desactivado el dibujo por seguridad.'), 2000);
     child.stdout.setEncoding('utf8');
     child.stdout.on('data', (chunk: string) => {
