@@ -298,6 +298,10 @@ function perform(action: Action, fromShortcut = false) {
     state.color = Number(action.slice(-1));
     if (fromShortcut) setDrawing(true);
   } else switch (action) {
+    case 'nextColor':
+      state.color = (state.color + 1) % state.settings.colors.length;
+      if (fromShortcut) setDrawing(true);
+      break;
     case 'toggle': setDrawing(!state.drawing); break;
     case 'undo': case 'redo': case 'clear': sendDrawingAction(action); break;
     case 'visible': state.visible = !state.visible; if (!state.visible) setDrawing(false); break;

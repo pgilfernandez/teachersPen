@@ -66,6 +66,7 @@ On macOS, **Ctrl means Control, not Command**.
 | `Ctrl+Shift+S` | Rectangle |
 | `Ctrl+Shift+O` | Circle |
 | `Ctrl+Shift+E/D/C/R/F` | Select one of the five colors and activate drawing |
+| `Ctrl+Shift+L` | Cycle to the next preset color, wrapping after the fifth |
 | `Ctrl+Shift+Z/Y` | Undo/redo on the active monitor |
 | `Ctrl+Shift+X` | Clear drawings on all monitors; undo is available per monitor |
 | `Ctrl+Shift+H` | Hide or show drawings |
@@ -114,7 +115,7 @@ These buttons and the move/resize controls have alpha **0.5** at rest and **0.65
 
 The first row in Preferences selects **English (default), Español, Italiano, Français, or Deutsch**. Language changes are applied and saved immediately across the interface, tooltips, and menus. Custom timer captions are preserved; the default caption follows the selected language. Editable translation catalogs are in `src/locales/`.
 
-The compact preferences panel is 430 px wide and organized into **Drawing**, **Colors**, and **Functions**. The Stroke row combines width and opacity, and each color shares a row with its shortcut. Timer duration is configured in the timer popup.
+The compact preferences panel is 430 px wide and organized into **Drawing**, **Colors**, and **Functions**. The Stroke row combines width and opacity, and each color shares a row with its shortcut. The last row of Colors configures the Next color shortcut, which cycles through all five presets without changing the drawing tool. Timer duration is configured in the timer popup.
 
 Save applies changes to stroke settings, colors, and shortcuts. Invalid or occupied shortcuts leave the previous settings in place. Activation, toolbar mode, language, and Drawing hints are saved immediately when selected. Drawing hints are enabled by default and show the selected tool and how to return to interaction mode; they can be enabled or disabled independently of the Visible, Minimal, or Hidden toolbar mode.
 

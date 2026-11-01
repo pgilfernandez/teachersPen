@@ -5,7 +5,7 @@ export interface HoldMonitor {
   watch(shortcut: string, down: () => void, up: () => void, error: (message: string) => void): StopWatching;
 }
 export function isDrawingShortcut(action: Action) {
-  return ['toggle', 'freehand', 'line', 'arrow', 'rectangle', 'circle', 'white', 'black'].includes(action) || action.startsWith('color');
+  return ['toggle', 'freehand', 'line', 'arrow', 'rectangle', 'circle', 'white', 'black', 'nextColor'].includes(action) || action.startsWith('color');
 }
 interface HeldKey { stop?: StopWatching; engaged: boolean; dismissed: boolean }
 

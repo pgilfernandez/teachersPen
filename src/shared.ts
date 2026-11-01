@@ -8,7 +8,8 @@ export const actionLabels = {
   freehand: 'Mano alzada', line: 'Línea', arrow: 'Flecha', rectangle: 'Rectángulo', circle: 'Círculo',
   color0: 'Color 1', color1: 'Color 2', color2: 'Color 3', color3: 'Color 4', color4: 'Color 5',
   undo: 'Deshacer', redo: 'Rehacer', clear: 'Borrar todo', visible: 'Ocultar / mostrar trazos',
-  timer: 'Temporizador', white: 'Pizarra blanca', black: 'Pizarra negra'
+  timer: 'Temporizador', white: 'Pizarra blanca', black: 'Pizarra negra',
+  nextColor: 'Siguiente color'
 } as const;
 export type Action = keyof typeof actionLabels;
 export const actions = Object.keys(actionLabels) as Action[];
@@ -47,7 +48,7 @@ export interface State {
   toolbarAvailableHeight: number;
 }
 export function defaults(): Settings {
-  const keys = ['Space', 'A', 'Q', 'W', 'S', 'O', 'E', 'D', 'C', 'R', 'F', 'Z', 'Y', 'X', 'H', 'T', 'V', 'B'];
+  const keys = ['Space', 'A', 'Q', 'W', 'S', 'O', 'E', 'D', 'C', 'R', 'F', 'Z', 'Y', 'X', 'H', 'T', 'V', 'B', 'L'];
   return {
     language: 'en', activation: 'toggle',
     toolbarMode: 'visible',
