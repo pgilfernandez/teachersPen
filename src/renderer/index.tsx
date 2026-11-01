@@ -258,7 +258,7 @@ function Preferences({ state }: { state: State }) {
     <section><h2>Barra de dibujo</h2>
       <div className="toolbar-options" role="radiogroup" aria-label="Barra de dibujo">{(['visible', 'minimal', 'hidden'] as ToolbarMode[]).map(mode => <label className={state.settings.toolbarMode === mode ? 'active' : ''} key={mode}>
         <input id={`toolbar-${mode}`} type="radio" name="toolbar-mode" checked={state.settings.toolbarMode === mode} disabled={busy} onChange={() => void changeToolbar(mode)} />
-        <span><strong>{({ visible: 'Visible', minimal: 'Mínima', hidden: 'Oculta' })[mode]}</strong><small>{({ visible: 'La barra completa permanece en pantalla.', minimal: 'Un círculo con el icono. Arrastra para moverlo; haz clic para abrir la barra.', hidden: 'Solo el icono del sistema. Dibuja usando los atajos.' })[mode]}</small></span>
+        <span><strong>{({ visible: 'Visible', minimal: 'Mínima', hidden: 'Oculta' })[mode]}</strong><small>{({ visible: 'La barra completa permanece en pantalla.', minimal: 'Solo el icono SVG. Arrastra para moverlo; haz clic para abrir la barra.', hidden: 'Solo el icono del sistema. Dibuja usando los atajos.' })[mode]}</small></span>
       </label>)}</div>
       <p className="help">Se aplica y guarda al seleccionarlo. El botón mínimo tiene un 15% de opacidad, y un 40% al pasar el ratón.</p>
     </section>
