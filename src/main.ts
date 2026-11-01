@@ -1,5 +1,5 @@
 import { translate, isLanguage, defaultTimerText, isDefaultTimerText } from './i18n';
-import { app, BrowserWindow, dialog, globalShortcut, ipcMain, Menu, nativeImage, powerMonitor, screen, Tray } from 'electron';
+import { app, BrowserWindow, globalShortcut, ipcMain, Menu, nativeImage, powerMonitor, screen, Tray } from 'electron';
 import { readFileSync, writeFileSync, mkdirSync, renameSync } from 'node:fs';
 import path from 'node:path';
 import { actions, actionLabels, defaults, parseSettings, tools, type Action, type Command, type Settings, type State, type ToolbarMode } from './shared';
@@ -381,13 +381,6 @@ function refreshTrayMenu() {
   if (!tray) return;
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: t("Mostrar barra completa"), click: showTools },
-    { label: t("Contraer / ocultar barra"), enabled: state.toolbarExpanded, click: () => { collapseTools(); } },
-    { label: t("Barra de dibujo"), submenu: (['visible', 'minimal', 'hidden'] as ToolbarMode[]).map(mode => ({
-      label: ({ visible: t("Visible"), minimal: t("Mínima"), hidden: t("Oculta") })[mode], type: 'radio' as const, checked: state.settings.toolbarMode === mode,
-      click: () => { const result = setToolbarMode(mode); if (!result.ok) dialog.showErrorBox('TeachersPen', result.error || t("No se pudo cambiar la barra")); }
-    })) },
-    { label: t("Dibujar / interactuar"), click: () => perform('toggle') },
-    { label: t("Volver al escritorio"), click: () => { state.background = 'transparent'; setDrawing(false); } },
     { label: t("Preferencias…"), click: openPreferences },
     { type: 'separator' }, { label: t("Salir de TeachersPen"), click: () => app.quit() }
   ]));
