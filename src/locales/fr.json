@@ -102,7 +102,6 @@
   "Atajo de {action}": "Raccourci pour {action}",
   "Eliminar atajo de {action}": "Supprimer le raccourci pour {action}",
   "Incluye Ctrl, Alt o Cmd para evitar activar herramientas mientras escribes.": "Utilisez Ctrl, Alt ou Cmd pour éviter d'activer les outils pendant la saisie.",
-  "Pulsa un campo y escribe el atajo. Esc cancela; Retroceso lo borra.": "Cliquez sur un champ et saisissez le raccourci. Échap annule ; Retour arrière efface.",
   "X11/XWayland: la superposición sobre aplicaciones Wayland nativas no está garantizada.": "X11/XWayland : la superposition sur les applications Wayland natives n'est pas garantie.",
   "Pulsa Guardar para restaurar los demás valores.": "Cliquez sur Enregistrer pour rétablir les autres valeurs.",
   "Restaurar valores": "Rétablir les valeurs",

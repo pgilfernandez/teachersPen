@@ -355,7 +355,6 @@ function Preferences({ state }: { state: State }) {
     </section>
     <section><h2>{t("Colores")}</h2><div className="shortcut-list color-shortcuts">{draft.colors.map((color, index) => shortcutRow(`color${index}` as Action, <span className="color-preset"><span>{t("Color")} {index + 1}</span><input aria-label={t('Color {number}', { number: index + 1 })} type="color" value={color} onChange={e => field('colors', draft.colors.map((old, i) => i === index ? e.target.value : old))} /></span>))}</div></section>
     <section><h2>{t("Funciones")}</h2><div className="shortcut-list">{actions.filter(name => !name.startsWith('color')).map(name => shortcutRow(name, name === 'toggle' ? t("Activar / salir") : t(actionLabels[name])))}</div>
-      <p className="help">{t("Pulsa un campo y escribe el atajo. Esc cancela; Retroceso lo borra.")}</p>
     </section>
     {state.shortcutErrors.length > 0 && <div className="notice" role="alert">{state.shortcutErrors.join('\n')}</div>}
     {state.holdError && <div className="notice" role="alert">{t(state.holdError)}</div>}

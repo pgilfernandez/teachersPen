@@ -102,7 +102,6 @@
   "Atajo de {action}": "Shortcut for {action}",
   "Eliminar atajo de {action}": "Remove shortcut for {action}",
   "Incluye Ctrl, Alt o Cmd para evitar activar herramientas mientras escribes.": "Include Ctrl, Alt or Cmd to avoid activating tools while typing.",
-  "Pulsa un campo y escribe el atajo. Esc cancela; Retroceso lo borra.": "Click a field and press a shortcut. Esc cancels; Backspace clears.",
   "X11/XWayland: la superposición sobre aplicaciones Wayland nativas no está garantizada.": "X11/XWayland: overlay support for native Wayland apps is not guaranteed.",
   "Pulsa Guardar para restaurar los demás valores.": "Click Save to restore the remaining defaults.",
   "Restaurar valores": "Restore defaults",

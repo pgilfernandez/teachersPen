@@ -102,7 +102,6 @@
   "Atajo de {action}": "Scorciatoia per {action}",
   "Eliminar atajo de {action}": "Rimuovi scorciatoia per {action}",
   "Incluye Ctrl, Alt o Cmd para evitar activar herramientas mientras escribes.": "Includi Ctrl, Alt o Cmd per evitare di attivare strumenti mentre scrivi.",
-  "Pulsa un campo y escribe el atajo. Esc cancela; Retroceso lo borra.": "Clicca un campo e premi la scorciatoia. Esc annulla; Backspace cancella.",
   "X11/XWayland: la superposición sobre aplicaciones Wayland nativas no está garantizada.": "X11/XWayland: la sovrapposizione sulle app Wayland native non è garantita.",
   "Pulsa Guardar para restaurar los demás valores.": "Premi Salva per ripristinare gli altri valori.",
   "Restaurar valores": "Ripristina valori",

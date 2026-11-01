@@ -358,7 +358,7 @@ function openPreferences() {
   setDrawing(false);
   if (preferences && !preferences.isDestroyed()) { preferences.show(); return; }
   const area = screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea;
-  preferences = createWindow('preferences', { width: Math.min(430, area.width), height: Math.min(750, area.height - 40), minWidth: 380, minHeight: 400, title: `${t('Preferencias')} · TeachersPen`, backgroundColor: '#eeecf0', autoHideMenuBar: true, skipTaskbar: state.settings.toolbarMode === 'hidden' });
+  preferences = createWindow('preferences', { width: Math.min(430, area.width), height: Math.min(690, area.height - 40), minWidth: 380, minHeight: 400, title: `${t('Preferencias')} · TeachersPen`, backgroundColor: '#eeecf0', autoHideMenuBar: true, skipTaskbar: state.settings.toolbarMode === 'hidden' });
   preferences.once('ready-to-show', () => preferences?.show());
   const finishRecording = () => {
     if (!recordingShortcut) return;

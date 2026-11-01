@@ -102,7 +102,6 @@
   "Atajo de {action}": "Tastenkürzel für {action}",
   "Eliminar atajo de {action}": "Tastenkürzel für {action} entfernen",
   "Incluye Ctrl, Alt o Cmd para evitar activar herramientas mientras escribes.": "Ctrl, Alt oder Cmd verwenden, damit Werkzeuge beim Tippen nicht aktiviert werden.",
-  "Pulsa un campo y escribe el atajo. Esc cancela; Retroceso lo borra.": "Feld anklicken und Tastenkürzel drücken. Esc bricht ab, Rücktaste löscht.",
   "X11/XWayland: la superposición sobre aplicaciones Wayland nativas no está garantizada.": "X11/XWayland: Überlagerungen nativer Wayland-Apps sind nicht garantiert.",
   "Pulsa Guardar para restaurar los demás valores.": "Zum Zurücksetzen der übrigen Werte auf Speichern klicken.",
   "Restaurar valores": "Standardwerte",
