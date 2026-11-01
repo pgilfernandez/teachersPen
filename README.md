@@ -6,11 +6,14 @@ TeachersPen is a desktop app for annotating other applications while the content
 
 ## License
 
-TeachersPen's original code is licensed under the **[PolyForm Noncommercial License 1.0.0](LICENSE.md)**. Copyright 2026 Pablo Gil Fernández. See [NOTICE.md](NOTICE.md) for the required attribution notice and third-party licensing information.
+TeachersPen's original code and assets are licensed under the **[TeachersPen License 1.0 — Free Use, No Sale](LICENSE.md)**. Copyright 2026 Pablo Gil Fernández. See [NOTICE.md](NOTICE.md) for attribution and third-party licensing information.
 
-The license permits use, modification, and redistribution for permitted noncommercial purposes. Copies and modified distributions must retain the license terms or their URL and the required notice. Commercial use, including commercializing or selling the app or modified versions, is not granted by this license and requires separate permission from the copyright holder. The license also explicitly permits use by educational institutions and the other organizations listed in its terms, regardless of funding.
+- **Any use is permitted without a license fee**, including paid teaching, professional services, commercial activities, and internal business use.
+- **Modification and free sharing are permitted**, including distributing modified builds with the license and attribution notices intact.
+- **Selling the app or modified versions is not permitted** without separate permission. This includes paid licenses, activation fees, paid downloads, subscriptions for the Software itself, and disguised software charges through paid bundles or mandatory donations.
+- Charging for your teaching, work, or independently offered services is allowed; the Software itself must remain available to recipients without a software charge or a requirement to buy those services. Your own drawings, presentations, and recordings are not subject to the app's no-sale restriction. Optional donations are allowed.
 
-This is source-available software with a noncommercial restriction, rather than unrestricted open-source software. Third-party dependencies and Lucide artwork retain their own licenses. This summary does not replace the full license text.
+This is a project-specific, source-available license, not MIT, Apache 2.0, or an OSI-approved open-source license. It restricts selling the Software, not commercial use of it. Third-party dependencies and Lucide artwork retain their own licenses. This summary does not replace the full license text.
 
 ## Run from source
 
