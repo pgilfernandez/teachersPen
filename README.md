@@ -169,6 +169,25 @@ The local macOS app is placed in `release/mac/TeachersPen.app`. Local packages a
 
 The version comes from `package.json` (currently `1.0.0`, displayed as `1.0`). The build automatically embeds the current short Git commit. Builds made from source archives without Git metadata display `unknown` for the commit.
 
+## Automatic builds on GitHub
+
+[Build desktop apps](.github/workflows/build-desktop.yml) runs automatically on pushes to `main`, pull requests targeting `main`, and tags starting with `v`. It can also be started from **Actions → Build desktop apps → Run workflow**.
+
+| Build job | Environment | Downloadable packages |
+| --- | --- | --- |
+| macOS Intel | `macos-15-intel`, Node.js 22 | x64 DMG |
+| macOS Apple Silicon | `macos-15`, Node.js 22 | arm64 DMG |
+| Windows x64 | `windows-2022`, Node.js 22, Visual Studio C tools | NSIS EXE installer |
+| Linux x64 | Ubuntu 20.04 container on an Ubuntu 22.04 host, Node.js 22 | AppImage and DEB |
+
+Open a completed workflow run and download the desired platform from **Artifacts**. Artifact names include the platform, architecture, and commit. They are retained for 14 days. A failed build does not cancel the other platforms.
+
+The Linux container keeps the native helper's build environment older than the hosted runner; this does not establish compatibility with every older distribution. The macOS jobs retain the macOS 11 deployment target, the universal native helper, and the pinned Electron 37 runtime. Using newer CI runners does not change the declared app compatibility requirements.
+
+The jobs install locked dependencies with `npm ci`, compile the native helper and app, and build installers. They do not run tests, type checking, smoke checks, or the app. They upload build artifacts only: `--publish never` prevents automatic release publication, no signing credentials are required, and the workflow has read-only repository permissions. Packages remain unsigned and unnotarized.
+
+Linux package metadata uses the project homepage and a public GitHub noreply maintainer address. The workflow still needs its first run on GitHub; creating the file locally does not execute it.
+
 ## Validation status
 
 Recent UI changes have been compiled and packaged without automated or visual tests, following the project's current manual-testing workflow. Earlier test results below describe earlier builds and do not establish validation of the current interface.

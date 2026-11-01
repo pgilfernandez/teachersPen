@@ -5,6 +5,7 @@
   "private": true,
   "description": "Anotaciones sobre el escritorio para profesores",
   "author": "Pablo Gil Fernández",
+  "homepage": "https://github.com/pgilfernandez/teachersPen",
   "license": "PolyForm-Noncommercial-1.0.0",
   "main": "dist/main.cjs",
   "scripts": {
@@ -52,6 +53,7 @@
       "target": [{ "target": "nsis", "arch": ["x64"] }]
     },
     "linux": {
+      "maintainer": "Pablo Gil Fernández <pgilfernandez@users.noreply.github.com>",
       "icon": "dist/icons/app-512.png",
       "category": "Education",
       "target": [{ "target": "AppImage", "arch": ["x64"] }, "deb"]
