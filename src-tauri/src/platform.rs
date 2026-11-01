@@ -234,6 +234,38 @@ pub fn configure(w: &Window, role: &str) -> Result<()> {
                 let signature = std::ffi::CString::new(format!("{}@:{}@",rect.as_str(),rect.as_str())).unwrap();
                 class_addMethod(class,sel!(constrainFrameRect:toScreen:),free_frame as *const () as *const std::ffi::c_void,signature.as_ptr());
             }
+            if role == "overlay" {
+                use cocoa::base::{BOOL, NO, YES};
+                use objc::declare::ClassDecl;
+                // Derive from NSPanel, not TaoWindow: Tao's dynamic super call
+                // in sendEvent must not become recursive after conversion.
+                extern "C" fn never_key(_: &Object, _: Sel) -> BOOL { NO }
+                extern "C" fn unrestricted(_: &Object, _: Sel, frame: NSRect, _: id) -> NSRect { frame }
+                extern "C" fn original_cleanup(this: &mut Object, _: Sel) {
+                    unsafe { let _:()=msg_send![super(this,class!(NSWindow)),dealloc]; }
+                }
+                let panel=Class::get("TeachersPenDrawingPanel").unwrap_or_else(|| {
+                    let mut cls=ClassDecl::new("TeachersPenDrawingPanel",class!(NSPanel)).unwrap();
+                    cls.add_method(sel!(canBecomeKeyWindow),never_key as extern "C" fn(&Object,Sel)->BOOL);
+                    cls.add_method(sel!(canBecomeMainWindow),never_key as extern "C" fn(&Object,Sel)->BOOL);
+                    cls.add_method(sel!(constrainFrameRect:toScreen:),unrestricted as extern "C" fn(&Object,Sel,NSRect,id)->NSRect);
+                    cls.add_method(sel!(dealloc),original_cleanup as extern "C" fn(&mut Object,Sel));
+                    cls.register()
+                });
+                let original=(&*(ns as *mut Object)).class();
+                // No extra storage may be required when converting an existing window.
+                if panel.instance_size() <= original.instance_size() {
+                    extern "C" { fn object_setClass(object:id,class:*const Class)->*const Class; }
+                    object_setClass(ns,panel);
+                    let style:u64=msg_send![ns,styleMask];
+                    let _:()=msg_send![ns,setStyleMask:style | (1u64<<7)];
+                    let _:()=msg_send![ns,setHidesOnDeactivate:NO];
+                    let _:()=msg_send![ns,setBecomesKeyOnlyIfNeeded:YES];
+                    let _:()=msg_send![ns,setFloatingPanel:YES];
+                } else {
+                    eprintln!("TeachersPen: incompatible NSPanel layout; retaining the original window");
+                }
+            }
         })
         .map_err(|e| e.to_string())?;
     }

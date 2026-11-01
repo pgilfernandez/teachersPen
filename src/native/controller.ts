@@ -79,7 +79,7 @@ export async function startController() {
     if (value) state.visible = true;
     try {
       for (const label of overlayLabels) await win(label, 'ignore', { enabled: !value, holding: state.holding });
-      if (value) await win(`overlay-${activeDisplay}`, 'focus', { holding: state.holding });
+      if (value && state.platform !== 'darwin') await win(`overlay-${activeDisplay}`, 'focus', { holding: state.holding });
     } catch (error) {
       state.drawing = false; state.holding = false; hold.dismiss();
       for (const label of overlayLabels) await win(label, 'ignore', { enabled: true }).catch(console.error);
@@ -325,6 +325,7 @@ export async function startController() {
     if (state.settings.activation === 'hold' && isDrawingShortcut(action)) hold.press(action, state.settings.shortcuts[action]);
     else await perform(action, true);
   }); });
+  await listen('host-escape', () => { void enqueue(() => setDrawing(false)); });
   await listen<{ token: string; event: string; error?: string }>('host-key', ({ payload: e }) => {
     const entry = watches.get(e.token); if (!entry) return;
     clearTimeout(entry.timeout);
