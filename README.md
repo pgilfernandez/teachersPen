@@ -23,7 +23,7 @@ Por defecto, la barra horizontal mide 40 px de alto y es una sola fila sin logot
 
 A la derecha del ancho del trazo está su opacidad, de 100% (opaco) a 0% (invisible); al bajar el valor aumenta la transparencia. Se guarda automáticamente y se aplica a los trazos nuevos; cada trazo conserva su propio valor al deshacer o rehacer.
 
-Junto a **Contraer** está **Girar barra**, con un icono Lucide de rotación. Alterna la ventana completa entre fila horizontal y columna vertical, con los controles en posición normal y el asa de seis puntos para moverla. La orientación se guarda automáticamente. La barra vertical mide 40 px de ancho y sus campos numéricos, sin etiquetas visibles, miden 36 px con 2 px de margen a cada lado. La columna se ajusta a la altura disponible del monitor y permite desplazamiento si no caben todos los controles.
+Junto a **Contraer** está **Girar barra**, con un icono Lucide de rotación. Alterna la ventana completa entre fila horizontal y columna vertical, con los controles en posición normal y el asa de seis puntos para moverla. La orientación se guarda automáticamente. La barra se puede arrastrar hasta el borde superior, incluida la zona de la barra de menús de macOS, y mantiene su posición al recalcular su tamaño o girarla. La barra vertical mide 40 px de ancho y sus campos numéricos, sin etiquetas visibles, miden 36 px con 2 px de margen a cada lado. La columna se ajusta a la altura disponible del monitor y permite desplazamiento si no caben todos los controles.
 
 En **Preferencias → Barra de dibujo** puedes elegir un modo, que se aplica y guarda inmediatamente:
 
