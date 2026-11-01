@@ -1,48 +1,73 @@
-# TeachersPen License 1.0 — Free Use, No Sale
+# PolyForm Noncommercial License 1.0.0
 
-Copyright 2026 Pablo Gil Fernández
-https://github.com/pgilfernandez/teachersPen
+<https://polyformproject.org/licenses/noncommercial/1.0.0>
 
-## 1. Scope
+## Acceptance
 
-In this license, "Software" means the TeachersPen code, documentation, and original assets offered by their copyright holders under these terms, including copies and modified versions of those materials. "You" means the person or organization exercising the permissions below.
+In order to get any license under these terms, you must agree to them as both strict obligations and conditions to all your licenses.
 
-Third-party components and artwork identified as having their own licenses are excluded from these terms and remain governed by their respective licenses.
+## Copyright License
 
-## 2. Permission to use and modify
+The licensor grants you a copyright license for the software to do everything you might do with the software that would otherwise infringe the licensor's copyright in it for any permitted purpose.  However, you may only distribute the software according to [Distribution License](#distribution-license) and make changes or new works based on the software according to [Changes and New Works License](#changes-and-new-works-license).
 
-You may install, run, study, copy, modify, combine, and use the Software, and distribute it subject to sections 3 and 4, worldwide and without paying a license fee. These permissions apply to personal, educational, professional, business, governmental, nonprofit, and other purposes, including commercial activities.
+## Distribution License
 
-In particular, you may use the Software in paid classes, courses, presentations, consulting, client work, and other paid activities. You may use it within a business of any size. You do not have to publish your modifications merely because you use them.
+The licensor grants you an additional copyright license to distribute copies of the software.  Your license to distribute covers distributing the software with changes and new works permitted by [Changes and New Works License](#changes-and-new-works-license).
 
-This license does not claim rights in your own drawings, presentations, recordings, or other content created using the Software, and does not restrict charging for that content or your work.
+## Notices
 
-## 3. Free redistribution; no sale of the Software
+You must ensure that anyone who gets a copy of any part of the software from you also gets a copy of these terms or the URL for them above, as well as copies of any plain-text lines beginning with `Required Notice:` that the licensor provided with the software.  For example:
 
-You may share original or modified copies of the Software, in source or compiled form, only without charging for the Software itself, and subject to section 4.
+> Required Notice: Copyright Yoyodyne, Inc. (http://example.com)
 
-Without separate permission from the relevant copyright holder, you must not:
+## Changes and New Works License
 
-- Sell copies of the Software or modified versions, including renamed versions.
-- Charge a software license, activation, download, access, subscription, rental, or other fee for obtaining or using the Software itself.
-- Supply the Software as a paid component of a bundle or otherwise disguise a charge for the Software as another mandatory payment, purchase, or donation.
+The licensor grants you an additional copyright license to make changes and new works based on the software for any permitted purpose.
 
-These restrictions apply to redistribution and charging for the Software itself, not to using the Software in a paid activity. Charging for teaching, consulting, installation, support, or development work is permitted, provided that the Software itself is supplied without charge and receiving or using it is not conditional on purchasing those services. Optional donations that are not a condition of receiving or using the Software are permitted.
+## Patent License
 
-## 4. Conditions on redistribution
+The licensor grants you a patent license for the software that covers patent claims the licensor can license, or becomes able to license, that you would infringe by using the software.
 
-Every distribution of the Software, including modified versions, must include this complete license and the applicable copyright and attribution notices, including NOTICE.md. Modified versions must be clearly identified as modified and must not imply endorsement by the original author.
+## Noncommercial Purposes
 
-Recipients must receive the permissions in this license for the included Software and its modifications. You may not remove the no-sale restriction or impose additional terms on those materials that contradict the permissions granted here. This does not require independently written components to adopt this license, but it does not permit charging for the Software through a combined product.
+Any noncommercial purpose is a permitted purpose.
 
-## 5. Ownership and other rights
+## Personal Uses
 
-Copyright holders retain ownership of their respective contributions. This license does not transfer ownership, grant trademark rights, or authorize you to claim authorship of another person's work. No rights beyond those stated here are granted.
+Personal use for research, experiment, and testing for the benefit of public knowledge, personal study, private entertainment, hobby projects, amateur pursuits, or religious observance, without any anticipated commercial application, is use for a permitted purpose.
 
-The copyright holder may offer separate permissions or licenses for their own contributions. The no-sale restriction in this license does not limit the copyright holder's ability to license or distribute their own work.
+## Noncommercial Organizations
 
-Rights that applicable law grants independently of this license are unaffected. If you violate these terms, your permissions under this license terminate.
+Use by any charitable organization, educational institution, public research organization, public safety or health organization, environmental protection organization, or government institution is use for a permitted purpose regardless of the source of funding or obligations resulting from the funding.
 
-## 6. No warranty or liability
+## Fair Use
 
-The Software is supplied without promises about its quality, suitability, reliability, or freedom from defects. To the extent permitted by applicable law, the copyright holders and contributors provide no warranties and accept no liability for losses or damages arising from the Software or its use. Nothing in this section excludes a right or liability that applicable law does not allow to be excluded.
+You may have "fair use" rights for the software under the law. These terms do not limit them.
+
+## No Other Rights
+
+These terms do not allow you to sublicense or transfer any of your licenses to anyone else, or prevent the licensor from granting licenses to anyone else.  These terms do not imply any other licenses.
+
+## Patent Defense
+
+If you make any written claim that the software infringes or contributes to infringement of any patent, your patent license for the software granted under these terms ends immediately. If your company makes such a claim, your patent license ends immediately for work on behalf of your company.
+
+## Violations
+
+The first time you are notified in writing that you have violated any of these terms, or done anything with the software not covered by your licenses, your licenses can nonetheless continue if you come into full compliance with these terms, and take practical steps to correct past violations, within 32 days of receiving notice.  Otherwise, all your licenses end immediately.
+
+## No Liability
+
+***As far as the law allows, the software comes as is, without any warranty or condition, and the licensor will not be liable to you for any damages arising out of these terms or the use or nature of the software, under any kind of legal claim.***
+
+## Definitions
+
+The **licensor** is the individual or entity offering these terms, and the **software** is the software the licensor makes available under these terms.
+
+**You** refers to the individual or entity agreeing to these terms.
+
+**Your company** is any legal entity, sole proprietorship, or other kind of organization that you work for, plus all organizations that have control over, are under the control of, or are under common control with that organization.  **Control** means ownership of substantially all the assets of an entity, or the power to direct its management and policies by vote, contract, or otherwise.  Control can be direct or indirect.
+
+**Your licenses** are all the licenses granted to you for the software under these terms.
+
+**Use** means anything you do with the software requiring one of your licenses.

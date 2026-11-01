@@ -5,7 +5,7 @@
   "private": true,
   "description": "Anotaciones sobre el escritorio para profesores",
   "author": "Pablo Gil Fernández",
-  "license": "SEE LICENSE IN LICENSE.md",
+  "license": "PolyForm-Noncommercial-1.0.0",
   "main": "dist/main.cjs",
   "scripts": {
     "build": "node scripts/build.mjs",
