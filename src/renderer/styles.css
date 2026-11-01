@@ -120,6 +120,8 @@ input[type="color"] { width: 35px; height: 23px; padding: 1px; cursor: pointer; 
 .about-content h2 { font-size: 18px; margin: 0 0 10px; border: 0; padding: 0; }
 .about-content h2 small { font-size: 12px; font-weight: 400; color: #74717b; }
 .about-content p { font-size: 12px; margin: 0 0 20px; line-height: 1.5; }
+.about-content .about-credit { margin-bottom: 4px; }
+.about-content .about-license { font-size: 11px; color: #74717b; margin-bottom: 20px; }
 .about-links { display: flex; justify-content: center; gap: 8px; }
 .about-links button { padding: 7px 12px; font-size: 12px; border-radius: 6px; background: #d9d6df; color: #33414d; }
 .about-links .donate-button { background: #256ed1; color: #fff; }

@@ -391,7 +391,8 @@ function About({ state, onClose }: { state: State; onClose: () => void }) {
       <button className="about-close" title={t('Cerrar')} aria-label={t('Cerrar')} onClick={() => dialog.current?.close()}><X size={18} /></button>
       <img className="about-icon" src="icons/app.svg" alt="TeachersPen" width="72" height="72" />
       <h2 id="about-title">TeachersPen v{appVersion} <small>({appCommit})</small></h2>
-      <p>developed with love by Pablo Gil Fernández</p>
+      <p className="about-credit">developed with love by Pablo Gil Fernández</p>
+      <p className="about-license">PolyForm Noncommercial 1.0.0</p>
       <div className="about-links">
         <button className="donate-button" title="https://github.com/sponsors/pgilfernandez" onClick={() => void open('donate')}>{t('Donar')}</button>
         <button title="https://github.com/pgilfernandez/teachersPen" onClick={() => void open('github')}>{t('Proyecto en GitHub')}</button>
