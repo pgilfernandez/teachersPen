@@ -4,30 +4,28 @@ TeachersPen is a desktop app for annotating other applications while the content
 
 **Version 1.0** · Initial development and testing platform: macOS Monterey 12.7.6 on Intel.
 
-## License
+![TeachersPen annotations over the Blender website, showing freehand marks, an arrow, a rectangle, and a circle](docs/images/example_blender.png)
 
-TeachersPen's original code is licensed under the **[PolyForm Noncommercial License 1.0.0](LICENSE.md)**. Copyright 2026 Pablo Gil Fernández. See [NOTICE.md](NOTICE.md) for the required attribution notice and third-party licensing information.
 
-The license permits use, modification, and redistribution for permitted noncommercial purposes. Copies and modified distributions must retain the license terms or their URL and the required notice. Commercial use, including commercializing or selling the app or modified versions, is not granted by this license and requires separate permission from the copyright holder. The license also explicitly permits use by educational institutions and the other organizations listed in its terms, regardless of funding.
+## Toolbar
 
-This is source-available software with a noncommercial restriction, rather than unrestricted open-source software. Third-party dependencies and Lucide artwork retain their own licenses. This summary does not replace the full license text.
+![TeachersPen horizontal toolbar with drawing tools, colors, stroke settings, and window controls](docs/images/bar.png)
 
-## Run from source
+The horizontal toolbar is **40 px high**. It has a six-dot drag handle (2 × 3), drawing tools, background buttons, timer, colors, stroke width, opacity, and drawing actions. Clear drawings is immediately after Hide/show drawings. Preferences, Collapse, Rotate, and Quit are grouped at the end. Controls have descriptive tooltips and show their shortcuts where applicable.
 
-Node.js 20 or later is required to run the source. Node.js 22.12 or later is recommended for the packaging toolchain's published requirements. Node.js is needed for development, not to use a packaged app.
+Drag the six-dot handle to move the toolbar, including to the top edge of the screen and into the macOS menu-bar area. Resizing or rotating the toolbar preserves its position.
 
-```sh
-npm ci
-npm start
-```
+**Rotate toolbar**, next to Collapse, switches between horizontal and vertical layouts. The vertical toolbar is **40 px wide**, with **36 px numeric fields** and no visible unit labels. The horizontal stroke-width and opacity fields are 47.6 px wide. Orientation is saved automatically. The vertical layout fits the available monitor height and supports scrolling when necessary.
 
-Building requires native compiler tools:
+In **Preferences → Drawing toolbar**, select a mode. Changes are applied and saved immediately:
 
-- **macOS:** Xcode Command Line Tools.
-- **Windows:** Visual Studio x64 Native Tools.
-- **Linux:** a C compiler and X11 development headers (`libx11-dev` or equivalent).
+- **Visible:** keeps the full toolbar on screen.
+- **Minimal:** shows the editable TeachersPen SVG launcher at 42 px in diameter. Its alpha is **0.15** at rest and **0.4** on hover. Drag to move it; click to reveal the full toolbar from the launcher. The 240 ms opening animation follows the available space: right/left in horizontal layout and down/up in vertical layout. Reduced-motion preferences are respected. Collapse returns to the launcher. Its position is remembered between sessions and adjusted when a monitor is disconnected.
+- **Hidden:** leaves only the macOS menu-bar icon or Windows/Linux system-tray icon. On macOS, the app also disappears from the Dock and app switcher. Shortcuts continue to work without the toolbar or launcher. Drawing hints follow their independent preference. Annotations and the stroke cursor preview remain available.
 
-The packaged app includes the native helper and does not require a compiler.
+Collapsing a visible toolbar switches to Minimal mode. If you temporarily open the toolbar in Hidden mode, the collapse control hides it again.
+
+The tray menu provides **Show full toolbar**, **Preferences**, and **Quit TeachersPen**. Launching TeachersPen again also recovers the toolbar. On Linux, tray placement and availability depend on the desktop environment.
 
 ## Drawing
 
@@ -79,24 +77,6 @@ The white and black background buttons are **20 × 20 px**. Their opaque backgro
 
 Opening a whiteboard or blackboard after hiding drawings starts with a clean canvas: hidden annotations are cleared and can be recovered explicitly with Undo. Switching between white and black preserves the drawings currently visible.
 
-## Toolbar
-
-The horizontal toolbar is **40 px high**. It has a six-dot drag handle (2 × 3), drawing tools, background buttons, timer, colors, stroke width, opacity, and drawing actions. Clear drawings is immediately after Hide/show drawings. Preferences, Collapse, Rotate, and Quit are grouped at the end. Controls have descriptive tooltips and show their shortcuts where applicable.
-
-Drag the six-dot handle to move the toolbar, including to the top edge of the screen and into the macOS menu-bar area. Resizing or rotating the toolbar preserves its position.
-
-**Rotate toolbar**, next to Collapse, switches between horizontal and vertical layouts. The vertical toolbar is **40 px wide**, with **36 px numeric fields** and no visible unit labels. The horizontal stroke-width and opacity fields are 47.6 px wide. Orientation is saved automatically. The vertical layout fits the available monitor height and supports scrolling when necessary.
-
-In **Preferences → Drawing toolbar**, select a mode. Changes are applied and saved immediately:
-
-- **Visible:** keeps the full toolbar on screen.
-- **Minimal:** shows the editable TeachersPen SVG launcher at 42 px in diameter. Its alpha is **0.15** at rest and **0.4** on hover. Drag to move it; click to reveal the full toolbar from the launcher. The 240 ms opening animation follows the available space: right/left in horizontal layout and down/up in vertical layout. Reduced-motion preferences are respected. Collapse returns to the launcher. Its position is remembered between sessions and adjusted when a monitor is disconnected.
-- **Hidden:** leaves only the macOS menu-bar icon or Windows/Linux system-tray icon. On macOS, the app also disappears from the Dock and app switcher. Shortcuts continue to work without the toolbar or launcher. Drawing hints follow their independent preference. Annotations and the stroke cursor preview remain available.
-
-Collapsing a visible toolbar switches to Minimal mode. If you temporarily open the toolbar in Hidden mode, the collapse control hides it again.
-
-The tray menu provides **Show full toolbar**, **Preferences**, and **Quit TeachersPen**. Launching TeachersPen again also recovers the toolbar. On Linux, tray placement and availability depend on the desktop environment.
-
 ## Timer
 
 The timer has its own floating window. The six-dot handle on the left moves it, and the double-ended arrow on the right resizes the clock proportionally. Both controls are inside the timer panel. Position and size are saved in `timer-window.json` in the application's data directory.
@@ -112,6 +92,10 @@ Three icon-only controls below the clock provide:
 These buttons and the move/resize controls have alpha **0.5** at rest and **0.65** on hover. Tooltips identify each action. The default countdown duration is five minutes. A completed countdown stays visible at zero.
 
 ## Preferences and languages
+
+<img src="docs/images/preferences.png" alt="TeachersPen preferences showing language, drawing settings, colors, and keyboard shortcuts" width="430" />
+
+*Preferences shown with customized shortcuts.*
 
 The first row in Preferences selects **English (default), Español, Italiano, Français, or Deutsch**. Language changes are applied and saved immediately across the interface, tooltips, and menus. Custom timer captions are preserved; the default caption follows the selected language. Editable translation catalogs are in `src/locales/`.
 
@@ -148,6 +132,25 @@ npm start -- --software-rendering
 
 This passes the flag to Electron and disables hardware acceleration. It is not the default; transparent windows still need validation on each system.
 
+
+## Run from source
+
+Node.js 20 or later is required to run the source. Node.js 22.12 or later is recommended for the packaging toolchain's published requirements. Node.js is needed for development, not to use a packaged app.
+
+```sh
+npm ci
+npm start
+```
+
+Building requires native compiler tools:
+
+- **macOS:** Xcode Command Line Tools.
+- **Windows:** Visual Studio x64 Native Tools.
+- **Linux:** a C compiler and X11 development headers (`libx11-dev` or equivalent).
+
+The packaged app includes the native helper and does not require a compiler.
+
+
 ## Build and package
 
 ```sh
@@ -169,91 +172,10 @@ The local macOS app is placed in `release/mac/TeachersPen.app`. Local packages a
 
 The version comes from `package.json` (currently `1.0.0`, displayed as `1.0`). The build automatically embeds the current short Git commit. Builds made from source archives without Git metadata display `unknown` for the commit.
 
-## Automatic builds on GitHub
+## License
 
-[Build desktop apps](.github/workflows/build-desktop.yml) runs automatically on pushes to `main`, pull requests targeting `main`, and tags starting with `v`. It can also be started from **Actions → Build desktop apps → Run workflow**.
+TeachersPen's original code is licensed under the **[PolyForm Noncommercial License 1.0.0](LICENSE.md)**. Copyright 2026 Pablo Gil Fernández. See [NOTICE.md](NOTICE.md) for the required attribution notice and third-party licensing information.
 
-| Build job | Environment | Downloadable packages |
-| --- | --- | --- |
-| macOS Intel | `macos-15-intel`, Node.js 22 | x64 DMG |
-| macOS Apple Silicon | `macos-15`, Node.js 22 | arm64 DMG |
-| Windows x64 | `windows-2022`, Node.js 22, Visual Studio C tools | NSIS EXE installer |
-| Linux x64 | Ubuntu 20.04 container on an Ubuntu 22.04 host, Node.js 22 | AppImage and DEB |
+The license permits use, modification, and redistribution for permitted noncommercial purposes. Copies and modified distributions must retain the license terms or their URL and the required notice. Commercial use, including commercializing or selling the app or modified versions, is not granted by this license and requires separate permission from the copyright holder. The license also explicitly permits use by educational institutions and the other organizations listed in its terms, regardless of funding.
 
-Open a completed workflow run and download the desired platform from **Artifacts**. Artifact names include the platform, architecture, and commit. They are retained for 14 days. A failed build does not cancel the other platforms.
-
-The Linux container keeps the native helper's build environment older than the hosted runner; this does not establish compatibility with every older distribution. The macOS jobs retain the macOS 11 deployment target, the universal native helper, and the pinned Electron 37 runtime. Using newer CI runners does not change the declared app compatibility requirements.
-
-The jobs install locked dependencies with `npm ci`, compile the native helper and app, and build installers. They do not run tests, type checking, smoke checks, or the app. They upload build artifacts only: `--publish never` prevents automatic release publication, no signing credentials are required, and the workflow has read-only repository permissions. Packages remain unsigned and unnotarized.
-
-Linux package metadata uses the project homepage and a public GitHub noreply maintainer address. The workflow still needs its first run on GitHub; creating the file locally does not execute it.
-
-## Validation status
-
-Recent UI changes have been compiled and packaged without automated or visual tests, following the project's current manual-testing workflow. Earlier test results below describe earlier builds and do not establish validation of the current interface.
-
-Historical checks on macOS Monterey 12.7.6 Intel:
-
-- **October 31, 2026:** type checking, two history/settings tests, and source/packaged-app smoke checks completed. The package declared `LSMinimumSystemVersion=11.0`.
-- **November 1, 2026:** nine unit tests, visible/hidden-start smoke checks, hidden-mode hold shortcuts, native simulated click/drag events, saved launcher position, and packaged-app hidden-mode focus were checked during toolbar-mode development.
-
-Existing developer check commands are listed below for reference; they are not part of the build and may require updates after subsequent interface changes:
-
-```sh
-npm run typecheck
-npm test
-npm run smoke
-npm run smoke -- --smoke-hidden-start
-npm run test:hold:mac
-```
-
-The smoke script opens real windows, uses synthetic drawing events, and checks history, backgrounds, renderer isolation, preferences, and shortcut registration. It exits afterward and does not write preferences. It does not replace physical-input, click-through, Spaces/fullscreen, or cross-platform checks.
-
-The native hold check sends `Ctrl+Shift+F19` events to macOS and checks release of the key and an early modifier release. It invokes the shortcut handler directly because Carbon global shortcuts do not receive these synthesized events. It requires existing event-simulation permission and does not request it automatically. Unit tests cover repetition, overlapping shortcuts, cancellation, and monitor failure without those permissions.
-
-Still pending:
-
-- Manual checks with mouse input, fullscreen applications, Spaces changes, and monitors with different scaling.
-- Big Sur, Apple Silicon, Windows, and Linux/X11 device testing; a dedicated Wayland backend.
-- Annotation persistence/export and recovery after closing.
-- Signing, notarization, and validated installers.
-
-## Editable icons
-
-App icons are editable SVG files in `src/renderer/assets/icons/`, based on [Lucide](https://lucide.dev/) with its license included. The interface reads these files during the build without network requests or overwriting the originals. Edit them with Inkscape, Illustrator, a text editor, or another SVG editor.
-
-| Files | Purpose |
-| --- | --- |
-| `app.svg` | App identity for the Dock, window icons, and platform packages |
-| `tray.svg`, `tray-template.svg` | System tray and monochrome macOS menu-bar artwork |
-| `pencil.svg`, `slash.svg`, `move-up-right.svg`, `rectangle-horizontal.svg`, `circle.svg` | Drawing tools |
-| `grip-vertical.svg`, `settings.svg`, `panel-top-close.svg`, `rectangle-vertical.svg`, `power.svg` | Moving, preferences, collapsing, orientation, and quitting |
-| `timer.svg`, `rotate-ccw.svg`, `arrow-down-up.svg`, `play.svg`, `pause.svg`, `move-diagonal.svg` | Timer and its controls |
-| `whiteboard.svg`, `blackboard.svg`, `undo2.svg`, `redo2.svg`, `trash2.svg`, `eye.svg`, `eye-off.svg`, `x.svg`, `info.svg` | Backgrounds and other actions |
-
-The minimal launcher uses its separate customized file, `src/renderer/assets/mini-launcher.svg`, copied to `dist/mini-launcher.svg`. Its resting/hover alpha is controlled by `.mini-launcher` in `src/renderer/styles.css`.
-
-After editing SVGs, rebuild and package the app. `scripts/build-icons.mjs` reads the sources and generates PNG, ICNS, and ICO assets where required by the operating system. It also copies the SVGs to `dist/icons/`. The rasterizer is used only during development and is not shipped with the app.
-
-## Project structure
-
-- `src/main.ts`: windows, monitors, global shortcuts, preferences, and native menus.
-- `src/preload.ts`: restricted IPC bridge.
-- `src/shared.ts`: shared contracts and settings validation.
-- `src/i18n.ts` and `src/locales/`: language selection and translation catalogs.
-- `src/build-info.ts`: version and commit injected during compilation.
-- `src/model.ts`: strokes and drawing history.
-- `src/renderer/`: interface, editable SVGs, and Canvas rendering.
-- `src/hold.ts`: held-shortcut activation and cancellation.
-- `src/native-hold.ts`: native key-monitor process management.
-- `native/key-state.c`: macOS, Windows, and X11 implementations, compiled during the build.
-- `src/toolbar.ts`: click/drag distinction and monitor positioning helpers.
-- `scripts/build.mjs`: build without a web development server.
-
-Preferences are written atomically to `settings.json` in Electron's application data directory (`~/Library/Application Support/TeachersPen` on macOS). The minimal launcher uses `window-state.json`; timer geometry uses `timer-window.json` in the same directory.
-
-## Technical references
-
-- [Electron 38: Big Sur support removed](https://www.electronjs.org/blog/electron-38-0)
-- [Electron 37 platform support](https://github.com/electron/electron/blob/v37.10.3/README.md#platform-support)
-- [Windows 7/8 support removed](https://www.electronjs.org/blog/electron-23-0)
+This is source-available software with a noncommercial restriction, rather than unrestricted open-source software. Third-party dependencies and Lucide artwork retain their own licenses. This summary does not replace the full license text.
