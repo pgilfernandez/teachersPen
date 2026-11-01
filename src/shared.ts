@@ -78,7 +78,7 @@ export type Command =
   | { type: 'preferences' }
   | { type: 'active-display' }
   | { type: 'record-shortcut'; active: boolean }
-  | { type: 'toolbar-size'; height: number }
+  | { type: 'toolbar-size'; width: number; height: number }
   | { type: 'quit' };
 export interface PenAPI {
   getState(): Promise<State>;

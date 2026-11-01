@@ -20,6 +20,7 @@ let tray: Tray;
 let activeDisplay: number;
 let quitting = false;
 let rebuilding = false;
+let toolbarSized = false;
 let recordingShortcut = false;
 let timerTimeout: ReturnType<typeof setTimeout> | undefined;
 const nativeDirectory = app.isPackaged ? path.join(process.resourcesPath, 'app.asar.unpacked', 'dist', 'native') : path.join(__dirname, 'native');
@@ -111,9 +112,11 @@ function showTools() {
   applyToolbarPresentation(); broadcast();
 }
 function collapseTools() {
+  if (state.settings.toolbarMode === 'visible') return setToolbarMode('minimal');
   state.toolbarExpanded = false;
   miniDrag.cancel();
   applyToolbarPresentation(); broadcast();
+  return { ok: true };
 }
 function setToolbarMode(mode: ToolbarMode) {
   if (!['visible', 'minimal', 'hidden'].includes(mode)) return { ok: false, error: 'Modo de barra no válido' };
@@ -188,7 +191,7 @@ function perform(action: Action, fromShortcut = false) {
         // Clear through the history so the user can still explicitly undo it.
         if (!state.visible) sendDrawingAction('clear');
         setDrawing(true);
-      }
+      } else if (!fromShortcut) setDrawing(false);
       break;
     case 'timer':
       clearTimeout(timerTimeout);
@@ -268,7 +271,7 @@ function refreshTrayMenu() {
   if (!tray) return;
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: 'Mostrar barra completa', click: showTools },
-    { label: 'Contraer / ocultar barra', enabled: state.settings.toolbarMode !== 'visible' && state.toolbarExpanded, click: collapseTools },
+    { label: 'Contraer / ocultar barra', enabled: state.toolbarExpanded, click: () => { collapseTools(); } },
     { label: 'Barra de dibujo', submenu: (['visible', 'minimal', 'hidden'] as ToolbarMode[]).map(mode => ({
       label: ({ visible: 'Visible', minimal: 'Mínima', hidden: 'Oculta' })[mode], type: 'radio' as const, checked: state.settings.toolbarMode === mode,
       click: () => { const result = setToolbarMode(mode); if (!result.ok) dialog.showErrorBox('TeachersPen', result.error || 'No se pudo cambiar la barra'); }
@@ -303,8 +306,18 @@ async function start() {
           for (const [id, overlay] of overlays) if (overlay.webContents === event.sender) activeDisplay = id;
           break;
         case 'action': if (actions.includes(command.action)) perform(command.action); break;
-        case 'tool': if (tools.includes(command.tool)) { state.tool = command.tool; setDrawing(true); } break;
-        case 'color': if (Number.isInteger(command.index) && command.index >= 0 && command.index < 5) state.color = command.index; break;
+        case 'tool':
+          if (tools.includes(command.tool)) {
+            const exit = state.drawing && state.tool === command.tool;
+            state.tool = command.tool; setDrawing(!exit);
+          }
+          break;
+        case 'color':
+          if (Number.isInteger(command.index) && command.index >= 0 && command.index < 5) {
+            const exit = state.drawing && state.color === command.index;
+            state.color = command.index; setDrawing(!exit);
+          }
+          break;
         case 'width': {
           const next = { ...state.settings, width: parseSettings({ width: command.width }).width };
           saveSettings(next); state.settings = next; break;
@@ -316,11 +329,18 @@ async function start() {
           else state.shortcutErrors = registerShortcuts(state.settings);
           break;
         case 'toolbar-size':
-          if (event.sender === toolbar?.webContents && Number.isFinite(command.height)) toolbar.setContentSize(toolbar.getContentSize()[0], Math.max(90, Math.min(180, Math.ceil(command.height))));
+          if (event.sender === toolbar?.webContents && Number.isFinite(command.width) && Number.isFinite(command.height)) {
+            const width = Math.max(200, Math.min(1600, Math.ceil(command.width)));
+            const height = Math.max(48, Math.min(180, Math.ceil(command.height)));
+            const bounds = toolbar.getBounds();
+            if (!toolbarSized) toolbar.setBounds({ x: Math.round(bounds.x + (bounds.width - width) / 2), y: bounds.y, width, height });
+            else toolbar.setContentSize(width, height);
+            toolbarSized = true;
+          }
           break;
         case 'toolbar-mode': return setToolbarMode(command.mode);
         case 'show-tools': showTools(); break;
-        case 'collapse-tools': collapseTools(); break;
+        case 'collapse-tools': return collapseTools();
         case 'mini-hit':
           if (event.sender === mini?.webContents) updateMiniHit(command.interactive === true);
           return { ok: true };
@@ -372,7 +392,7 @@ async function start() {
   const area = screen.getPrimaryDisplay().workArea;
   toolbar = createWindow('toolbar', {
     x: area.x + Math.round((area.width - 965) / 2), y: area.y + 18,
-    width: 965, height: 150, frame: false, transparent: true, backgroundColor: '#00000000',
+    width: 965, height: 72, frame: false, transparent: true, backgroundColor: '#00000000',
     resizable: false, hasShadow: false, skipTaskbar: true
   });
   toolbar.setAlwaysOnTop(true, 'screen-saver', 1);
@@ -435,6 +455,37 @@ async function runSmoke() {
     if (process.platform === 'darwin') assert.equal(app.dock!.isVisible(), false);
   }
   assert.equal(state.drawing, false);
+  const clickToolButton = async (label: string) => {
+    const position = await toolbar.webContents.executeJavaScript(`(() => { const button=Array.from(document.querySelectorAll('button')).find(b=>b.getAttribute('aria-label')===${JSON.stringify(label)}); const r=button.getBoundingClientRect(); return {x:Math.round(r.x+r.width/2),y:Math.round(r.y+r.height/2)}; })()`);
+    toolbar.webContents.sendInputEvent({ type: 'mouseDown', ...position, button: 'left', clickCount: 1 });
+    toolbar.webContents.sendInputEvent({ type: 'mouseUp', ...position, button: 'left', clickCount: 1 });
+    await toolbar.webContents.executeJavaScript('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))');
+  };
+  if (state.settings.toolbarMode === 'hidden') showTools();
+  await clickToolButton('Lápiz'); assert.equal(state.drawing, true);
+  await clickToolButton('Lápiz'); assert.equal(state.drawing, false, 'El mismo botón debe salir del dibujo');
+  await clickToolButton('Línea');
+  await clickToolButton('Flecha'); assert.equal(state.tool, 'arrow'); assert.equal(state.drawing, true);
+  await clickToolButton('Flecha'); assert.equal(state.drawing, false);
+  await clickToolButton('Color 2'); assert.equal(state.drawing, true);
+  await clickToolButton('Color 2'); assert.equal(state.drawing, false);
+  for (const board of ['Pizarra blanca', 'Pizarra negra']) {
+    await clickToolButton(board); assert.equal(state.drawing, true);
+    await clickToolButton(board); assert.equal(state.drawing, false); assert.equal(state.background, 'transparent');
+  }
+  const compactBar = await toolbar.webContents.executeJavaScript(`({grip:!!document.querySelector('.drag-handle .lucide-grip-vertical'),logo:!!document.querySelector('.brand'),footer:!!document.querySelector('.toolbar-footer'),width:document.querySelector('.width-control input').getBoundingClientRect().width,timer:document.querySelector('.timer-number').textContent,last:Array.from(document.querySelectorAll('.toolbar > button')).slice(-3).map(b=>b.getAttribute('aria-label'))})`);
+  assert.equal(compactBar.grip, true);
+  assert.equal(compactBar.logo, false); assert.equal(compactBar.footer, false);
+  assert.ok(compactBar.width >= 68); assert.equal(compactBar.timer, '5');
+  assert.deepEqual(compactBar.last, ['Preferencias', 'Contraer barra', 'Salir']);
+  assert.ok(toolbar.getBounds().height <= 76, 'La ventana debe ajustarse a una sola fila');
+  if (state.settings.toolbarMode === 'visible') {
+    await clickToolButton('Contraer barra');
+    assert.equal(state.settings.toolbarMode, 'minimal');
+    assert.equal(toolbar.isVisible(), false); assert.equal(mini!.isVisible(), true);
+    setToolbarMode('visible');
+  }
+  if (state.settings.toolbarMode === 'hidden') collapseTools();
   perform('freehand');
   assert.equal(state.drawing, true);
   await new Promise(resolve => setTimeout(resolve, 100));
@@ -489,6 +540,8 @@ async function runSmoke() {
   assert.equal(await hasInk(), false, 'Borrar todo y cambiar a negro debe mantener el lienzo limpio');
   perform('white');
   perform('white'); assert.equal(state.background, 'transparent');
+  assert.equal(state.drawing, false, 'Pulsar de nuevo la pizarra debe salir del dibujo');
+  perform('toggle'); assert.equal(state.drawing, true);
   perform('toggle'); assert.equal(state.drawing, false);
   openPreferences();
   await new Promise<void>(resolve => preferences!.webContents.once('did-finish-load', () => resolve()));

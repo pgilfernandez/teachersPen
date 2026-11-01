@@ -11,13 +11,15 @@ npm ci
 npm start
 ```
 
-La barra se puede mover arrastrando el nombre. La aplicación también aparece en la barra de menús/bandeja del sistema. Desde allí puedes recuperar las herramientas o volver al escritorio.
+La barra se puede mover arrastrando el asa de seis puntos (2×3). La aplicación también aparece en la barra de menús/bandeja del sistema. Desde allí puedes recuperar las herramientas o volver al escritorio.
 
 En **Preferencias → Activación → Mantener pulsado**, el cambio se aplica y guarda inmediatamente; no hace falta pulsar Guardar. Mantén el atajo mientras dibujas. Funciona con el atajo de activación, herramientas, colores y pizarras. Soltar la tecla principal o cualquiera de los modificadores devuelve el control al escritorio y conserva los trazos. Esc interrumpe el dibujo aunque sigas manteniendo el atajo; para volver a activarlo debes soltarlo y pulsarlo otra vez. Los botones de la barra permiten activar el dibujo manualmente. El modo inicial sigue siendo pulsar para activar/desactivar.
 
-Los dos modos aparecen como opciones visibles y la opción marcada indica el modo realmente activo. La barra muestra «Mantén el atajo para dibujar» cuando ese modo está activado y «Suelta el atajo para interactuar» durante la pulsación.
+Los dos modos aparecen como opciones visibles y la opción marcada indica el modo realmente activo. Los botones de las herramientas y colores activan el dibujo al pulsarlos y salen al volver a pulsar la misma selección. Cambiar de herramienta mantiene el dibujo activo. Esto es independiente del modo elegido para los atajos.
 
 ## Presentación de la barra
+
+La barra completa es una sola fila sin logotipo ni botón de interacción: asa de seis puntos, herramientas, fondos blanco/negro, temporizador con un 5, colores, diámetro del trazo y acciones. Preferencias, Contraer y Salir están juntos al final y usan iconos Lucide. El campo del diámetro tiene 68 px de ancho. Contraer una barra visible pasa al modo mínimo.
 
 En **Preferencias → Barra de dibujo** puedes elegir un modo, que se aplica y guarda inmediatamente:
 
@@ -107,7 +109,7 @@ Para generar instaladores: `npm run dist:mac`, `npm run dist:win`, `npm run dist
 
 ## Iconos
 
-Los iconos propios de la interfaz son SVG de [Lucide](https://lucide.dev/guide/react/), incluidos en el bundle sin peticiones de red. Se usa `PencilLine` como identidad de TeachersPen en la barra, el círculo mínimo, el Dock y la bandeja del sistema; las herramientas utilizan los símbolos de lápiz, línea, flecha, rectángulo y círculo correspondientes.
+Los iconos propios de la interfaz son SVG de [Lucide](https://lucide.dev/guide/react/), incluidos en el bundle sin peticiones de red. Se usa `PencilLine` como identidad de TeachersPen en el círculo mínimo, el Dock y la bandeja del sistema; las herramientas utilizan los símbolos de lápiz, línea, flecha, rectángulo y círculo correspondientes.
 
 `scripts/build-icons.mjs` genera automáticamente PNG, ICNS e ICO a partir del mismo icono oficial. El rasterizador se usa solo al compilar y no se distribuye con la app. Se incluye la licencia de Lucide en `dist/icons/LICENSE-lucide.txt`. Los requisitos de sistema siguen siendo los mismos.
 
