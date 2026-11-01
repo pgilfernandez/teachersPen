@@ -79,7 +79,7 @@ function MiniLauncher({ state }: { state: State }) {
     onPointerCancel={event => { if (pointer.current !== null) { pointer.current = null; void send('cancel', event); } }}
     onLostPointerCapture={event => { if (pointer.current !== null) { pointer.current = null; void send('cancel', event); } }}
     onClick={event => { if (event.detail === 0) void command({ type: 'show-tools' }); }}>
-    <img src="mini-launcher.svg" width="50" height="50" alt="" draggable={false} aria-hidden="true" />
+    <img src="mini-launcher.svg" width="42" height="42" alt="" draggable={false} aria-hidden="true" />
   </button>;
 }
 

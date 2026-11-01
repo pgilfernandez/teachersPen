@@ -1,7 +1,7 @@
 import type { Point } from './model';
 
-export const MINI_SIZE = 56;
-export const MINI_RADIUS = 25;
+export const MINI_SIZE = 48;
+export const MINI_RADIUS = 21;
 export interface Area extends Point { width: number; height: number }
 export function fitPosition(point: Point, size: { width: number; height: number }, area: Area): Point {
   return {
