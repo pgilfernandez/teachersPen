@@ -1,85 +1,175 @@
 # TeachersPen
 
-Aplicación de escritorio para dibujar encima de otras aplicaciones mientras su contenido sigue actualizándose. Primera versión de desarrollo; plataforma inicial de pruebas: macOS Monterey 12.7.6, Intel.
+TeachersPen is a desktop app for annotating other applications while the content underneath continues to update in real time. Draw over presentations, websites, videos, and other desktop content without taking a screenshot first.
 
-## Ejecutar
+**Version 1.0** · Initial development and testing platform: macOS Monterey 12.7.6 on Intel.
 
-Para ejecutar el código fuente se utiliza Node.js 20 o posterior; para instalar toda la cadena de empaquetado con sus requisitos oficiales se recomienda Node.js 22.12 o posterior. Node.js es necesario **para desarrollar**, no para usar la aplicación empaquetada.
+## Run from source
+
+Node.js 20 or later is required to run the source. Node.js 22.12 or later is recommended for the packaging toolchain's published requirements. Node.js is needed for development, not to use a packaged app.
 
 ```sh
 npm ci
 npm start
 ```
 
-La barra se puede mover arrastrando el asa de seis puntos (2×3). La aplicación también aparece en la barra de menús/bandeja del sistema. Desde allí puedes recuperar las herramientas o volver al escritorio.
+Building requires native compiler tools:
 
-En **Preferencias → Activación → Mantener pulsado**, el cambio se aplica y guarda inmediatamente; no hace falta pulsar Guardar. Mantén el atajo mientras dibujas. Funciona con el atajo de activación, herramientas, colores y pizarras. Soltar la tecla principal o cualquiera de los modificadores devuelve el control al escritorio y conserva los trazos. Esc interrumpe el dibujo aunque sigas manteniendo el atajo; para volver a activarlo debes soltarlo y pulsarlo otra vez. Los botones de la barra permiten activar el dibujo manualmente. El modo inicial sigue siendo pulsar para activar/desactivar.
+- **macOS:** Xcode Command Line Tools.
+- **Windows:** Visual Studio x64 Native Tools.
+- **Linux:** a C compiler and X11 development headers (`libx11-dev` or equivalent).
 
-Los dos modos aparecen como opciones visibles y la opción marcada indica el modo realmente activo. Los botones de las herramientas y colores activan el dibujo al pulsarlos y salen al volver a pulsar la misma selección. Cambiar de herramienta mantiene el dibujo activo. Esto es independiente del modo elegido para los atajos.
+The packaged app includes the native helper and does not require a compiler.
 
-## Presentación de la barra
+## Drawing
 
-Por defecto, la barra horizontal mide 40 px de alto y es una sola fila sin logotipo ni botón de interacción: asa de seis puntos, herramientas, fondos blanco/negro, temporizador, colores, diámetro del trazo y acciones. Preferencias, Contraer, Girar y Salir están juntos al final y usan iconos Lucide. Los controles muestran tooltips con su función y, cuando corresponde, su atajo. Borrar dibujo está a la derecha de Ver/ocultar. El campo del diámetro tiene 68 px de ancho. Contraer una barra visible pasa al modo mínimo.
+Available tools are freehand pencil, line, arrow, rectangle, and circle. To draw a circle, drag from its center to define the radius.
 
-Al activar el dibujo, el puntero muestra un círculo con el diámetro, color y opacidad actuales como previsualización antes de trazar. No forma parte del dibujo y desaparece mientras se realiza un trazo.
+Click a tool or color to enter drawing mode. Click the same selection again to exit; selecting another tool keeps drawing active. These toolbar controls work independently of the keyboard activation mode.
 
-A la derecha del ancho del trazo está su opacidad, de 100% (opaco) a 0% (invisible); al bajar el valor aumenta la transparencia. Se guarda automáticamente y se aplica a los trazos nuevos; cada trazo conserva su propio valor al deshacer o rehacer.
+When drawing is ready, the pointer previews a circle with the current stroke diameter, color, and opacity. This preview is not part of the drawing or its undo history. It disappears while drawing a stroke and returns afterward.
 
-Junto a **Contraer** está **Girar barra**, con un icono Lucide de rotación. Alterna la ventana completa entre fila horizontal y columna vertical, con los controles en posición normal y el asa de seis puntos para moverla. La orientación se guarda automáticamente. La barra se puede arrastrar hasta el borde superior, incluida la zona de la barra de menús de macOS, y mantiene su posición al recalcular su tamaño o girarla. La barra vertical mide 40 px de ancho y sus campos numéricos, sin etiquetas visibles, miden 36 px con 2 px de margen a cada lado. La columna se ajusta a la altura disponible del monitor y permite desplazamiento si no caben todos los controles.
+Stroke opacity ranges from **100% opaque** to **0% invisible**. Changes are saved automatically and apply to new strokes. Each stroke retains its own opacity when undone or redone.
 
-En **Preferencias → Barra de dibujo** puedes elegir un modo, que se aplica y guarda inmediatamente:
+Annotations remain visible when you leave drawing mode, and clicks pass through to the applications underneath. Drawings stay fixed in screen coordinates and are held in memory only.
 
-- **Visible:** mantiene la barra completa en pantalla.
-- **Mínima:** muestra solo el icono SVG de TeachersPen, sin fondo, borde ni aro de enfoque. Su alpha es 0.15 en reposo y 0.4 al pasar el ratón. Arrastrarlo cambia su posición; hacer clic abre la barra completa. El botón **Contraer** vuelve al icono. Su posición se recuerda entre sesiones y se ajusta si se desconecta un monitor.
-- **Oculta:** deja únicamente el icono en la barra de menús de macOS o la bandeja del sistema de Windows/Linux. En macOS también desaparece del Dock y del selector de aplicaciones. Los atajos siguen dibujando sin mostrar la barra, el círculo ni el aviso inferior. Las anotaciones permanecen visibles.
+### Keyboard activation
 
-El menú del icono del sistema permite abrir la barra completa, abrir Preferencias o salir. Si abres temporalmente la barra en modo oculto, **Ocultar** vuelve a esconderla. Volver a ejecutar TeachersPen también permite recuperar la barra. En Linux, la ubicación y disponibilidad de los iconos de bandeja dependen del escritorio; la validación de Windows/Linux sigue pendiente.
+In **Preferences → Activation**, choose:
 
-La liberación se comprueba mediante un pequeño ejecutable nativo, cada 8 ms y solo mientras mantienes un atajo. Usa Core Graphics en macOS, `GetAsyncKeyState` en Windows y X11 en Linux. No instala un monitor permanente de teclado ni registra lo que escribes. El ejecutable macOS se compila para Intel y Apple Silicon con versión mínima 11.0. Windows y Linux siguen pendientes de prueba real.
+- **Press to toggle:** press a shortcut to enter or leave drawing mode. This is the default.
+- **Hold shortcut:** hold the shortcut while drawing. Releasing the main key or any modifier returns control to the desktop while preserving the annotations.
 
-- `Ctrl+Mayús+Espacio`: activar/salir del dibujo. En Mac es Control, no Command.
-- `Esc`: salir cuando la capa de dibujo tiene el foco.
-- `Ctrl+Mayús+A/Q/W/S`: mano alzada/línea/flecha/rectángulo.
-- `Ctrl+Mayús+O`: círculo. Arrastra desde el centro para definir el radio.
-- `Ctrl+Mayús+E/D/C/R/F`: los cinco colores; también activan el dibujo.
-- `Ctrl+Mayús+Z/Y`: deshacer/rehacer en el monitor activo.
-- `Ctrl+Mayús+X`: borrar todos los monitores (se puede deshacer por monitor).
-- `Ctrl+Mayús+H`: ocultar/mostrar trazos.
-- `Ctrl+Mayús+V/B`: alternar pizarra blanca/negra y fondo transparente.
-- `Ctrl+Mayús+T`: mostrar/ocultar el temporizador (5 minutos por defecto).
+The activation setting is applied and saved immediately. Hold mode works with the activation, tool, color, and whiteboard/blackboard shortcuts. Esc interrupts drawing even if a shortcut is still held; release and press the shortcut again to reactivate it.
 
-El temporizador tiene su propia ventana flotante: el asa de seis puntos de la izquierda permite arrastrarlo y la doble flecha de la derecha permite cambiar su tamaño manteniendo las proporciones del reloj. Ambos controles están dentro del rectángulo. La posición y el tamaño se conservan en `timer-window.json` en la carpeta de datos de la aplicación. Encima del reloj aparece el texto editable «continuamos en». El engranaje (opacidad 0.4) abre un popup para cambiar el texto, la duración en segundos y el color del texto y los números; los ajustes se guardan automáticamente. Abajo están los controles de reinicio, cambio de dirección e inicio/pausa, solo con iconos y tooltips. Estos botones y los controles de mover y escalar tienen alpha 0.5 en reposo y 0.65 al pasar el ratón. Reset y el cambio de dirección detienen el reloj y lo devuelven al inicio; la cuenta atrás permanece visible al llegar a cero.
+Key release is checked by a small native helper every 8 ms, only while a drawing shortcut is held. It uses Core Graphics on macOS, `GetAsyncKeyState` on Windows, and X11 on Linux. It does not install a permanent keyboard monitor or record what you type. The macOS helper is built for Intel and Apple Silicon with a minimum deployment target of macOS 11.
 
-La primera fila de Preferencias permite elegir English (predeterminado), Español, Italiano, Français o Deutsch. El cambio se aplica y guarda al instante en la interfaz, tooltips y menús. El botón de información, a la izquierda de Restaurar y Guardar, abre el popup de TeachersPen con el icono de la app, versión, commit de compilación, autoría y enlaces de donación y GitHub. Las traducciones editables están en `src/locales/`. El texto personalizado del temporizador se conserva al cambiar de idioma.
+### Default shortcuts
 
-Las preferencias utilizan un panel compacto de 430 px de ancho, organizado en Dibujo, Colores y Funciones, con cada color junto a su atajo. La fila Trazo reúne grosor y opacidad. Permiten cambiar activación, modo de barra, colores y atajos; la duración se configura en el popup del temporizador. Guardar aplica los cambios; si un atajo está ocupado o es inválido se conservan los ajustes anteriores. Los trazos se guardan solo en memoria y permanecen fijos en coordenadas de pantalla. En modo interacción los trazos siguen visibles y los clics atraviesan la capa. Las pizarras tienen un fondo opaco hasta que vuelves a pulsar su botón/atajo.
+On macOS, **Ctrl means Control, not Command**.
 
-Si abres una pizarra después de ocultar los trazos, empieza limpia: las anotaciones ocultas se borran del lienzo y se pueden recuperar explícitamente con Deshacer. Cambiar entre blanco y negro conserva los trazos visibles que estés usando.
+| Shortcut | Action |
+| --- | --- |
+| `Ctrl+Shift+Space` | Enter or exit drawing mode |
+| `Esc` | Exit drawing when the overlay has focus |
+| `Ctrl+Shift+A` | Freehand pencil |
+| `Ctrl+Shift+Q` | Line |
+| `Ctrl+Shift+W` | Arrow |
+| `Ctrl+Shift+S` | Rectangle |
+| `Ctrl+Shift+O` | Circle |
+| `Ctrl+Shift+E/D/C/R/F` | Select one of the five colors and activate drawing |
+| `Ctrl+Shift+Z/Y` | Undo/redo on the active monitor |
+| `Ctrl+Shift+X` | Clear drawings on all monitors; undo is available per monitor |
+| `Ctrl+Shift+H` | Hide or show drawings |
+| `Ctrl+Shift+V/B` | Toggle whiteboard/blackboard and transparent background |
+| `Ctrl+Shift+T` | Show or hide the timer |
 
-## Compatibilidad
+### Whiteboard and blackboard
 
-| Plataforma | Base de esta versión | Estado |
+The white and black background buttons are **20 × 20 px**. Their opaque backgrounds remain active until toggled off.
+
+Opening a whiteboard or blackboard after hiding drawings starts with a clean canvas: hidden annotations are cleared and can be recovered explicitly with Undo. Switching between white and black preserves the drawings currently visible.
+
+## Toolbar
+
+The horizontal toolbar is **40 px high**. It has a six-dot drag handle (2 × 3), drawing tools, background buttons, timer, colors, stroke width, opacity, and drawing actions. Clear drawings is immediately after Hide/show drawings. Preferences, Collapse, Rotate, and Quit are grouped at the end. Controls have descriptive tooltips and show their shortcuts where applicable.
+
+Drag the six-dot handle to move the toolbar, including to the top edge of the screen and into the macOS menu-bar area. Resizing or rotating the toolbar preserves its position.
+
+**Rotate toolbar**, next to Collapse, switches between horizontal and vertical layouts. The vertical toolbar is **40 px wide**, with **36 px numeric fields** and no visible unit labels. The horizontal stroke-width field is 68 px wide. Orientation is saved automatically. The vertical layout fits the available monitor height and supports scrolling when necessary.
+
+In **Preferences → Drawing toolbar**, select a mode. Changes are applied and saved immediately:
+
+- **Visible:** keeps the full toolbar on screen.
+- **Minimal:** shows the editable TeachersPen SVG launcher. Its alpha is **0.15** at rest and **0.4** on hover. Drag to move it; click to open the full toolbar. Collapse returns to the launcher. Its position is remembered between sessions and adjusted when a monitor is disconnected.
+- **Hidden:** leaves only the macOS menu-bar icon or Windows/Linux system-tray icon. On macOS, the app also disappears from the Dock and app switcher. Shortcuts continue to work without the toolbar, launcher, or drawing hint. Annotations and the stroke cursor preview remain available.
+
+Collapsing a visible toolbar switches to Minimal mode. If you temporarily open the toolbar in Hidden mode, the collapse control hides it again.
+
+The tray menu provides **Show full toolbar**, **Preferences**, and **Quit TeachersPen**. Launching TeachersPen again also recovers the toolbar. On Linux, tray placement and availability depend on the desktop environment.
+
+## Timer
+
+The timer has its own floating window. The six-dot handle on the left moves it, and the double-ended arrow on the right resizes the clock proportionally. Both controls are inside the timer panel. Position and size are saved in `timer-window.json` in the application's data directory.
+
+Above the clock is an editable caption, initially **“we continue in”** in English. The gear icon, with alpha **0.4**, opens a small configuration popup for the caption, duration in seconds, and caption/number color. These settings are saved automatically.
+
+Three icon-only controls below the clock provide:
+
+- **Reset:** stop and return to the initial value.
+- **Change direction:** switch between countdown and counting up from zero, resetting the clock.
+- **Start/pause:** start, pause, or resume the clock.
+
+These buttons and the move/resize controls have alpha **0.5** at rest and **0.65** on hover. Tooltips identify each action. The default countdown duration is five minutes. A completed countdown stays visible at zero.
+
+## Preferences and languages
+
+The first row in Preferences selects **English (default), Español, Italiano, Français, or Deutsch**. Language changes are applied and saved immediately across the interface, tooltips, and menus. Custom timer captions are preserved; the default caption follows the selected language. Editable translation catalogs are in `src/locales/`.
+
+The compact preferences panel is 430 px wide and organized into **Drawing**, **Colors**, and **Functions**. The Stroke row combines width and opacity, and each color shares a row with its shortcut. Timer duration is configured in the timer popup.
+
+Save applies changes to stroke settings, colors, and shortcuts. Invalid or occupied shortcuts leave the previous settings in place. Activation, toolbar mode, and language are saved immediately when selected.
+
+The information button is on the left of the Restore defaults/Save row. Its popup shows the app icon, **TeachersPen v1.0**, the short build commit, and:
+
+> developed with love by Pablo Gil Fernández
+
+It also includes buttons for [donations](https://github.com/sponsors/pgilfernandez) and the [GitHub project](https://github.com/pgilfernandez/teachersPen), opened in the default browser.
+
+## Compatibility
+
+| Platform | Target baseline | Validation status |
 | --- | --- | --- |
-| macOS | Big Sur 11+, Intel x64 y Apple Silicon arm64 | Pruebas iniciales en Monterey Intel; Big Sur y arm64 pendientes de prueba real |
-| Windows | Windows 10+, x64 | Pendiente de prueba real |
-| Linux | x64, escritorio X11, distribuciones con bibliotecas compatibles con Electron 37 | Pendiente de prueba real; no se fija aún una distribución mínima verificada |
-| Linux Wayland | Se fuerza el backend X11 mediante XWayland | Experimental; no garantiza superposición sobre aplicaciones Wayland nativas |
+| macOS | Big Sur 11+, Intel x64 and Apple Silicon arm64 | Initial testing on Monterey Intel; Big Sur and arm64 still need device testing |
+| Windows | Windows 10+, x64 | Device testing pending |
+| Linux | x64, X11 desktop, libraries compatible with Electron 37 | Device testing pending; no minimum distribution has been verified |
+| Linux Wayland | X11 backend through XWayland | Experimental; overlays over native Wayland applications are not guaranteed |
 
-Electron está fijado exactamente en **37.10.3**, última versión publicada de la rama 37 consultada al iniciar el proyecto. Electron 38 elimina Big Sur. No actualizar Electron de versión mayor sin revisar el requisito macOS 11. `minimumSystemVersion` del paquete macOS también está fijado en 11.0.
+Electron is pinned to **37.10.3** to retain macOS Big Sur support. Electron 38 drops Big Sur. Do not upgrade the Electron major version without reviewing the macOS 11 requirement. The macOS package also declares `minimumSystemVersion: 11.0`.
 
-**Deuda de mantenimiento:** Electron 37 está fuera de soporte upstream. Preservar Big Sur con Electron implica mantener un runtime antiguo. Antes de distribución pública habrá que decidir cómo mantener esa rama o migrar la integración de escritorio. Se carga solo contenido local, con sandbox, aislamiento de contexto, sin integración Node en la interfaz y sin navegación externa. Estas medidas no sustituyen las actualizaciones de seguridad.
+**Maintenance consideration:** Electron 37 is outside upstream support. Retaining Big Sur requires an older runtime; maintaining that runtime or changing the desktop integration needs to be addressed before public distribution. The app loads local content with sandboxing, context isolation, no renderer Node integration, and blocked external navigation. These measures do not replace security updates. The About popup opens only the two configured project links in the external browser.
 
-Windows 7/8/8.1 quedan fuera de esta base (Electron dejó de admitirlos en la versión 23). Soportarlos requeriría revisar la tecnología, no simplemente cambiar una opción de empaquetado. No se promete compatibilidad de CPU, GPU o distribución Linux sin probarla.
+Windows 7/8/8.1 are outside this baseline; Electron dropped them in version 23. Supporting those systems would require revisiting the technology. CPU, GPU, and Linux distribution compatibility require real-device testing.
 
-Canvas 2D, dibujo bajo demanda, sin WebGPU, filtros ni animaciones permanentes. Si un controlador gráfico antiguo da problemas puedes probar:
+Drawing uses Canvas 2D and on-demand rendering, without WebGPU, filters, or continuous animation. If an older graphics driver causes problems, try:
 
 ```sh
 npm start -- --software-rendering
 ```
 
-Ese argumento se transmite a Electron y desactiva la aceleración por hardware. No es el modo predeterminado; debe probarse con la transparencia en cada sistema.
+This passes the flag to Electron and disables hardware acceleration. It is not the default; transparent windows still need validation on each system.
 
-## Verificación y empaquetado
+## Build and package
+
+```sh
+npm run build
+npm run pack
+```
+
+To generate installers:
+
+```sh
+npm run dist:mac
+npm run dist:win
+npm run dist:linux
+```
+
+The macOS configuration produces separate x64 and arm64 builds. Windows and Linux packages should be built and validated on their respective systems. Build Linux packages on the oldest distribution you intend to support to avoid unnecessarily raising the glibc requirement.
+
+The local macOS app is placed in `release/mac/TeachersPen.app`. Local packages are not signed or notarized.
+
+The version comes from `package.json` (currently `1.0.0`, displayed as `1.0`). The build automatically embeds the current short Git commit. Builds made from source archives without Git metadata display `unknown` for the commit.
+
+## Validation status
+
+Recent UI changes have been compiled and packaged without automated or visual tests, following the project's current manual-testing workflow. Earlier test results below describe earlier builds and do not establish validation of the current interface.
+
+Historical checks on macOS Monterey 12.7.6 Intel:
+
+- **October 31, 2026:** type checking, two history/settings tests, and source/packaged-app smoke checks completed. The package declared `LSMinimumSystemVersion=11.0`.
+- **November 1, 2026:** nine unit tests, visible/hidden-start smoke checks, hidden-mode hold shortcuts, native simulated click/drag events, saved launcher position, and packaged-app hidden-mode focus were checked during toolbar-mode development.
+
+Existing developer check commands are listed below for reference; they are not part of the build and may require updates after subsequent interface changes:
 
 ```sh
 npm run typecheck
@@ -87,57 +177,55 @@ npm test
 npm run smoke
 npm run smoke -- --smoke-hidden-start
 npm run test:hold:mac
-npm run pack
 ```
 
-`smoke` abre ventanas reales, prueba dibujo mediante eventos sintéticos, deshacer, cambios de fondo, aislamiento del renderer, preferencias y registro de atajos. Sale al terminar y no escribe preferencias. No equivale a comprobar entrada física, paso de clics, todos los escritorios/fullscreen ni otros sistemas.
+The smoke script opens real windows, uses synthetic drawing events, and checks history, backgrounds, renderer isolation, preferences, and shortcut registration. It exits afterward and does not write preferences. It does not replace physical-input, click-through, Spaces/fullscreen, or cross-platform checks.
 
-También comprueba los modos de barra, la transparencia del círculo, que arrastrarlo no abra las herramientas, que el clic sí lo haga y que el dibujo oculto mantenga la barra y el Dock escondidos. `--smoke-hidden-start` verifica además el arranque directamente en modo oculto.
+The native hold check sends `Ctrl+Shift+F19` events to macOS and checks release of the key and an early modifier release. It invokes the shortcut handler directly because Carbon global shortcuts do not receive these synthesized events. It requires existing event-simulation permission and does not request it automatically. Unit tests cover repetition, overlapping shortcuts, cancellation, and monitor failure without those permissions.
 
-Verificación de los modos de barra (01/11/2026, Monterey 12.7.6 Intel): nueve pruebas unitarias, smoke con inicio visible y oculto, atajos mantenidos en modo oculto y prueba de clic/arrastre con eventos de ratón enviados a macOS. Se comprobó la escritura de la posición en disco y, en la `.app` empaquetada, que la capa de dibujo recibe el foco sin mostrar barra, círculo, aviso inferior ni Dock. Windows/Linux pendientes de validación.
+Still pending:
 
-`test:hold:mac` comprueba además el estado nativo con eventos enviados al sistema (Ctrl+Mayús+F19), la liberación de la tecla y la liberación anticipada de un modificador. Invoca el mismo manejador del atajo para iniciar la prueba: macOS no entrega esos eventos sintetizados al registro global de Carbon. Por tanto, no sustituye la prueba con teclado físico. Solo se ejecuta si ya existe permiso para simular eventos; no solicita permisos automáticamente. Las pruebas unitarias cubren repetición, atajos solapados, cancelación y fallo del comprobador sin necesitar esos permisos.
+- Manual checks with mouse input, fullscreen applications, Spaces changes, and monitors with different scaling.
+- Big Sur, Apple Silicon, Windows, and Linux/X11 device testing; a dedicated Wayland backend.
+- Annotation persistence/export and recovery after closing.
+- Signing, notarization, and validated installers.
 
-La compilación ahora necesita herramientas C: Xcode Command Line Tools en macOS, Visual Studio x64 Native Tools en Windows y compilador C más cabeceras X11 (`libx11-dev` o equivalente) en Linux. La aplicación empaquetada incluye el ejecutable y no necesita compilador. Empaqueta Linux en la distribución más antigua que se vaya a admitir para no elevar innecesariamente la versión de glibc.
+## Editable icons
 
-Primera verificación local (31/10/2026): typecheck, dos pruebas de historial/validación de preferencias y smoke de la aplicación fuente y de la `.app` empaquetada completados en Monterey 12.7.6 x64. Se comprobó que el paquete declara `LSMinimumSystemVersion=11.0`. La aplicación local está en `release/mac/TeachersPen.app`.
+App icons are editable SVG files in `src/renderer/assets/icons/`, based on [Lucide](https://lucide.dev/) with its license included. The interface reads these files during the build without network requests or overwriting the originals. Edit them with Inkscape, Illustrator, a text editor, or another SVG editor.
 
-Para generar instaladores: `npm run dist:mac`, `npm run dist:win`, `npm run dist:linux`. La configuración macOS genera x64 y arm64 separados. Windows y Linux se deben empaquetar/validar en sus sistemas correspondientes. Los paquetes locales no están firmados ni notarizados.
+| Files | Purpose |
+| --- | --- |
+| `app.svg` | App identity for the Dock, window icons, and platform packages |
+| `tray.svg`, `tray-template.svg` | System tray and monochrome macOS menu-bar artwork |
+| `pencil.svg`, `slash.svg`, `arrow-up-right.svg`, `rectangle-horizontal.svg`, `circle.svg` | Drawing tools |
+| `grip-vertical.svg`, `settings.svg`, `panel-top-close.svg`, `rotate-cw.svg`, `power.svg` | Moving, preferences, collapsing, orientation, and quitting |
+| `timer.svg`, `rotate-ccw.svg`, `arrow-down-up.svg`, `play.svg`, `pause.svg`, `move-diagonal.svg` | Timer and its controls |
+| `whiteboard.svg`, `blackboard.svg`, `undo2.svg`, `redo2.svg`, `trash2.svg`, `eye.svg`, `eye-off.svg`, `x.svg`, `info.svg` | Backgrounds and other actions |
 
-## Pendiente
+The minimal launcher uses its separate customized file, `src/renderer/assets/mini-launcher.svg`, copied to `dist/mini-launcher.svg`. Its resting/hover alpha is controlled by `.mini-launcher` in `src/renderer/styles.css`.
 
-- Validación manual con ratón, pantallas completas, cambios de Spaces y dos monitores con distinto escalado.
-- Pruebas en Big Sur, Apple Silicon, Windows y Linux/X11; backend específico para Wayland.
-- Persistencia/exportación de anotaciones y recuperación tras cierre.
-- Firma, notarización e instaladores probados.
+After editing SVGs, rebuild and package the app. `scripts/build-icons.mjs` reads the sources and generates PNG, ICNS, and ICO assets where required by the operating system. It also copies the SVGs to `dist/icons/`. The rasterizer is used only during development and is not shipped with the app.
 
-## Referencias técnicas
+## Project structure
 
-- [Electron 38: retirada de Big Sur](https://www.electronjs.org/blog/electron-38-0)
-- [Plataformas de Electron 37](https://github.com/electron/electron/blob/v37.10.3/README.md#platform-support)
-- [Retirada de Windows 7/8](https://www.electronjs.org/blog/electron-23-0)
+- `src/main.ts`: windows, monitors, global shortcuts, preferences, and native menus.
+- `src/preload.ts`: restricted IPC bridge.
+- `src/shared.ts`: shared contracts and settings validation.
+- `src/i18n.ts` and `src/locales/`: language selection and translation catalogs.
+- `src/build-info.ts`: version and commit injected during compilation.
+- `src/model.ts`: strokes and drawing history.
+- `src/renderer/`: interface, editable SVGs, and Canvas rendering.
+- `src/hold.ts`: held-shortcut activation and cancellation.
+- `src/native-hold.ts`: native key-monitor process management.
+- `native/key-state.c`: macOS, Windows, and X11 implementations, compiled during the build.
+- `src/toolbar.ts`: click/drag distinction and monitor positioning helpers.
+- `scripts/build.mjs`: build without a web development server.
 
-## Iconos
+Preferences are written atomically to `settings.json` in Electron's application data directory (`~/Library/Application Support/TeachersPen` on macOS). The minimal launcher uses `window-state.json`; timer geometry uses `timer-window.json` in the same directory.
 
-Todos los iconos propios tienen archivos SVG editables en `src/renderer/assets/icons/`, basados en [Lucide](https://lucide.dev/) y acompañados de su licencia. La interfaz utiliza estos archivos directamente al compilar, sin peticiones de red ni regeneración de los originales. Puedes abrirlos con Inkscape, Illustrator, un editor de texto u otro editor SVG.
+## Technical references
 
-- `app.svg`: imagen de la aplicación, usada para el Dock, los iconos de ventana y los paquetes de macOS, Windows y Linux.
-- `tray.svg` y `tray-template.svg`: bandeja del sistema y variante monocroma de la barra superior de macOS.
-- `pencil.svg`, `slash.svg`, `arrow-up-right.svg`, `rectangle-horizontal.svg` y `circle.svg`: herramientas de dibujo.
-- `grip-vertical.svg`, `settings.svg`, `panel-top-close.svg`, `rotate-cw.svg`, `power.svg`: movimiento, preferencias, contraer, orientación y salir.
-- `timer.svg`, `rotate-ccw.svg`, `arrow-down-up.svg`, `play.svg`, `pause.svg`, `move-diagonal.svg`: temporizador y sus controles.
-- `whiteboard.svg`, `blackboard.svg`, `undo2.svg`, `redo2.svg`, `trash2.svg`, `eye.svg`, `eye-off.svg`, `x.svg`: fondos y demás acciones.
-
-El botón mínimo conserva su archivo personalizado `src/renderer/assets/mini-launcher.svg`, que se copia a `dist/mini-launcher.svg`. Su alpha normal/hover se configura en `.mini-launcher` dentro de `src/renderer/styles.css`.
-
-Después de editar los SVG, recompila y empaqueta la app. `scripts/build-icons.mjs` lee los originales y genera PNG, ICNS e ICO para los sistemas que requieren esos formatos; también copia los SVG a `dist/icons/`. El rasterizador se usa solo al compilar y no se distribuye con la app. Los SVG originales nunca se sobrescriben al compilar y los requisitos de sistema se mantienen.
-
-## Organización
-
-`src/main.ts` gestiona ventanas, monitores, atajos y preferencias. `src/preload.ts` expone un puente IPC limitado. `src/shared.ts` define el contrato y valida preferencias. `src/model.ts` conserva trazos e historial. `src/renderer/` contiene interfaz y Canvas. `scripts/build.mjs` compila sin servidor web. Las preferencias se escriben de forma atómica en `settings.json` dentro del directorio de datos de Electron (`~/Library/Application Support/TeachersPen` en macOS, según el nombre de aplicación).
-
-`src/hold.ts` coordina los atajos mantenidos y su cancelación; `src/native-hold.ts` gestiona el proceso de comprobación. `native/key-state.c` contiene las implementaciones de macOS, Windows y X11 y se compila durante el build.
-
-`src/toolbar.ts` distingue clic y arrastre y ajusta posiciones a los monitores. El círculo utiliza una ventana pequeña independiente; su posición se guarda de forma atómica en `window-state.json`, junto a `settings.json`.
-
-La versión de la aplicación se toma de `package.json` (actualmente 1.0.0, mostrada como 1.0) y el commit corto se incorpora automáticamente durante la compilación.
+- [Electron 38: Big Sur support removed](https://www.electronjs.org/blog/electron-38-0)
+- [Electron 37 platform support](https://github.com/electron/electron/blob/v37.10.3/README.md#platform-support)
+- [Windows 7/8 support removed](https://www.electronjs.org/blog/electron-23-0)
