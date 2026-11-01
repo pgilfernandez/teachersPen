@@ -132,7 +132,7 @@ jobs:
         run: |
           apt-get update
           apt-get install -y --no-install-recommends \
-            build-essential ca-certificates curl git python3 pkg-config \
+            build-essential ca-certificates curl wget git python3 pkg-config \
             libx11-dev libwebkit2gtk-4.0-dev libgtk-3-dev libssl-dev \
             libayatana-appindicator3-dev librsvg2-dev patchelf \
             libarchive-tools libfuse2 libcrypt1 libssl1.1 \
@@ -164,7 +164,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Build AppImage and DEB
-        run: npm run dist:linux -- --ci
+        run: npm run dist:linux -- --ci --verbose
       - name: Upload Linux packages
         uses: actions/upload-artifact@v4
         with:
