@@ -78,8 +78,8 @@ export async function startController() {
     state.drawing = value;
     if (value) state.visible = true;
     try {
-      for (const label of overlayLabels) await win(label, 'ignore', { enabled: !value });
-      if (value) await win(`overlay-${activeDisplay}`, 'focus');
+      for (const label of overlayLabels) await win(label, 'ignore', { enabled: !value, holding: state.holding });
+      if (value) await win(`overlay-${activeDisplay}`, 'focus', { holding: state.holding });
     } catch (error) {
       state.drawing = false; state.holding = false; hold.dismiss();
       for (const label of overlayLabels) await win(label, 'ignore', { enabled: true }).catch(console.error);

@@ -2,7 +2,11 @@
 
 mod platform;
 use serde_json::{json, Value};
-use std::{collections::HashMap, fs, sync::Mutex};
+use std::{
+    collections::{HashMap, HashSet},
+    fs,
+    sync::Mutex,
+};
 use tauri::{
     api::process::{Command, CommandChild, CommandEvent},
     CustomMenuItem, GlobalShortcutManager, Icon, Manager, PhysicalPosition, PhysicalSize,
@@ -13,6 +17,46 @@ use tauri::{
 type Result<T> = std::result::Result<T, String>;
 #[derive(Default)]
 struct Helpers(Mutex<HashMap<String, CommandChild>>);
+#[derive(Default)]
+struct LiveState {
+    down: Mutex<HashSet<String>>,
+    published: Mutex<Value>,
+}
+fn any_held(app: &tauri::AppHandle) -> bool {
+    app.state::<LiveState>()
+        .down
+        .lock()
+        .map(|keys| !keys.is_empty())
+        .unwrap_or(false)
+}
+fn release_native(app: &tauri::AppHandle, token: &str) {
+    if let Ok(mut keys) = app.state::<LiveState>().down.lock() {
+        keys.remove(token);
+        if !keys.is_empty() {
+            return;
+        }
+    }
+    let next = {
+        let live = app.state::<LiveState>();
+        let Ok(mut state) = live.published.lock() else {
+            return;
+        };
+        if state["holding"] != true {
+            return;
+        }
+        state["drawing"] = json!(false);
+        state["holding"] = json!(false);
+        state.clone()
+    };
+    // Return input immediately; a hidden WebView may defer its JS event queue.
+    for (label, window) in app.windows() {
+        if label.starts_with("overlay-") {
+            let _ = platform::ignore(&window, true);
+        }
+    }
+    let _ = app.emit_all("pen:state", next);
+    trace("native hold release");
+}
 fn err(e: impl std::fmt::Display) -> String {
     e.to_string()
 }
@@ -216,12 +260,19 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
                 "show" => w.show().map_err(err)?,
                 "hide" => w.hide().map_err(err)?,
                 "close" => w.close().map_err(err)?,
-                "focus" => w.set_focus().map_err(err)?,
+                "focus" => {
+                    if args["holding"] != true || any_held(&app) {
+                        w.set_focus().map_err(err)?;
+                    }
+                }
                 "bounds" => {
                     let b = &args["bounds"];
                     set_bounds(&w, b)?;
                 }
-                "ignore" => platform::ignore(&w, args["enabled"].as_bool().unwrap_or(false))?,
+                "ignore" => {
+                    let stale_hold = args["holding"] == true && !any_held(&app);
+                    platform::ignore(&w, stale_hold || args["enabled"].as_bool().unwrap_or(false))?;
+                }
                 "title" => w.set_title(text(&args, "title")).map_err(err)?,
                 "get-bounds" => return bounds(&w),
                 _ => return Err("Unknown window operation".into()),
@@ -231,6 +282,12 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
             .emit_to(text(&args, "label"), "pen:reply", args["value"].clone())
             .map_err(err)?,
         "broadcast" => {
+            let mut args = args;
+            if args["holding"] == true && !any_held(&app) {
+                args["drawing"] = json!(false);
+                args["holding"] = json!(false);
+            }
+            *app.state::<LiveState>().published.lock().map_err(err)? = args.clone();
             trace(format!(
                 "state drawing={} holding={} activation={}",
                 args["drawing"], args["holding"], args["settings"]["activation"]
@@ -315,8 +372,14 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
                     match event {
                         CommandEvent::Stdout(s) => {
                             trace(format!("key {} {}", token, s.trim()));
+                            if s.trim() == "down" {
+                                if let Ok(mut keys) = handle.state::<LiveState>().down.lock() {
+                                    keys.insert(token.clone());
+                                }
+                            }
                             if s.trim() == "up" {
                                 released = true;
+                                release_native(&handle, &token);
                             }
                             let _ = handle.emit_to(
                                 "controller",
@@ -330,6 +393,7 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
                         }
                         CommandEvent::Terminated(_) => {
                             if !released {
+                                release_native(&handle, &token);
                                 let _=handle.emit_to("controller","host-key",json!({"token":token,"event":"error","error":if error.is_empty(){"The shortcut monitor stopped"}else{&error}}));
                             }
                             break;
@@ -343,6 +407,7 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
             });
         }
         "stop-watch" => {
+            release_native(&app, text(&args, "token"));
             if let Some(child) = app
                 .state::<Helpers>()
                 .0
@@ -386,7 +451,7 @@ fn main() {
     let tray = SystemTray::new().with_icon(Icon::Raw(icon)).with_menu(menu);
     #[cfg(target_os = "macos")]
     let tray = tray.with_icon_as_template(true);
-    tauri::Builder::default().plugin(tauri_plugin_single_instance::init(|app,_,_| { let _=app.emit_to("controller","host-menu","show"); })).manage(Helpers::default()).system_tray(tray)
+    tauri::Builder::default().plugin(tauri_plugin_single_instance::init(|app,_,_| { let _=app.emit_to("controller","host-menu","show"); })).manage(Helpers::default()).manage(LiveState::default()).system_tray(tray)
         .invoke_handler(tauri::generate_handler![host])
         .setup(|app| { create_window(&app.handle(),&json!({"label":"controller","role":"controller","title":"TeachersPen","bounds":{"width":1,"height":1}}))?; Ok(()) })
         .on_system_tray_event(|app,event| {if let SystemTrayEvent::MenuItemClick{id,..}=event {
