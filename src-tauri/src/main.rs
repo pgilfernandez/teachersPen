@@ -1,20 +1,23 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+#[cfg(target_os = "macos")]
+mod mac_hold;
 mod platform;
 use serde_json::{json, Value};
-use std::{
-    collections::{HashMap, HashSet},
-    fs,
-    sync::Mutex,
-};
+use std::{collections::HashSet, fs, sync::Mutex};
 use tauri::{
-    api::process::{Command, CommandChild, CommandEvent},
-    CustomMenuItem, GlobalShortcutManager, Icon, Manager, PhysicalPosition, PhysicalSize,
-    SystemTray, SystemTrayEvent, SystemTrayMenu, SystemTrayMenuItem, Window, WindowBuilder,
-    WindowEvent, WindowUrl,
+    api::process::Command, CustomMenuItem, GlobalShortcutManager, Icon, Manager, PhysicalPosition,
+    PhysicalSize, SystemTray, SystemTrayEvent, SystemTrayMenu, SystemTrayMenuItem, Window,
+    WindowBuilder, WindowEvent, WindowUrl,
 };
 
+#[cfg(not(target_os = "macos"))]
+use std::collections::HashMap;
+#[cfg(not(target_os = "macos"))]
+use tauri::api::process::{CommandChild, CommandEvent};
+
 type Result<T> = std::result::Result<T, String>;
+#[cfg(not(target_os = "macos"))]
 #[derive(Default)]
 struct Helpers(Mutex<HashMap<String, CommandChild>>);
 #[derive(Default)]
@@ -315,6 +318,8 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
             }
         }
         "shortcuts" => {
+            #[cfg(target_os = "macos")]
+            mac_hold::clear(&app);
             app.global_shortcut_manager()
                 .unregister_all()
                 .map_err(err)?;
@@ -327,7 +332,11 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
                     }
                     let handle = app.clone();
                     let id = action.clone();
+                    #[cfg(target_os = "macos")]
+                    let chord = shortcut.to_string();
                     if let Err(e) = app.global_shortcut_manager().register(shortcut, move || {
+                        #[cfg(target_os = "macos")]
+                        mac_hold::press(&handle, &chord);
                         trace(format!("shortcut {}", id));
                         let _ = handle.emit_to("controller", "host-shortcut", id.clone());
                     }) {
@@ -354,74 +363,85 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
         "watch" => {
             let token = text(&args, "token").to_string();
             trace(format!("watch {} {}", token, text(&args, "shortcut")));
-            let (mut rx, child) = Command::new_sidecar("key-state")
-                .map_err(err)?
-                .args([
-                    "--watch",
-                    text(&args, "shortcut"),
-                    &std::process::id().to_string(),
-                ])
-                .spawn()
-                .map_err(err)?;
-            app.state::<Helpers>()
-                .0
-                .lock()
-                .map_err(err)?
-                .insert(token.clone(), child);
-            let handle = app.clone();
-            tauri::async_runtime::spawn(async move {
-                let mut released = false;
-                let mut error = String::new();
-                while let Some(event) = rx.recv().await {
-                    match event {
-                        CommandEvent::Stdout(s) => {
-                            trace(format!("key {} {}", token, s.trim()));
-                            if s.trim() == "down" {
-                                if let Ok(mut keys) = handle.state::<LiveState>().down.lock() {
-                                    keys.insert(token.clone());
-                                }
-                            }
-                            if s.trim() == "up" {
-                                released = true;
-                                release_native(&handle, &token);
-                            }
-                            let _ = handle.emit_to(
-                                "controller",
-                                "host-key",
-                                json!({"token":token,"event":s.trim()}),
-                            );
-                        }
-                        CommandEvent::Stderr(s) | CommandEvent::Error(s) => {
-                            trace(format!("key error {} {}", token, s));
-                            error = s;
-                        }
-                        CommandEvent::Terminated(_) => {
-                            if !released {
-                                release_native(&handle, &token);
-                                let _=handle.emit_to("controller","host-key",json!({"token":token,"event":"error","error":if error.is_empty(){"The shortcut monitor stopped"}else{&error}}));
-                            }
-                            break;
-                        }
-                        _ => (),
-                    }
-                }
-                if let Ok(mut children) = handle.state::<Helpers>().0.lock() {
-                    children.remove(&token);
-                };
-            });
-        }
-        "stop-watch" => {
-            release_native(&app, text(&args, "token"));
-            if let Some(child) = app
-                .state::<Helpers>()
-                .0
-                .lock()
-                .map_err(err)?
-                .remove(text(&args, "token"))
+            #[cfg(target_os = "macos")]
+            mac_hold::watch(&app, token, text(&args, "shortcut"))?;
+            #[cfg(not(target_os = "macos"))]
             {
-                let _ = child.kill();
+                let (mut rx, child) = Command::new_sidecar("key-state")
+                    .map_err(err)?
+                    .args([
+                        "--watch",
+                        text(&args, "shortcut"),
+                        &std::process::id().to_string(),
+                    ])
+                    .spawn()
+                    .map_err(err)?;
+                app.state::<Helpers>()
+                    .0
+                    .lock()
+                    .map_err(err)?
+                    .insert(token.clone(), child);
+                let handle = app.clone();
+                tauri::async_runtime::spawn(async move {
+                    let mut released = false;
+                    let mut error = String::new();
+                    while let Some(event) = rx.recv().await {
+                        match event {
+                            CommandEvent::Stdout(s) => {
+                                trace(format!("key {} {}", token, s.trim()));
+                                if s.trim() == "down" {
+                                    if let Ok(mut keys) = handle.state::<LiveState>().down.lock() {
+                                        keys.insert(token.clone());
+                                    }
+                                }
+                                if s.trim() == "up" {
+                                    released = true;
+                                    release_native(&handle, &token);
+                                }
+                                let _ = handle.emit_to(
+                                    "controller",
+                                    "host-key",
+                                    json!({"token":token,"event":s.trim()}),
+                                );
+                            }
+                            CommandEvent::Stderr(s) | CommandEvent::Error(s) => {
+                                trace(format!("key error {} {}", token, s));
+                                error = s;
+                            }
+                            CommandEvent::Terminated(_) => {
+                                if !released {
+                                    release_native(&handle, &token);
+                                    let _=handle.emit_to("controller","host-key",json!({"token":token,"event":"error","error":if error.is_empty(){"The shortcut monitor stopped"}else{&error}}));
+                                }
+                                break;
+                            }
+                            _ => (),
+                        }
+                    }
+                    if let Ok(mut children) = handle.state::<Helpers>().0.lock() {
+                        children.remove(&token);
+                    };
+                });
             }
         }
+        "stop-watch" => {
+            #[cfg(target_os = "macos")]
+            mac_hold::stop(&app, text(&args, "token"));
+            #[cfg(not(target_os = "macos"))]
+            {
+                release_native(&app, text(&args, "token"));
+                if let Some(child) = app
+                    .state::<Helpers>()
+                    .0
+                    .lock()
+                    .map_err(err)?
+                    .remove(text(&args, "token"))
+                {
+                    let _ = child.kill();
+                }
+            }
+        }
+
         "open" => {
             let url = match text(&args, "target") {
                 "donate" => "https://github.com/sponsors/pgilfernandez",
@@ -455,9 +475,17 @@ fn main() {
     let tray = SystemTray::new().with_icon(Icon::Raw(icon)).with_menu(menu);
     #[cfg(target_os = "macos")]
     let tray = tray.with_icon_as_template(true);
-    tauri::Builder::default().plugin(tauri_plugin_single_instance::init(|app,_,_| { let _=app.emit_to("controller","host-menu","show"); })).manage(Helpers::default()).manage(LiveState::default()).system_tray(tray)
+    let builder = tauri::Builder::default();
+    #[cfg(target_os = "macos")]
+    let builder = builder.manage(mac_hold::MacHold::default());
+    #[cfg(not(target_os = "macos"))]
+    let builder = builder.manage(Helpers::default());
+    builder.plugin(tauri_plugin_single_instance::init(|app,_,_| { let _=app.emit_to("controller","host-menu","show"); })).manage(LiveState::default()).system_tray(tray)
         .invoke_handler(tauri::generate_handler![host])
-        .setup(|app| { create_window(&app.handle(),&json!({"label":"controller","role":"controller","title":"TeachersPen","bounds":{"width":1,"height":1}}))?; Ok(()) })
+        .setup(|app| {
+            #[cfg(target_os = "macos")]
+            mac_hold::install(&app.handle())?;
+            create_window(&app.handle(),&json!({"label":"controller","role":"controller","title":"TeachersPen","bounds":{"width":1,"height":1}}))?; Ok(()) })
         .on_system_tray_event(|app,event| {if let SystemTrayEvent::MenuItemClick{id,..}=event {
             if id=="quit" {tauri::api::process::kill_children();app.exit(0);}
             let _=app.emit_to("controller","host-menu",id);

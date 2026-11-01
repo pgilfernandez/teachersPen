@@ -48,7 +48,9 @@ In **Preferences → Activation**, choose:
 
 The activation setting is applied and saved immediately. Hold mode works with the activation, tool, color, and whiteboard/blackboard shortcuts. Esc interrupts drawing even if a shortcut is still held; release and press the shortcut again to reactivate it.
 
-Key release is checked by a small native helper every 8 ms, only while a drawing shortcut is held. Four consecutive released samples (about 32 ms) confirm release, filtering transient key-up readings. On macOS, the helper prefers physical HID key state, with a session-input fallback selected before activation. There is no maximum hold duration; the two-second watchdog applies only to helper startup. It uses Core Graphics on macOS, `GetAsyncKeyState` on Windows, and X11 on Linux. It does not install a permanent keyboard monitor or record what you type. The macOS helper is built for Intel and Apple Silicon with a minimum deployment target of macOS 11.
+On macOS, hold activation follows the press/release events of the registered Carbon hotkey, plus modifier changes within TeachersPen. It does not depend on a child process being able to query global physical key state, which can differ between Finder and terminal launches. Release returns input directly from the native host, with no maximum hold duration. The API is available on Big Sur and earlier macOS versions.
+
+On Windows and Linux, a small native helper checks the held shortcut every 8 ms. Four consecutive released samples (about 32 ms) confirm release. The two-second watchdog applies only to helper startup, with no maximum hold duration. The helper uses `GetAsyncKeyState` on Windows and X11 on Linux. It does not install a permanent keyboard monitor or record what you type.
 
 ### Default shortcuts
 
