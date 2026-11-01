@@ -106,9 +106,7 @@ input[type="color"] { width: 35px; height: 23px; padding: 1px; cursor: pointer; 
 .color-preset input[type="color"] { width: 48px; height: 20px; padding: 0; }
 .preferences-footer { display: flex; justify-content: flex-end; gap: 8px; }
 .preferences-footer button { background: #d9d6df; padding: 5px 10px; color: #4e4a57; border-radius: 5px; font-size: 12px; }
-.preferences-footer button.primary { background: #256ed1; color: #fff; }
 .notice { white-space: pre-line; background: #fff0d4; color: #876018; padding: 8px; border-radius: 5px; font-size: 11px; line-height: 1.4; margin-bottom: 8px; }
-.save-message { white-space: pre-line; font-size: 10px; line-height: 1.4; color: #315f87; min-height: 14px; margin: 5px 0 0; }
 
 .board-button svg { display: block; width: 100%; height: 100%; }
 

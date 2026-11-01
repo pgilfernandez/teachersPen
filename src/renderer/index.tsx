@@ -286,103 +286,73 @@ function Toolbar({ state }: { state: State }) {
 }
 function Preferences({ state }: { state: State }) {
   const t = translator(state.settings.language);
-  const [draft, setDraft] = useState<Settings>(() => structuredClone(state.settings));
-  useEffect(() => { setDraft(previous => ({ ...previous, transparency: state.settings.transparency })); }, [state.settings.transparency]);
-  useEffect(() => { setDraft(previous => ({ ...previous, timerText: state.settings.timerText, timerColor: state.settings.timerColor, timerDirection: state.settings.timerDirection, timerSeconds: state.settings.timerSeconds })); }, [state.settings.timerText, state.settings.timerColor, state.settings.timerDirection, state.settings.timerSeconds]);
-  useEffect(() => { setDraft(previous => ({ ...previous, toolbarOrientation: state.settings.toolbarOrientation })); }, [state.settings.toolbarOrientation]);
-  const [message, setMessage] = useState('');
+  const [widthText, setWidthText] = useState(String(state.settings.width));
+  const [opacityText, setOpacityText] = useState(String(100 - state.settings.transparency));
+  useEffect(() => { setWidthText(String(state.settings.width)); }, [state.settings.width]);
+  useEffect(() => { setOpacityText(String(100 - state.settings.transparency)); }, [state.settings.transparency]);
+  const [error, setError] = useState('');
   const [about, setAbout] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [changingActivation, setChangingActivation] = useState(false);
-  const [changingToolbar, setChangingToolbar] = useState(false);
-  const [changingHints, setChangingHints] = useState(false);
-  useEffect(() => { setDraft(previous => ({ ...previous, drawingHints: state.settings.drawingHints })); }, [state.settings.drawingHints]);
+  const [busy, setBusy] = useState(false);
+  const pending = useRef(0);
   const [recording, setRecording] = useState<Action | null>(null);
-  const field = <K extends keyof Settings>(key: K, value: Settings[K]) => { setDraft(previous => ({ ...previous, [key]: value })); setMessage(''); };
-  const [changingLanguage, setChangingLanguage] = useState(false);
-  const busy = saving || changingActivation || changingToolbar || changingLanguage || changingHints;
-  useEffect(() => { setDraft(previous => ({ ...previous, language: state.settings.language })); setMessage(''); }, [state.settings.language]);
-  const changeLanguage = async (next: Language) => {
-    setChangingLanguage(true);
+  const saveChange = async (value: Command) => {
+    pending.current++; setBusy(true); setError('');
+    const failed = (message: string) => {
+      setError(message);
+      if (value.type === 'width') setWidthText(String(state.settings.width));
+      if (value.type === 'transparency') setOpacityText(String(100 - state.settings.transparency));
+    };
     try {
-      const result = await command({ type: 'language', language: next });
-      if (!result.ok) setMessage(result.error || t('No se han podido guardar.'));
-    } catch (error) { setMessage(String(error)); }
-    finally { setChangingLanguage(false); }
+      const result = await command(value);
+      if (!result.ok) failed(result.error || t('No se han podido guardar.'));
+      else if (value.type === 'restore-defaults') {
+        const restored = defaults();
+        setWidthText(String(restored.width)); setOpacityText(String(100 - restored.transparency));
+      }
+    } catch (error) { failed(String(error)); }
+    finally { pending.current--; setBusy(pending.current > 0); }
   };
-  const changeHints = async (enabled: boolean) => {
-    setChangingHints(true);
-    try {
-      const result = await command({ type: 'drawing-hints', enabled });
-      setMessage(result.ok ? t('Preferencias guardadas.') : result.error || t('No se han podido guardar.'));
-    } catch (error) { setMessage(String(error)); }
-    finally { setChangingHints(false); }
-  };
-  const changeToolbar = async (mode: ToolbarMode) => {
-    setChangingToolbar(true);
-    try {
-      const result = await command({ type: 'toolbar-mode', mode });
-      if (result.ok) {
-        setDraft(previous => ({ ...previous, toolbarMode: mode }));
-        setMessage(t("Modo de barra aplicado y guardado."));
-      } else setMessage(result.error || t("No se ha podido cambiar la barra."));
-      return result.ok;
-    } catch (error) { setMessage(String(error)); return false; }
-    finally { setChangingToolbar(false); }
-  };
-  const changeActivation = async (activation: Settings['activation']) => {
-    setChangingActivation(true);
-    try {
-      const result = await command({ type: 'activation', activation });
-      if (result.ok) {
-        setDraft(previous => ({ ...previous, activation }));
-        setMessage(t("Modo de activación aplicado y guardado."));
-      } else setMessage(result.error || t("No se ha podido cambiar el modo de activación."));
-    } catch (error) { setMessage(String(error)); }
-    finally { setChangingActivation(false); }
-  };
-  const save = async () => {
-    setSaving(true);
-    try {
-      const result = await command({ type: 'settings', settings: draft });
-      setMessage(result.ok ? t("Preferencias guardadas.") : result.error || t("No se han podido guardar."));
-    } catch (error) { setMessage(String(error)); }
-    finally { setSaving(false); }
-  };
-  const shortcutRow = (name: Action, label: React.ReactNode = t(actionLabels[name])) => <div className="shortcut-row" key={name}><div className="shortcut-label">{typeof label === 'string' ? <label htmlFor={`shortcut-${name}`}>{label}</label> : label}</div><input id={`shortcut-${name}`} aria-label={t('Atajo de {action}', { action: t(actionLabels[name]) })} readOnly value={recording === name ? t("Pulsa la combinación…") : keyLabel(draft.shortcuts[name], state.settings.language)} placeholder={t("Sin atajo")} onFocus={() => { setRecording(name); void command({ type: 'record-shortcut', active: true }); }} onBlur={() => { setRecording(null); void command({ type: 'record-shortcut', active: false }); }} onKeyDown={event => {
+  const changeShortcut = (action: Action, accelerator: string) => void saveChange({ type: 'shortcut', action, accelerator });
+  const shortcutRow = (name: Action, label: React.ReactNode = t(actionLabels[name])) => <div className="shortcut-row" key={name}><div className="shortcut-label">{typeof label === 'string' ? <label htmlFor={`shortcut-${name}`}>{label}</label> : label}</div><input id={`shortcut-${name}`} aria-label={t('Atajo de {action}', { action: t(actionLabels[name]) })} readOnly value={recording === name ? t("Pulsa la combinación…") : keyLabel(state.settings.shortcuts[name], state.settings.language)} placeholder={t("Sin atajo")} onFocus={() => { setRecording(name); void command({ type: 'record-shortcut', active: true }); }} onBlur={() => { setRecording(null); void command({ type: 'record-shortcut', active: false }); }} onKeyDown={event => {
         event.preventDefault();
         if (event.key === 'Tab') { setRecording(null); event.currentTarget.blur(); return; }
         if (event.key === 'Escape') { event.currentTarget.blur(); return; }
         if (event.key === 'Backspace' || event.key === 'Delete') {
-          if (name !== 'toggle') field('shortcuts', { ...draft.shortcuts, [name]: '' });
+          if (name !== 'toggle') changeShortcut(name, '');
           event.currentTarget.blur(); return;
         }
         if (['Control', 'Shift', 'Alt', 'Meta'].includes(event.key)) return;
-        if (!event.ctrlKey && !event.altKey && !event.metaKey) { setMessage(t("Incluye Ctrl, Alt o Cmd para evitar activar herramientas mientras escribes.")); return; }
+        if (!event.ctrlKey && !event.altKey && !event.metaKey) { setError(t("Incluye Ctrl, Alt o Cmd para evitar activar herramientas mientras escribes.")); return; }
         const key = event.code.startsWith('Key') ? event.code.slice(3) : event.code.startsWith('Digit') ? event.code.slice(5) : event.code === 'Space' ? 'Space' : event.key.length === 1 ? event.key.toUpperCase() : event.key;
         const parts = [event.ctrlKey && 'Control', event.altKey && 'Alt', event.shiftKey && 'Shift', event.metaKey && (state.platform === 'darwin' ? 'Command' : 'Super'), key].filter(Boolean);
-        field('shortcuts', { ...draft.shortcuts, [name]: parts.join('+') });
+        changeShortcut(name, parts.join('+'));
         event.currentTarget.blur();
-      }} /><button className="remove-shortcut" disabled={name === 'toggle'} aria-label={t('Eliminar atajo de {action}', { action: t(actionLabels[name]) })} onClick={() => field('shortcuts', { ...draft.shortcuts, [name]: '' })}><X size={16} aria-hidden="true" /></button></div>;
+      }} /><button className="remove-shortcut" disabled={name === 'toggle'} aria-label={t('Eliminar atajo de {action}', { action: t(actionLabels[name]) })} onClick={() => changeShortcut(name, '')}><X size={16} aria-hidden="true" /></button></div>;
   return <main className="preferences-main">
-    <div className="setting-row language-row"><label htmlFor="language">{t('Idioma')}</label><select id="language" value={state.settings.language} disabled={busy} onChange={event => void changeLanguage(event.target.value as Language)}>{languages.map(code => <option key={code} value={code}>{languageNames[code]}</option>)}</select></div>
+    <div className="setting-row language-row"><label htmlFor="language">{t('Idioma')}</label><select id="language" value={state.settings.language} disabled={busy} onChange={event => void saveChange({ type: 'language', language: event.target.value as Language })}>{languages.map(code => <option key={code} value={code}>{languageNames[code]}</option>)}</select></div>
     <section><h2>{t("Dibujo")}</h2>
       <div className="setting-row"><span className="setting-label">{t("Trazo")}</span><div className="stroke-settings">
-        <label className="number-with-unit" title={t("Grosor del trazo")}><input id="line-width" aria-label={t("Grosor del trazo")} type="number" min="1" max="40" value={draft.width} onChange={e => field('width', Number(e.target.value))} /><span>px</span></label>
-        <label className="number-with-unit" title={t("Opacidad del trazo")}><input id="stroke-opacity" aria-label={t("Opacidad del trazo")} type="number" min="0" max="100" value={100 - draft.transparency} onChange={e => field('transparency', 100 - Number(e.target.value))} /><span>%</span></label>
+        <label className="number-with-unit" title={t("Grosor del trazo")}><input id="line-width" aria-label={t("Grosor del trazo")} type="number" min="1" max="40" value={widthText} onChange={event => {
+          setWidthText(event.target.value);
+          if (event.target.value !== '' && event.target.validity.valid) void saveChange({ type: 'width', width: Number(event.target.value) });
+        }} onBlur={event => { if (!event.target.value || !event.target.validity.valid) setWidthText(String(state.settings.width)); }} /><span>px</span></label>
+        <label className="number-with-unit" title={t("Opacidad del trazo")}><input id="stroke-opacity" aria-label={t("Opacidad del trazo")} type="number" min="0" max="100" value={opacityText} onChange={event => {
+          setOpacityText(event.target.value);
+          if (event.target.value !== '' && event.target.validity.valid) void saveChange({ type: 'transparency', transparency: 100 - Number(event.target.value) });
+        }} onBlur={event => { if (!event.target.value || !event.target.validity.valid) setOpacityText(String(100 - state.settings.transparency)); }} /><span>%</span></label>
       </div></div>
-      <div className="setting-row"><label htmlFor="activation-mode">{t("Activación")}</label><select id="activation-mode" value={state.settings.activation} disabled={busy} onChange={e => void changeActivation(e.target.value as Settings['activation'])}><option value="toggle">{t("Pulsar para alternar")}</option><option value="hold" disabled={!state.holdAvailable}>{t("Mantener pulsado")}</option></select></div>
-      <div className="setting-row"><label htmlFor="toolbar-mode">{t("Barra de dibujo")}</label><select id="toolbar-mode" value={state.settings.toolbarMode} disabled={busy} onChange={e => void changeToolbar(e.target.value as ToolbarMode)}><option value="visible">{t("Visible")}</option><option value="minimal">{t("Mínima")}</option><option value="hidden">{t("Oculta")}</option></select></div>
-      <div className="setting-row"><label htmlFor="drawing-hints">{t('Ayuda al dibujar')}</label><input id="drawing-hints" type="checkbox" checked={state.settings.drawingHints} disabled={busy} onChange={event => void changeHints(event.target.checked)} /></div>
+      <div className="setting-row"><label htmlFor="activation-mode">{t("Activación")}</label><select id="activation-mode" value={state.settings.activation} disabled={busy} onChange={e => void saveChange({ type: 'activation', activation: e.target.value as Settings['activation'] })}><option value="toggle">{t("Pulsar para alternar")}</option><option value="hold" disabled={!state.holdAvailable}>{t("Mantener pulsado")}</option></select></div>
+      <div className="setting-row"><label htmlFor="toolbar-mode">{t("Barra de dibujo")}</label><select id="toolbar-mode" value={state.settings.toolbarMode} disabled={busy} onChange={e => void saveChange({ type: 'toolbar-mode', mode: e.target.value as ToolbarMode })}><option value="visible">{t("Visible")}</option><option value="minimal">{t("Mínima")}</option><option value="hidden">{t("Oculta")}</option></select></div>
+      <div className="setting-row"><label htmlFor="drawing-hints">{t('Ayuda al dibujar')}</label><input id="drawing-hints" type="checkbox" checked={state.settings.drawingHints} disabled={busy} onChange={event => void saveChange({ type: 'drawing-hints', enabled: event.target.checked })} /></div>
     </section>
-    <section><h2>{t("Colores")}</h2><div className="shortcut-list color-shortcuts">{draft.colors.map((color, index) => shortcutRow(`color${index}` as Action, <span className="color-preset"><span>{t("Color")} {index + 1}</span><input aria-label={t('Color {number}', { number: index + 1 })} type="color" value={color} onChange={e => field('colors', draft.colors.map((old, i) => i === index ? e.target.value : old))} /></span>))}{shortcutRow('nextColor')}</div></section>
+    <section><h2>{t("Colores")}</h2><div className="shortcut-list color-shortcuts">{state.settings.colors.map((color, index) => shortcutRow(`color${index}` as Action, <span className="color-preset"><span>{t("Color")} {index + 1}</span><input aria-label={t('Color {number}', { number: index + 1 })} type="color" value={color} onChange={event => void saveChange({ type: 'preset-color', index, color: event.target.value })} /></span>))}{shortcutRow('nextColor')}</div></section>
     <section><h2>{t("Funciones")}</h2><div className="shortcut-list">{actions.filter(name => !name.startsWith('color') && name !== 'nextColor').map(name => shortcutRow(name, name === 'toggle' ? t("Activar / salir") : t(actionLabels[name])))}</div>
     </section>
     {state.shortcutErrors.length > 0 && <div className="notice" role="alert">{state.shortcutErrors.join('\n')}</div>}
     {state.holdError && <div className="notice" role="alert">{t(state.holdError)}</div>}
     {state.wayland && <div className="notice">{t("X11/XWayland: la superposición sobre aplicaciones Wayland nativas no está garantizada.")}</div>}
-    <footer className="preferences-footer"><button className="about-button" title={t('Información')} aria-label={t('Información')} onClick={() => setAbout(true)}><Info size={18} /></button><button disabled={busy} onClick={() => { setDraft({ ...defaults(), language: state.settings.language }); void changeToolbar('visible').then(ok => { if (ok) setMessage(t("Pulsa Guardar para restaurar los demás valores.")); }); }}>{t("Restaurar valores")}</button><button className="primary" disabled={busy} onClick={() => void save()}>{saving ? t("Guardando…") : t("Guardar")}</button></footer>
-    <p className="save-message" role="status">{message}</p>
+    {error && <div className="notice" role="alert">{error}</div>}
+    <footer className="preferences-footer"><button className="about-button" title={t('Información')} aria-label={t('Información')} onClick={() => setAbout(true)}><Info size={18} /></button><button disabled={busy} onClick={() => void saveChange({ type: 'restore-defaults' })}>{t('Restaurar valores')}</button></footer>
     {about && <About state={state} onClose={() => setAbout(false)} />}
   </main>;
 }

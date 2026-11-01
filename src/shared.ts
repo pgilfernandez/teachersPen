@@ -92,6 +92,9 @@ export type Command =
   | { type: 'width'; width: number }
   | { type: 'transparency'; transparency: number }
   | { type: 'settings'; settings: Settings }
+  | { type: 'restore-defaults' }
+  | { type: 'preset-color'; index: number; color: string }
+  | { type: 'shortcut'; action: Action; accelerator: string }
   | { type: 'language'; language: Language }
   | { type: 'activation'; activation: Settings['activation'] }
   | { type: 'toolbar-mode'; mode: ToolbarMode }

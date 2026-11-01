@@ -448,6 +448,33 @@ async function start() {
           const next = { ...state.settings, transparency: parseSettings({ transparency: command.transparency }).transparency };
           saveSettings(next); state.settings = next; break;
         }
+        case 'preset-color': {
+          if (!Number.isInteger(command.index) || command.index < 0 || command.index >= state.settings.colors.length || !/^#[0-9a-f]{6}$/i.test(command.color)) return { ok: false, error: t('No se han podido guardar.') };
+          const colors = state.settings.colors.map((color, index) => index === command.index ? command.color : color);
+          const next = { ...state.settings, colors };
+          saveSettings(next); state.settings = next;
+          break;
+        }
+        case 'shortcut': {
+          if (!actions.includes(command.action) || typeof command.accelerator !== 'string' || command.accelerator.length >= 100 || (command.action === 'toggle' && !command.accelerator)) return { ok: false, error: t('No se han podido guardar.') };
+          const next = parseSettings({ ...state.settings, shortcuts: { ...state.settings.shortcuts, [command.action]: command.accelerator } });
+          const errors = registerShortcuts(next);
+          if (errors.length) {
+            state.shortcutErrors = registerShortcuts(state.settings);
+            if (recordingShortcut) globalShortcut.unregisterAll();
+            broadcast(); return { ok: false, error: errors.join('\n') };
+          }
+          try { saveSettings(next); }
+          catch (error) {
+            state.shortcutErrors = registerShortcuts(state.settings);
+            if (recordingShortcut) globalShortcut.unregisterAll();
+            throw error;
+          }
+          state.settings = next; state.shortcutErrors = []; state.holdError = null;
+          // Keep recording isolated until the field blurs, then bind the saved shortcut.
+          if (recordingShortcut) globalShortcut.unregisterAll();
+          break;
+        }
         case 'record-shortcut':
           if (event.sender !== preferences?.webContents) return { ok: false, error: t("Solo se pueden editar atajos desde Preferencias") };
           recordingShortcut = command.active === true;
@@ -570,9 +597,12 @@ async function start() {
           refreshApplicationMenu(); refreshTrayMenu();
           break;
         }
+        case 'restore-defaults':
         case 'settings': {
-          // Presentation is applied immediately by its own control, including tray changes.
-          const next = parseSettings({ ...command.settings, language: state.settings.language, toolbarMode: state.settings.toolbarMode });
+          const restoring = command.type === 'restore-defaults';
+          const next = restoring
+            ? parseSettings({ ...defaults(), language: state.settings.language })
+            : parseSettings({ ...command.settings, language: state.settings.language, toolbarMode: state.settings.toolbarMode });
           const orientationChanged = next.toolbarOrientation !== state.settings.toolbarOrientation;
           const errors = registerShortcuts(next);
           if (errors.length) { state.shortcutErrors = registerShortcuts(state.settings); broadcast(); return { ok: false, error: errors.join('\n') }; }
@@ -580,6 +610,12 @@ async function start() {
           catch (error) { state.shortcutErrors = registerShortcuts(state.settings); throw error; }
           if (next.timerSeconds !== state.settings.timerSeconds || next.timerDirection !== state.settings.timerDirection) resetTimer();
           state.settings = next; state.shortcutErrors = []; state.holdError = null;
+          if (restoring) {
+            toolbarRevealAnchor = null; state.toolbarReveal = null;
+            clearTimeout(toolbarRevealTimeout);
+            state.toolbarExpanded = next.toolbarMode === 'visible';
+            applyToolbarPresentation();
+          }
           if (orientationChanged) prepareToolbarLayout();
           break;
         }

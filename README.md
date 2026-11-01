@@ -117,9 +117,9 @@ The first row in Preferences selects **English (default), Español, Italiano, Fr
 
 The compact preferences panel is 430 px wide and organized into **Drawing**, **Colors**, and **Functions**. The Stroke row combines width and opacity, and each color shares a row with its shortcut. The last row of Colors configures the Next color shortcut, which cycles through all five presets without changing the drawing tool. Timer duration is configured in the timer popup.
 
-Save applies changes to stroke settings, colors, and shortcuts. Invalid or occupied shortcuts leave the previous settings in place. Activation, toolbar mode, language, and Drawing hints are saved immediately when selected. Drawing hints are enabled by default and show the selected tool and how to return to interaction mode; they can be enabled or disabled independently of the Visible, Minimal, or Hidden toolbar mode.
+All preference changes are applied and saved automatically, including stroke settings, colors, shortcuts, activation, toolbar mode, language, and Drawing hints. There is no Save button or saved-status line. Invalid or occupied shortcuts leave the previous assignment in place and show an error. Restore defaults applies and saves the defaults immediately, preserving the selected language. Drawing hints are enabled by default and show the selected tool and how to return to interaction mode; they can be enabled or disabled independently of the Visible, Minimal, or Hidden toolbar mode.
 
-The information button is on the left of the Restore defaults/Save row. Its popup shows the app icon, **TeachersPen v1.0**, the short build commit, and:
+The information button is on the left of the footer, with Restore defaults aligned to the right. Its popup shows the app icon, **TeachersPen v1.0**, the short build commit, and:
 
 > developed with love by Pablo Gil Fernández
 
