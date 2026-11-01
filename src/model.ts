@@ -1,6 +1,6 @@
 import type { Tool } from './shared';
 export interface Point { x: number; y: number }
-export interface Stroke { tool: Tool; color: string; width: number; points: Point[] }
+export interface Stroke { tool: Tool; color: string; width: number; transparency?: number; points: Point[] }
 export class DrawingHistory {
   strokes: Stroke[] = [];
   private future: Stroke[][] = [];

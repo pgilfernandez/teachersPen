@@ -15,6 +15,7 @@ export interface Settings {
   activation: 'toggle' | 'hold';
   toolbarMode: ToolbarMode;
   width: number;
+  transparency: number;
   colors: string[];
   shortcuts: Record<Action, string>;
   timerSeconds: number;
@@ -40,7 +41,7 @@ export function defaults(): Settings {
   return {
     activation: 'toggle',
     toolbarMode: 'visible',
-    width: 6, colors: ['#ef4444', '#087bff', '#78cc00', '#e2cd00', '#bfc0c2'], timerSeconds: 300,
+    width: 6, transparency: 0, colors: ['#ef4444', '#087bff', '#78cc00', '#e2cd00', '#bfc0c2'], timerSeconds: 300,
     shortcuts: Object.fromEntries(actions.map((action, i) => [action, `Control+Shift+${keys[i]}`])) as Record<Action, string>
   };
 }
@@ -51,6 +52,7 @@ export function parseSettings(input: unknown): Settings {
   if (data.activation === 'hold') base.activation = 'hold';
   if (data.toolbarMode === 'minimal' || data.toolbarMode === 'hidden') base.toolbarMode = data.toolbarMode;
   if (Number.isFinite(data.width)) base.width = Math.max(1, Math.min(40, Math.round(data.width!)));
+  if (Number.isFinite(data.transparency)) base.transparency = Math.max(0, Math.min(100, Math.round(data.transparency!)));
   if (Number.isFinite(data.timerSeconds)) base.timerSeconds = Math.max(10, Math.min(7200, Math.round(data.timerSeconds!)));
   if (Array.isArray(data.colors) && data.colors.length === 5 && data.colors.every(c => typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c))) base.colors = [...data.colors];
   if (data.shortcuts && typeof data.shortcuts === 'object') {
@@ -68,6 +70,7 @@ export type Command =
   | { type: 'tool'; tool: Tool }
   | { type: 'color'; index: number }
   | { type: 'width'; width: number }
+  | { type: 'transparency'; transparency: number }
   | { type: 'settings'; settings: Settings }
   | { type: 'activation'; activation: Settings['activation'] }
   | { type: 'toolbar-mode'; mode: ToolbarMode }

@@ -21,6 +21,8 @@ Los dos modos aparecen como opciones visibles y la opción marcada indica el mod
 
 La barra completa es una sola fila sin logotipo ni botón de interacción: asa de seis puntos, herramientas, fondos blanco/negro, temporizador con un 5, colores, diámetro del trazo y acciones. Preferencias, Contraer y Salir están juntos al final y usan iconos Lucide. El campo del diámetro tiene 68 px de ancho. Contraer una barra visible pasa al modo mínimo.
 
+A la derecha del ancho del trazo está su transparencia, de 0% (opaco) a 100% (invisible). Se guarda automáticamente y se aplica a los trazos nuevos; cada trazo conserva su propio valor al deshacer o rehacer.
+
 En **Preferencias → Barra de dibujo** puedes elegir un modo, que se aplica y guarda inmediatamente:
 
 - **Visible:** mantiene la barra completa en pantalla.

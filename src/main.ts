@@ -322,6 +322,10 @@ async function start() {
           const next = { ...state.settings, width: parseSettings({ width: command.width }).width };
           saveSettings(next); state.settings = next; break;
         }
+        case 'transparency': {
+          const next = { ...state.settings, transparency: parseSettings({ transparency: command.transparency }).transparency };
+          saveSettings(next); state.settings = next; break;
+        }
         case 'record-shortcut':
           if (event.sender !== preferences?.webContents) return { ok: false, error: 'Solo se pueden editar atajos desde Preferencias' };
           recordingShortcut = command.active === true;
