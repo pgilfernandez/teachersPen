@@ -23,7 +23,7 @@ Por defecto, la barra completa es una sola fila sin logotipo ni botón de intera
 
 A la derecha del ancho del trazo está su transparencia, de 0% (opaco) a 100% (invisible). Se guarda automáticamente y se aplica a los trazos nuevos; cada trazo conserva su propio valor al deshacer o rehacer.
 
-Junto a **Contraer** está **Girar barra**, con un icono Lucide de rotación. Alterna la ventana completa entre fila horizontal y columna vertical, con los controles en posición normal y el asa de seis puntos para moverla. La orientación se guarda automáticamente. La columna se ajusta a la altura disponible del monitor y permite desplazamiento si no caben todos los controles.
+Junto a **Contraer** está **Girar barra**, con un icono Lucide de rotación. Alterna la ventana completa entre fila horizontal y columna vertical, con los controles en posición normal y el asa de seis puntos para moverla. La orientación se guarda automáticamente. La barra vertical mide 50 px de ancho y sus campos numéricos, sin etiquetas visibles, miden 44 px con 3 px de margen a cada lado. La columna se ajusta a la altura disponible del monitor y permite desplazamiento si no caben todos los controles.
 
 En **Preferencias → Barra de dibujo** puedes elegir un modo, que se aplica y guarda inmediatamente:
 

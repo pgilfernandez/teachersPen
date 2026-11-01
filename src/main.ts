@@ -128,7 +128,7 @@ function prepareToolbarLayout(anchor?: Point, workArea?: Electron.Rectangle) {
   state.toolbarAvailableHeight = area.height;
   const vertical = state.settings.toolbarOrientation === 'vertical';
   // Give the column room to measure itself before the renderer fits the final size.
-  const size = { width: Math.min(vertical ? 136 : 1000, area.width), height: vertical ? area.height : Math.min(72, area.height) };
+  const size = { width: Math.min(vertical ? 66 : 1000, area.width), height: vertical ? area.height : Math.min(72, area.height) };
   const position = fitPosition(anchor || bounds, size, area);
   toolbar.setBounds({ ...position, ...size });
   if (areaChanged) broadcast();
@@ -442,7 +442,7 @@ async function start() {
             const bounds = toolbar.getBounds();
             const area = screen.getDisplayMatching(bounds).workArea;
             const vertical = command.orientation === 'vertical';
-            const width = Math.max(vertical ? 80 : 200, Math.min(1600, Math.ceil(command.width)));
+            const width = Math.max(vertical ? 66 : 200, Math.min(1600, Math.ceil(command.width)));
             const height = Math.max(48, Math.min(vertical ? area.height : 180, Math.ceil(command.height)));
             const anchor = { x: toolbarSized ? bounds.x : Math.round(bounds.x + (bounds.width - width) / 2), y: bounds.y };
             const position = fitPosition(anchor, { width, height }, area);
@@ -546,7 +546,7 @@ async function start() {
   const area = screen.getPrimaryDisplay().workArea;
   state.toolbarAvailableHeight = area.height;
   const initialVertical = state.settings.toolbarOrientation === 'vertical';
-  const initialWidth = initialVertical ? 136 : 965;
+  const initialWidth = initialVertical ? 66 : 965;
   toolbar = createWindow('toolbar', {
     x: area.x + Math.round((area.width - initialWidth) / 2), y: initialVertical ? area.y : area.y + 18,
     width: initialWidth, height: initialVertical ? area.height : 72, frame: false, transparent: true, backgroundColor: '#00000000',
