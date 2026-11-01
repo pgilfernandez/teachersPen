@@ -21,7 +21,6 @@ import PanelTopCloseSource from './assets/icons/panel-top-close.svg';
 import RotateCwSource from './assets/icons/rotate-cw.svg';
 import PowerSource from './assets/icons/power.svg';
 import XSource from './assets/icons/x.svg';
-import TimerFiveSource from './assets/icons/timer-five.svg';
 import WhiteboardSource from './assets/icons/whiteboard.svg';
 import BlackboardSource from './assets/icons/blackboard.svg';
 
@@ -57,6 +56,5 @@ export const PanelTopClose = icon(PanelTopCloseSource);
 export const RotateCw = icon(RotateCwSource);
 export const Power = icon(PowerSource);
 export const X = icon(XSource);
-export const TimerFive = icon(TimerFiveSource);
 export const Whiteboard = icon(WhiteboardSource);
 export const Blackboard = icon(BlackboardSource);
