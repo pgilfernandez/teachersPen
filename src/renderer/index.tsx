@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { actionLabels, actions, defaults, type Action, type Command, type Settings, type State, type Tool, type ToolbarMode } from '../shared';
 import { MINI_RADIUS, MINI_SIZE } from '../toolbar';
-import { Pencil, PencilLine, Slash, ArrowUpRight, RectangleHorizontal, Circle, Undo2, Redo2, Trash2, Eye, EyeOff, Settings as SettingsIcon, Timer as TimerIcon, GripVertical, PanelTopClose, Power, X, type LucideIcon } from 'lucide-react';
+import { Pencil, Slash, ArrowUpRight, RectangleHorizontal, Circle, Undo2, Redo2, Trash2, Eye, EyeOff, Settings as SettingsIcon, Timer as TimerIcon, GripVertical, PanelTopClose, Power, X, type LucideIcon } from 'lucide-react';
 import { DrawingHistory, type Stroke } from '../model';
 import { paintStroke } from './draw';
 
@@ -71,7 +71,7 @@ function MiniLauncher({ state }: { state: State }) {
     onPointerCancel={event => { if (pointer.current !== null) { pointer.current = null; void send('cancel', event); } }}
     onLostPointerCapture={event => { if (pointer.current !== null) { pointer.current = null; void send('cancel', event); } }}
     onClick={event => { if (event.detail === 0) void command({ type: 'show-tools' }); }}>
-    <PencilLine size={28} aria-hidden="true" />
+    <img src="mini-launcher.svg" width="50" height="50" alt="" draggable={false} aria-hidden="true" />
   </button>;
 }
 
@@ -258,7 +258,7 @@ function Preferences({ state }: { state: State }) {
         <input id={`toolbar-${mode}`} type="radio" name="toolbar-mode" checked={state.settings.toolbarMode === mode} disabled={busy} onChange={() => void changeToolbar(mode)} />
         <span><strong>{({ visible: 'Visible', minimal: 'Mínima', hidden: 'Oculta' })[mode]}</strong><small>{({ visible: 'La barra completa permanece en pantalla.', minimal: 'Un círculo con el icono. Arrastra para moverlo; haz clic para abrir la barra.', hidden: 'Solo el icono del sistema. Dibuja usando los atajos.' })[mode]}</small></span>
       </label>)}</div>
-      <p className="help">Se aplica y guarda al seleccionarlo. El círculo tiene un 20% de transparencia, y un 40% al pasar el ratón.</p>
+      <p className="help">Se aplica y guarda al seleccionarlo. El botón mínimo tiene un 15% de opacidad, y un 40% al pasar el ratón.</p>
     </section>
     <section><h2>Dibujo</h2><div className="setting-row"><label htmlFor="line-width">Grosor del trazo</label><div><input id="line-width" type="number" min="1" max="40" value={draft.width} onChange={e => field('width', Number(e.target.value))} /> <span className="muted">px</span></div></div>
       <div className="setting-row"><span id="activation-label">Activación</span><div className="activation-options" role="radiogroup" aria-labelledby="activation-label">

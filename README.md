@@ -26,7 +26,7 @@ A la derecha del ancho del trazo está su transparencia, de 0% (opaco) a 100% (i
 En **Preferencias → Barra de dibujo** puedes elegir un modo, que se aplica y guarda inmediatamente:
 
 - **Visible:** mantiene la barra completa en pantalla.
-- **Mínima:** muestra solo un círculo con el icono de TeachersPen. Tiene un 20% de transparencia (80% de opacidad) y un 40% al pasar el ratón (60% de opacidad). Arrastrarlo cambia su posición; hacer clic abre la barra completa. El botón **Contraer** vuelve al círculo. Su posición se recuerda entre sesiones y se ajusta si se desconecta un monitor.
+- **Mínima:** muestra solo un círculo con el icono de TeachersPen. Su alpha es 0.15 en reposo y 0.4 al pasar el ratón. Arrastrarlo cambia su posición; hacer clic abre la barra completa. El botón **Contraer** vuelve al círculo. Su posición se recuerda entre sesiones y se ajusta si se desconecta un monitor.
 - **Oculta:** deja únicamente el icono en la barra de menús de macOS o la bandeja del sistema de Windows/Linux. En macOS también desaparece del Dock y del selector de aplicaciones. Los atajos siguen dibujando sin mostrar la barra, el círculo ni el aviso inferior. Las anotaciones permanecen visibles.
 
 El menú del icono del sistema permite abrir la barra completa, cambiar entre los tres modos, abrir Preferencias o salir. Si abres temporalmente la barra en modo oculto, **Ocultar** vuelve a esconderla. Volver a ejecutar TeachersPen también permite recuperar la barra. En Linux, la ubicación y disponibilidad de los iconos de bandeja dependen del escritorio; la validación de Windows/Linux sigue pendiente.
@@ -114,6 +114,8 @@ Para generar instaladores: `npm run dist:mac`, `npm run dist:win`, `npm run dist
 Los iconos propios de la interfaz son SVG de [Lucide](https://lucide.dev/guide/react/), incluidos en el bundle sin peticiones de red. Se usa `PencilLine` como identidad de TeachersPen en el círculo mínimo, el Dock y la bandeja del sistema; las herramientas utilizan los símbolos de lápiz, línea, flecha, rectángulo y círculo correspondientes.
 
 `scripts/build-icons.mjs` genera automáticamente PNG, ICNS e ICO a partir del mismo icono oficial. El rasterizador se usa solo al compilar y no se distribuye con la app. Se incluye la licencia de Lucide en `dist/icons/LICENSE-lucide.txt`. Los requisitos de sistema siguen siendo los mismos.
+
+El diseño completo del botón mínimo está en el SVG editable `src/renderer/assets/mini-launcher.svg`: círculo, borde y lápiz. No se regenera al compilar; se copia directamente a `dist/mini-launcher.svg`. Puedes editar ese archivo fuente y recompilar la app. Su alpha normal/hover se configura en `.mini-launcher` dentro de `src/renderer/styles.css`.
 
 ## Organización
 

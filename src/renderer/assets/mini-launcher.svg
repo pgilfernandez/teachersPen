@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Editable mini button. PencilLine artwork from Lucide (ISC license).
+     Keep the 50 x 50 viewBox to retain the button's size and circular hit area.
+     Normal/hover alpha is controlled by .mini-launcher in styles.css. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 50 50">
+  <circle id="background" cx="25" cy="25" r="24.5" fill="#f7faff" stroke="#8ba3c4" />
+  <g id="pencil" transform="translate(11 11) scale(1.166666667)" fill="none" stroke="#2474df" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M13 21h8" />
+    <path d="m15 5 4 4" />
+    <path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" />
+  </g>
+</svg>

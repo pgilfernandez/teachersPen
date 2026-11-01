@@ -589,9 +589,9 @@ async function runSmoke() {
   assert.equal(toolbar.isVisible(), false);
   assert.equal(mini!.isVisible(), true);
   mini!.webContents.sendInputEvent({ type: 'mouseMove', x: 0, y: 0 });
-  assert.equal(await mini!.webContents.executeJavaScript(`new Promise(resolve=>requestAnimationFrame(()=>resolve(getComputedStyle(document.querySelector('button')).opacity)))`), '0.8');
+  assert.equal(await mini!.webContents.executeJavaScript(`new Promise(resolve=>requestAnimationFrame(()=>resolve(getComputedStyle(document.querySelector('button')).opacity)))`), '0.15');
   mini!.webContents.sendInputEvent({ type: 'mouseMove', x: 28, y: 28 });
-  assert.equal(await mini!.webContents.executeJavaScript(`new Promise(resolve=>requestAnimationFrame(()=>resolve(getComputedStyle(document.querySelector('button')).opacity)))`), '0.6');
+  assert.equal(await mini!.webContents.executeJavaScript(`new Promise(resolve=>requestAnimationFrame(()=>resolve(getComputedStyle(document.querySelector('button')).opacity)))`), '0.4');
   const miniBefore = mini!.getBounds();
   await mini!.webContents.executeJavaScript(`(async () => {
     const button=document.querySelector('button');
