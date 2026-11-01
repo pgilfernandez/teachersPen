@@ -353,7 +353,8 @@ async function createOverlays() {
 function openPreferences() {
   setDrawing(false);
   if (preferences && !preferences.isDestroyed()) { preferences.show(); return; }
-  preferences = createWindow('preferences', { width: 650, height: 800, minWidth: 570, minHeight: 500, title: 'Preferencias · TeachersPen', backgroundColor: '#f6f5f1', autoHideMenuBar: true, skipTaskbar: state.settings.toolbarMode === 'hidden' });
+  const area = screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea;
+  preferences = createWindow('preferences', { width: Math.min(430, area.width), height: Math.min(800, area.height - 40), minWidth: 380, minHeight: 400, title: 'Preferencias · TeachersPen', backgroundColor: '#eeecf0', autoHideMenuBar: true, skipTaskbar: state.settings.toolbarMode === 'hidden' });
   preferences.once('ready-to-show', () => preferences?.show());
   const finishRecording = () => {
     if (!recordingShortcut) return;

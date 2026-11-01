@@ -308,27 +308,7 @@ function Preferences({ state }: { state: State }) {
     } catch (error) { setMessage(String(error)); }
     finally { setSaving(false); }
   };
-  return <main className="preferences-main">
-    <header><div className="eyebrow">TEACHERSPEN / PREFERENCIAS</div><h1>Tu pantalla, tu pizarra.</h1><p>Configura las herramientas para acompañar tus clases.</p></header>
-    <section><h2>Barra de dibujo</h2>
-      <div className="toolbar-options" role="radiogroup" aria-label="Barra de dibujo">{(['visible', 'minimal', 'hidden'] as ToolbarMode[]).map(mode => <label className={state.settings.toolbarMode === mode ? 'active' : ''} key={mode}>
-        <input id={`toolbar-${mode}`} type="radio" name="toolbar-mode" checked={state.settings.toolbarMode === mode} disabled={busy} onChange={() => void changeToolbar(mode)} />
-        <span><strong>{({ visible: 'Visible', minimal: 'Mínima', hidden: 'Oculta' })[mode]}</strong><small>{({ visible: 'La barra completa permanece en pantalla.', minimal: 'Solo el icono SVG. Arrastra para moverlo; haz clic para abrir la barra.', hidden: 'Solo el icono del sistema. Dibuja usando los atajos.' })[mode]}</small></span>
-      </label>)}</div>
-      <p className="help">Se aplica y guarda al seleccionarlo. El botón mínimo tiene un 15% de opacidad, y un 40% al pasar el ratón.</p>
-    </section>
-    <section><h2>Dibujo</h2><div className="setting-row"><label htmlFor="line-width">Grosor del trazo</label><div><input id="line-width" type="number" min="1" max="40" value={draft.width} onChange={e => field('width', Number(e.target.value))} /> <span className="muted">px</span></div></div>
-      <div className="setting-row"><span id="activation-label">Activación</span><div className="activation-options" role="radiogroup" aria-labelledby="activation-label">
-        <label className={state.settings.activation === 'toggle' ? 'active' : ''}><input id="activation-toggle" type="radio" name="activation" checked={state.settings.activation === 'toggle'} disabled={busy} onChange={() => void changeActivation('toggle')} />Pulsar para activar / desactivar</label>
-        <label className={state.settings.activation === 'hold' ? 'active' : ''}><input id="activation-hold" type="radio" name="activation" checked={state.settings.activation === 'hold'} disabled={busy || !state.holdAvailable} onChange={() => void changeActivation('hold')} />Mantener pulsado</label>
-      </div></div>
-      <p className="help">El modo de activación se aplica y guarda al seleccionarlo.</p>
-      {state.settings.activation === 'hold' && <p className="help">Mantén pulsado el atajo de activación, de una herramienta o de un color mientras dibujas. Al soltar cualquiera de sus teclas vuelves a interactuar. Los botones de la barra también permiten activar el dibujo manualmente.</p>}
-      <p className="help">Al salir del dibujo, los trazos permanecen visibles y puedes volver a usar las aplicaciones de debajo. Esc sale del modo dibujo.</p>
-    </section>
-    <section><h2>Colores</h2><div className="preset-colors">{draft.colors.map((color, index) => <label key={index}><input aria-label={`Color ${index + 1}`} type="color" value={color} onChange={e => field('colors', draft.colors.map((old, i) => i === index ? e.target.value : old))} /><span>Color {index + 1}</span></label>)}</div></section>
-    <section><h2>Atajos globales</h2><p className="help">Pulsa un campo y escribe la combinación. Se aplican al guardar. Esc cancela; Retroceso elimina el atajo.</p>
-      <div className="shortcut-list">{actions.map(name => <div className="shortcut-row" key={name}><label htmlFor={`shortcut-${name}`}>{actionLabels[name]}</label><input id={`shortcut-${name}`} readOnly value={recording === name ? 'Pulsa la combinación…' : keyLabel(draft.shortcuts[name])} placeholder="Sin atajo" onFocus={() => { setRecording(name); void command({ type: 'record-shortcut', active: true }); }} onBlur={() => { setRecording(null); void command({ type: 'record-shortcut', active: false }); }} onKeyDown={event => {
+  const shortcutRow = (name: Action, label: React.ReactNode = actionLabels[name]) => <div className="shortcut-row" key={name}><div className="shortcut-label">{typeof label === 'string' ? <label htmlFor={`shortcut-${name}`}>{label}</label> : label}</div><input id={`shortcut-${name}`} aria-label={`Atajo de ${actionLabels[name]}`} readOnly value={recording === name ? 'Pulsa la combinación…' : keyLabel(draft.shortcuts[name])} placeholder="Sin atajo" onFocus={() => { setRecording(name); void command({ type: 'record-shortcut', active: true }); }} onBlur={() => { setRecording(null); void command({ type: 'record-shortcut', active: false }); }} onKeyDown={event => {
         event.preventDefault();
         if (event.key === 'Tab') { setRecording(null); event.currentTarget.blur(); return; }
         if (event.key === 'Escape') { event.currentTarget.blur(); return; }
@@ -342,15 +322,25 @@ function Preferences({ state }: { state: State }) {
         const parts = [event.ctrlKey && 'Control', event.altKey && 'Alt', event.shiftKey && 'Shift', event.metaKey && (state.platform === 'darwin' ? 'Command' : 'Super'), key].filter(Boolean);
         field('shortcuts', { ...draft.shortcuts, [name]: parts.join('+') });
         event.currentTarget.blur();
-      }} /><button className="remove-shortcut" disabled={name === 'toggle'} aria-label={`Eliminar atajo de ${actionLabels[name]}`} onClick={() => field('shortcuts', { ...draft.shortcuts, [name]: '' })}><X size={16} aria-hidden="true" /></button></div>)}</div>
+      }} /><button className="remove-shortcut" disabled={name === 'toggle'} aria-label={`Eliminar atajo de ${actionLabels[name]}`} onClick={() => field('shortcuts', { ...draft.shortcuts, [name]: '' })}><X size={16} aria-hidden="true" /></button></div>;
+  return <main className="preferences-main">
+    <section><h2>Dibujo</h2>
+      <div className="setting-row"><label htmlFor="line-width">Grosor del trazo</label><div className="number-with-unit"><input id="line-width" type="number" min="1" max="40" value={draft.width} onChange={e => field('width', Number(e.target.value))} /><span>px</span></div></div>
+      <div className="setting-row"><label htmlFor="stroke-opacity">Opacidad del trazo</label><div className="number-with-unit"><input id="stroke-opacity" type="number" min="0" max="100" value={100 - draft.transparency} onChange={e => field('transparency', 100 - Number(e.target.value))} /><span>%</span></div></div>
+      <div className="setting-row"><label htmlFor="activation-mode">Activación</label><select id="activation-mode" value={state.settings.activation} disabled={busy} onChange={e => void changeActivation(e.target.value as Settings['activation'])}><option value="toggle">Pulsar para alternar</option><option value="hold" disabled={!state.holdAvailable}>Mantener pulsado</option></select></div>
+      {state.settings.activation === 'hold' && <p className="help setting-help">Mantén el atajo para dibujar; suéltalo para interactuar.</p>}
+      <div className="setting-row"><label htmlFor="toolbar-mode">Barra de dibujo</label><select id="toolbar-mode" value={state.settings.toolbarMode} disabled={busy} onChange={e => void changeToolbar(e.target.value as ToolbarMode)}><option value="visible">Visible</option><option value="minimal">Mínima</option><option value="hidden">Oculta</option></select></div>
+      <div className="setting-row"><label htmlFor="timer-duration">Temporizador</label><div className="number-with-unit"><input id="timer-duration" type="number" min="1" max="120" step="1" value={draft.timerSeconds / 60} onChange={e => field('timerSeconds', Math.max(1, Number(e.target.value)) * 60)} /><span>min</span></div></div>
     </section>
-    <section><h2>Temporizador</h2><div className="setting-row"><label htmlFor="timer-duration">Duración en minutos</label><input id="timer-duration" type="number" min="1" max="120" step="1" value={draft.timerSeconds / 60} onChange={e => field('timerSeconds', Math.max(1, Number(e.target.value)) * 60)} /></div><p className="help">El atajo muestra u oculta el temporizador. Cambiar la duración reinicia el temporizador y lo deja preparado para iniciar.</p></section>
+    <section><h2>Colores</h2><div className="shortcut-list color-shortcuts">{draft.colors.map((color, index) => shortcutRow(`color${index}` as Action, <span className="color-preset"><span>Color {index + 1}</span><input aria-label={`Color ${index + 1}`} type="color" value={color} onChange={e => field('colors', draft.colors.map((old, i) => i === index ? e.target.value : old))} /></span>))}</div></section>
+    <section><h2>Funciones</h2><div className="shortcut-list">{actions.filter(name => !name.startsWith('color')).map(name => shortcutRow(name, name === 'toggle' ? 'Activar / salir' : actionLabels[name]))}</div>
+      <p className="help">Pulsa un campo y escribe el atajo. Esc cancela; Retroceso lo borra.</p>
+    </section>
     {state.shortcutErrors.length > 0 && <div className="notice" role="alert">{state.shortcutErrors.join('\n')}</div>}
     {state.holdError && <div className="notice" role="alert">{state.holdError}</div>}
-    {state.wayland && <div className="notice">Esta versión utiliza X11/XWayland. La superposición sobre aplicaciones Wayland nativas no está garantizada.</div>}
-    <footer className="preferences-footer"><button disabled={busy} onClick={() => { setDraft(defaults()); void changeToolbar('visible').then(ok => { if (ok) setMessage('Barra visible restaurada. Pulsa Guardar para aplicar los demás valores.'); }); }}>Restaurar valores</button><button className="primary" disabled={busy} onClick={() => void save()}>{saving ? 'Guardando…' : 'Guardar preferencias'}</button></footer>
+    {state.wayland && <div className="notice">X11/XWayland: la superposición sobre aplicaciones Wayland nativas no está garantizada.</div>}
+    <footer className="preferences-footer"><button disabled={busy} onClick={() => { setDraft(defaults()); void changeToolbar('visible').then(ok => { if (ok) setMessage('Pulsa Guardar para restaurar los demás valores.'); }); }}>Restaurar valores</button><button className="primary" disabled={busy} onClick={() => void save()}>{saving ? 'Guardando…' : 'Guardar'}</button></footer>
     <p className="save-message" role="status">{message}</p>
-    <p className="version">TeachersPen 0.1 · Todo se guarda en este ordenador.</p>
   </main>;
 }
 createRoot(document.getElementById('root')!).render(<App />);
