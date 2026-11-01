@@ -100,6 +100,7 @@ export type Command =
   | { type: 'mini-hit'; interactive: boolean }
   | { type: 'mini-pointer'; phase: 'start' | 'move' | 'end' | 'cancel'; x: number; y: number }
   | { type: 'preferences' }
+  | { type: 'about-link'; target: 'donate' | 'github' }
   | { type: 'active-display' }
   | { type: 'record-shortcut'; active: boolean }
   | { type: 'toolbar-size'; width: number; height: number; orientation: Settings['toolbarOrientation'] }

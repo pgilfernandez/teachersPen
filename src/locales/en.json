@@ -136,5 +136,10 @@
   "Se ha cerrado el comprobador de teclas. El dibujo se ha desactivado.": "The key monitor has closed. Drawing has been disabled.",
   "No se puede conectar con X11.": "Cannot connect to X11.",
   "Tecla no compatible con mantener pulsado. Usa letras, números, espacio, flechas o teclas de función.": "Key not supported in hold mode. Use letters, numbers, space, arrows or function keys.",
-  "No se puede comprobar la liberación del atajo: {error}": "Cannot monitor shortcut release: {error}"
+  "No se puede comprobar la liberación del atajo: {error}": "Cannot monitor shortcut release: {error}",
+  "Información": "About",
+  "Cerrar": "Close",
+  "Donar": "Donate",
+  "Proyecto en GitHub": "GitHub project",
+  "Abrir en el navegador": "Open in browser"
 }

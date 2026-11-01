@@ -136,5 +136,10 @@
   "Se ha cerrado el comprobador de teclas. El dibujo se ha desactivado.": "Se ha cerrado el comprobador de teclas. El dibujo se ha desactivado.",
   "No se puede conectar con X11.": "No se puede conectar con X11.",
   "Tecla no compatible con mantener pulsado. Usa letras, números, espacio, flechas o teclas de función.": "Tecla no compatible con mantener pulsado. Usa letras, números, espacio, flechas o teclas de función.",
-  "No se puede comprobar la liberación del atajo: {error}": "No se puede comprobar la liberación del atajo: {error}"
+  "No se puede comprobar la liberación del atajo: {error}": "No se puede comprobar la liberación del atajo: {error}",
+  "Información": "Información",
+  "Cerrar": "Cerrar",
+  "Donar": "Donar",
+  "Proyecto en GitHub": "Proyecto en GitHub",
+  "Abrir en el navegador": "Abrir en el navegador"
 }

@@ -136,5 +136,10 @@
   "Se ha cerrado el comprobador de teclas. El dibujo se ha desactivado.": "Il monitor dei tasti è stato chiuso. Disegno disattivato.",
   "No se puede conectar con X11.": "Impossibile connettersi a X11.",
   "Tecla no compatible con mantener pulsado. Usa letras, números, espacio, flechas o teclas de función.": "Tasto non supportato in modalità pressione. Usa lettere, numeri, spazio, frecce o tasti funzione.",
-  "No se puede comprobar la liberación del atajo: {error}": "Impossibile monitorare il rilascio della scorciatoia: {error}"
+  "No se puede comprobar la liberación del atajo: {error}": "Impossibile monitorare il rilascio della scorciatoia: {error}",
+  "Información": "Informazioni",
+  "Cerrar": "Chiudi",
+  "Donar": "Dona",
+  "Proyecto en GitHub": "Progetto su GitHub",
+  "Abrir en el navegador": "Apri nel browser"
 }

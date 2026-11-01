@@ -136,5 +136,10 @@
   "Se ha cerrado el comprobador de teclas. El dibujo se ha desactivado.": "Die Tastenüberwachung wurde beendet. Zeichnen wurde deaktiviert.",
   "No se puede conectar con X11.": "Verbindung zu X11 nicht möglich.",
   "Tecla no compatible con mantener pulsado. Usa letras, números, espacio, flechas o teclas de función.": "Taste wird im Haltemodus nicht unterstützt. Buchstaben, Zahlen, Leertaste, Pfeile oder Funktionstasten verwenden.",
-  "No se puede comprobar la liberación del atajo: {error}": "Loslassen des Tastenkürzels kann nicht überwacht werden: {error}"
+  "No se puede comprobar la liberación del atajo: {error}": "Loslassen des Tastenkürzels kann nicht überwacht werden: {error}",
+  "Información": "Info",
+  "Cerrar": "Schließen",
+  "Donar": "Spenden",
+  "Proyecto en GitHub": "GitHub-Projekt",
+  "Abrir en el navegador": "Im Browser öffnen"
 }

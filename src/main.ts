@@ -1,5 +1,5 @@
 import { translate, isLanguage, defaultTimerText, isDefaultTimerText } from './i18n';
-import { app, BrowserWindow, globalShortcut, ipcMain, Menu, nativeImage, powerMonitor, screen, Tray } from 'electron';
+import { app, BrowserWindow, globalShortcut, ipcMain, Menu, nativeImage, powerMonitor, screen, shell, Tray } from 'electron';
 import { readFileSync, writeFileSync, mkdirSync, renameSync } from 'node:fs';
 import path from 'node:path';
 import { actions, actionLabels, defaults, parseSettings, tools, type Action, type Command, type Settings, type State, type ToolbarMode } from './shared';
@@ -407,7 +407,7 @@ async function start() {
     if (!windows().some(win => win.webContents === event.sender)) throw new Error(t("Ventana no autorizada"));
     return state;
   });
-  ipcMain.handle('pen:command', (event, command: Command) => {
+  ipcMain.handle('pen:command', async (event, command: Command) => {
     if (!windows().some(win => win.webContents === event.sender) || !command || typeof command !== 'object') return { ok: false, error: t("Comando no autorizado") };
     try {
       switch (command.type) {
@@ -515,6 +515,14 @@ async function start() {
           return { ok: true };
         }
         case 'preferences': openPreferences(); break;
+        case 'about-link': {
+          if (event.sender !== preferences?.webContents) return { ok: false, error: t('Ventana no autorizada') };
+          const url = command.target === 'donate' ? 'https://github.com/sponsors/pgilfernandez'
+            : command.target === 'github' ? 'https://github.com/pgilfernandez/teachersPen' : null;
+          if (!url) return { ok: false, error: t('Comando desconocido') };
+          await shell.openExternal(url);
+          break;
+        }
         case 'activation': {
           if (command.activation !== 'toggle' && command.activation !== 'hold') return { ok: false, error: t("Modo de activación no válido") };
           const next = { ...state.settings, activation: command.activation };

@@ -1,4 +1,5 @@
 import type { ComponentType } from 'react';
+import InfoSource from './assets/icons/info.svg';
 import PencilSource from './assets/icons/pencil.svg';
 import SlashSource from './assets/icons/slash.svg';
 import ArrowUpRightSource from './assets/icons/arrow-up-right.svg';
@@ -58,3 +59,5 @@ export const Power = icon(PowerSource);
 export const X = icon(XSource);
 export const Whiteboard = icon(WhiteboardSource);
 export const Blackboard = icon(BlackboardSource);
+
+export const Info = icon(InfoSource);

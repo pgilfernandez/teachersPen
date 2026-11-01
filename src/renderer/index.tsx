@@ -2,9 +2,10 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { actionLabels, actions, defaults, type Action, type Command, type Settings, type State, type Tool, type ToolbarMode } from '../shared';
 import { MINI_RADIUS, MINI_SIZE } from '../toolbar';
-import { Pencil, Slash, ArrowUpRight, RectangleHorizontal, Circle, Undo2, Redo2, Trash2, Eye, EyeOff, Settings as SettingsIcon, Timer as TimerIcon, Whiteboard, Blackboard, GripVertical, MoveDiagonal, RotateCcw, ArrowDownUp, Play, Pause, PanelTopClose, RotateCw, Power, X, type EditableIcon } from './icons';
+import { Pencil, Slash, ArrowUpRight, RectangleHorizontal, Circle, Undo2, Redo2, Trash2, Eye, EyeOff, Settings as SettingsIcon, Timer as TimerIcon, Whiteboard, Blackboard, GripVertical, MoveDiagonal, RotateCcw, ArrowDownUp, Play, Pause, PanelTopClose, RotateCw, Power, X, Info, type EditableIcon } from './icons';
 import { DrawingHistory, type Stroke } from '../model';
 import { paintStroke, strokeCursor } from './draw';
+import { appVersion, appCommit } from '../build-info';
 
 import { translate, languages, languageNames, type Language } from '../i18n';
 
@@ -284,6 +285,7 @@ function Preferences({ state }: { state: State }) {
   useEffect(() => { setDraft(previous => ({ ...previous, timerText: state.settings.timerText, timerColor: state.settings.timerColor, timerDirection: state.settings.timerDirection, timerSeconds: state.settings.timerSeconds })); }, [state.settings.timerText, state.settings.timerColor, state.settings.timerDirection, state.settings.timerSeconds]);
   useEffect(() => { setDraft(previous => ({ ...previous, toolbarOrientation: state.settings.toolbarOrientation })); }, [state.settings.toolbarOrientation]);
   const [message, setMessage] = useState('');
+  const [about, setAbout] = useState(false);
   const [saving, setSaving] = useState(false);
   const [changingActivation, setChangingActivation] = useState(false);
   const [changingToolbar, setChangingToolbar] = useState(false);
@@ -362,8 +364,34 @@ function Preferences({ state }: { state: State }) {
     {state.shortcutErrors.length > 0 && <div className="notice" role="alert">{state.shortcutErrors.join('\n')}</div>}
     {state.holdError && <div className="notice" role="alert">{t(state.holdError)}</div>}
     {state.wayland && <div className="notice">{t("X11/XWayland: la superposición sobre aplicaciones Wayland nativas no está garantizada.")}</div>}
-    <footer className="preferences-footer"><button disabled={busy} onClick={() => { setDraft({ ...defaults(), language: state.settings.language }); void changeToolbar('visible').then(ok => { if (ok) setMessage(t("Pulsa Guardar para restaurar los demás valores.")); }); }}>{t("Restaurar valores")}</button><button className="primary" disabled={busy} onClick={() => void save()}>{saving ? t("Guardando…") : t("Guardar")}</button></footer>
+    <footer className="preferences-footer"><button className="about-button" title={t('Información')} aria-label={t('Información')} onClick={() => setAbout(true)}><Info size={18} /></button><button disabled={busy} onClick={() => { setDraft({ ...defaults(), language: state.settings.language }); void changeToolbar('visible').then(ok => { if (ok) setMessage(t("Pulsa Guardar para restaurar los demás valores.")); }); }}>{t("Restaurar valores")}</button><button className="primary" disabled={busy} onClick={() => void save()}>{saving ? t("Guardando…") : t("Guardar")}</button></footer>
     <p className="save-message" role="status">{message}</p>
+    {about && <About state={state} onClose={() => setAbout(false)} />}
   </main>;
+}
+function About({ state, onClose }: { state: State; onClose: () => void }) {
+  const t = translator(state.settings.language);
+  const dialog = useRef<HTMLDialogElement>(null);
+  const [error, setError] = useState('');
+  useEffect(() => { dialog.current?.showModal(); }, []);
+  const open = async (target: 'donate' | 'github') => {
+    try {
+      const result = await command({ type: 'about-link', target });
+      if (!result.ok) setError(result.error || t('Abrir en el navegador'));
+    } catch (error) { setError(String(error)); }
+  };
+  return <dialog className="about-dialog" ref={dialog} onClose={onClose} aria-labelledby="about-title" onClick={event => { if (event.target === event.currentTarget) dialog.current?.close(); }}>
+    <div className="about-content">
+      <button className="about-close" title={t('Cerrar')} aria-label={t('Cerrar')} onClick={() => dialog.current?.close()}><X size={18} /></button>
+      <img className="about-icon" src="icons/app.svg" alt="TeachersPen" width="72" height="72" />
+      <h2 id="about-title">TeachersPen v{appVersion} <small>({appCommit})</small></h2>
+      <p>developed with love by Pablo Gil Fernández</p>
+      <div className="about-links">
+        <button className="donate-button" title="https://github.com/sponsors/pgilfernandez" onClick={() => void open('donate')}>{t('Donar')}</button>
+        <button title="https://github.com/pgilfernandez/teachersPen" onClick={() => void open('github')}>{t('Proyecto en GitHub')}</button>
+      </div>
+      {error && <p role="alert">{error}</p>}
+    </div>
+  </dialog>;
 }
 createRoot(document.getElementById('root')!).render(<App />);

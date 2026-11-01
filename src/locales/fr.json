@@ -136,5 +136,10 @@
   "Se ha cerrado el comprobador de teclas. El dibujo se ha desactivado.": "Le moniteur de touches s'est fermé. Le dessin a été désactivé.",
   "No se puede conectar con X11.": "Impossible de se connecter à X11.",
   "Tecla no compatible con mantener pulsado. Usa letras, números, espacio, flechas o teclas de función.": "Touche non prise en charge en mode maintien. Utilisez lettres, chiffres, espace, flèches ou touches de fonction.",
-  "No se puede comprobar la liberación del atajo: {error}": "Impossible de surveiller le relâchement du raccourci : {error}"
+  "No se puede comprobar la liberación del atajo: {error}": "Impossible de surveiller le relâchement du raccourci : {error}",
+  "Información": "À propos",
+  "Cerrar": "Fermer",
+  "Donar": "Faire un don",
+  "Proyecto en GitHub": "Projet GitHub",
+  "Abrir en el navegador": "Ouvrir dans le navigateur"
 }
