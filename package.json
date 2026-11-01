@@ -4,7 +4,8 @@
   "version": "1.0.0",
   "private": true,
   "description": "Anotaciones sobre el escritorio para profesores",
-  "author": "TeachersPen",
+  "author": "Pablo Gil Fernández",
+  "license": "PolyForm-Noncommercial-1.0.0",
   "main": "dist/main.cjs",
   "scripts": {
     "build": "node scripts/build.mjs",
@@ -36,7 +37,7 @@
   },
   "build": {
     "appId": "org.teacherspen.desktop",
-    "files": ["dist/**/*", "package.json"],
+    "files": ["dist/**/*", "package.json", "LICENSE.md", "NOTICE.md"],
     "asarUnpack": ["dist/native/**"],
     "directories": { "output": "release" },
     "mac": {
