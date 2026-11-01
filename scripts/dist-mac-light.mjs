@@ -17,6 +17,9 @@ const metadata = JSON.parse(await readFile('package.json', 'utf8'));
 const output = path.join(directory, 'dmg', `TeachersPen-${metadata.version}-macOS-${architecture}.dmg`);
 const staging = await mkdtemp(path.join(os.tmpdir(), 'teacherspen-dmg-'));
 try {
+  // A restored Cargo cache may contain installers from an earlier build/name.
+  // Uploading a glob must never collect those alongside the current installer.
+  await rm(path.dirname(output), { recursive: true, force: true });
   await mkdir(path.dirname(output), { recursive: true });
   execFileSync('ditto', [path.join(directory, 'macos/TeachersPen.app'), path.join(staging, 'TeachersPen.app')], { stdio: 'inherit' });
   await symlink('/Applications', path.join(staging, 'Applications'));
