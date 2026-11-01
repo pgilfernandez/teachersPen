@@ -20,8 +20,8 @@ let timerWindow: BrowserWindow | undefined;
 let timerReady: Promise<void> | undefined;
 let timerResize: { pointer: Point; bounds: Electron.Rectangle } | null = null;
 let timerGeometrySave: ReturnType<typeof setTimeout> | undefined;
-const TIMER_WIDTH = 240;
-const TIMER_HEIGHT = 76;
+const TIMER_WIDTH = 320;
+const TIMER_HEIGHT = 180;
 const TIMER_RATIO = TIMER_WIDTH / TIMER_HEIGHT;
 let tray: Tray;
 let activeDisplay: number;
@@ -34,6 +34,7 @@ const nativeDirectory = app.isPackaged ? path.join(process.resourcesPath, 'app.a
 const holdMonitor = new NativeHoldMonitor(path.join(nativeDirectory, process.platform === 'win32' ? 'key-state.exe' : 'key-state'));
 const state: State = {
   drawing: false, tool: 'freehand', color: 1, visible: true, background: 'transparent', timerEnd: null,
+  timer: { visible: false, running: false, elapsedMs: 0, startedAt: null },
   settings: defaults(), shortcutErrors: [], platform: process.platform,
   wayland: process.platform === 'linux' && !!process.env.WAYLAND_DISPLAY,
   holding: false, holdAvailable: holdMonitor.available, holdError: null, toolbarExpanded: true, toolbarAvailableHeight: 0
@@ -183,7 +184,7 @@ function timerBounds(): Electron.Rectangle {
       if (Number.isFinite(saved.width)) width = saved.width;
     } catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') console.error('No se pudo cargar el tamaño del temporizador', error); }
   }
-  width = Math.round(Math.max(180, Math.min(width, 960, area.width, area.height * TIMER_RATIO)));
+  width = Math.round(Math.max(280, Math.min(width, 960, area.width, area.height * TIMER_RATIO)));
   const size = { width, height: Math.round(width / TIMER_RATIO) };
   return { ...fitPosition(position, size, area), ...size };
 }
@@ -191,7 +192,7 @@ async function showTimer() {
   if (!timerWindow || timerWindow.isDestroyed()) {
     const win = createWindow('timer-window', {
       ...timerBounds(), title: 'Temporizador · TeachersPen', frame: false, transparent: true,
-      backgroundColor: '#00000000', hasShadow: false, resizable: false, focusable: false,
+      backgroundColor: '#00000000', hasShadow: false, resizable: false, focusable: true,
       skipTaskbar: true, roundedCorners: false, acceptFirstMouse: true
     });
     timerWindow = win;
@@ -209,13 +210,37 @@ async function showTimer() {
   }
   const win = timerWindow;
   await timerReady;
-  if (!quitting && state.timerEnd && win && !win.isDestroyed()) win.showInactive();
+  if (!quitting && state.timer.visible && win && !win.isDestroyed()) win.showInactive();
+}
+function stopTimer() {
+  clearTimeout(timerTimeout);
+  if (state.timer.startedAt !== null) state.timer.elapsedMs += Date.now() - state.timer.startedAt;
+  state.timer.startedAt = null;
+  state.timer.running = false;
+  state.timerEnd = null;
+}
+function resetTimer() {
+  stopTimer();
+  state.timer.elapsedMs = 0;
+}
+function startTimer() {
+  if (state.timer.running) { stopTimer(); return; }
+  const duration = state.settings.timerSeconds * 1000;
+  if (state.settings.timerDirection === 'down' && state.timer.elapsedMs >= duration) state.timer.elapsedMs = 0;
+  state.timer.startedAt = Date.now();
+  state.timer.running = true;
+  if (state.settings.timerDirection === 'down') {
+    state.timerEnd = Date.now() + duration - state.timer.elapsedMs;
+    timerTimeout = setTimeout(() => {
+      stopTimer(); state.timer.elapsedMs = duration; broadcast();
+    }, Math.max(0, duration - state.timer.elapsedMs));
+  }
 }
 function resizeTimer(pointer: Point) {
   if (!timerResize || !timerWindow) return;
   const { bounds, pointer: start } = timerResize;
   const area = screen.getDisplayMatching(bounds).workArea;
-  const width = Math.round(Math.max(180, Math.min(bounds.width + pointer.x - start.x + pointer.y - start.y, 960, area.width, area.height * TIMER_RATIO)));
+  const width = Math.round(Math.max(280, Math.min(bounds.width + pointer.x - start.x + pointer.y - start.y, 960, area.width, area.height * TIMER_RATIO)));
   const size = { width, height: Math.round(width / TIMER_RATIO) };
   timerWindow.setBounds({ ...fitPosition(bounds, size, area), ...size });
 }
@@ -273,12 +298,10 @@ function perform(action: Action, fromShortcut = false) {
       } else if (!fromShortcut) setDrawing(false);
       break;
     case 'timer':
-      clearTimeout(timerTimeout);
-      state.timerEnd = state.timerEnd ? null : Date.now() + state.settings.timerSeconds * 1000;
-      if (state.timerEnd) {
-        void showTimer().catch(error => { console.error('No se pudo abrir el temporizador', error); timerWindow?.hide(); });
-        timerTimeout = setTimeout(() => { state.timerEnd = null; timerResize = null; timerWindow?.hide(); broadcast(); }, state.settings.timerSeconds * 1000 + 1000);
-      } else { timerResize = null; timerWindow?.hide(); }
+      state.timer.visible = !state.timer.visible;
+      if (state.timer.visible) {
+        void showTimer().catch(error => console.error('No se pudo abrir el temporizador', error));
+      } else { stopTimer(); timerResize = null; timerWindow?.hide(); }
       break;
   }
   broadcast();
@@ -437,6 +460,26 @@ async function start() {
           prepareToolbarLayout();
           break;
         }
+        case 'timer-control':
+          if (command.action === 'reset') resetTimer();
+          else if (command.action === 'start') startTimer();
+          else if (command.action === 'direction') {
+            const next = { ...state.settings, timerDirection: state.settings.timerDirection === 'down' ? 'up' as const : 'down' as const };
+            saveSettings(next); state.settings = next; resetTimer();
+          }
+          break;
+        case 'timer-settings': {
+          const data = command.settings;
+          if (!data || typeof data !== 'object') return { ok: false };
+          const next = parseSettings({ ...state.settings,
+            timerText: data.timerText ?? state.settings.timerText,
+            timerSeconds: data.timerSeconds ?? state.settings.timerSeconds,
+            timerColor: data.timerColor ?? state.settings.timerColor });
+          saveSettings(next);
+          if (next.timerSeconds !== state.settings.timerSeconds) resetTimer();
+          state.settings = next;
+          break;
+        }
         case 'timer-resize': {
           if (event.sender !== timerWindow?.webContents || !timerWindow) return { ok: false, error: 'Ventana no autorizada' };
           const pointer = readPosition(command);
@@ -487,6 +530,7 @@ async function start() {
           if (errors.length) { state.shortcutErrors = registerShortcuts(state.settings); broadcast(); return { ok: false, error: errors.join('\n') }; }
           try { saveSettings(next); }
           catch (error) { state.shortcutErrors = registerShortcuts(state.settings); throw error; }
+          if (next.timerSeconds !== state.settings.timerSeconds || next.timerDirection !== state.settings.timerDirection) resetTimer();
           state.settings = next; state.shortcutErrors = []; state.holdError = null;
           if (orientationChanged) prepareToolbarLayout();
           break;
@@ -806,8 +850,8 @@ async function runSmoke() {
     }
     console.log('HOLD NATIVO OK: activación con estado real del teclado, liberación de tecla y de modificador.');
   }
-  perform('timer'); assert.ok(state.timerEnd && state.timerEnd > Date.now());
-  perform('timer'); assert.equal(state.timerEnd, null);
+  perform('timer'); assert.equal(state.timer.visible, true); assert.equal(state.timer.running, false);
+  perform('timer'); assert.equal(state.timer.visible, false);
   setToolbarMode('visible');
   assert.equal(toolbar.isVisible(), true);
   assert.equal(mini!.isVisible(), false);

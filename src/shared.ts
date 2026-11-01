@@ -20,6 +20,9 @@ export interface Settings {
   colors: string[];
   shortcuts: Record<Action, string>;
   timerSeconds: number;
+  timerText: string;
+  timerColor: string;
+  timerDirection: 'down' | 'up';
 }
 export interface State {
   drawing: boolean;
@@ -28,6 +31,7 @@ export interface State {
   visible: boolean;
   background: Background;
   timerEnd: number | null;
+  timer: { visible: boolean; running: boolean; elapsedMs: number; startedAt: number | null };
   settings: Settings;
   shortcutErrors: string[];
   platform: string;
@@ -45,6 +49,7 @@ export function defaults(): Settings {
     toolbarMode: 'visible',
     toolbarOrientation: 'horizontal',
     width: 6, transparency: 0, colors: ['#ef4444', '#087bff', '#78cc00', '#e2cd00', '#bfc0c2'], timerSeconds: 300,
+    timerText: 'continuamos en', timerColor: '#ffffff', timerDirection: 'down',
     shortcuts: Object.fromEntries(actions.map((action, i) => [action, `Control+Shift+${keys[i]}`])) as Record<Action, string>
   };
 }
@@ -58,6 +63,9 @@ export function parseSettings(input: unknown): Settings {
   if (Number.isFinite(data.width)) base.width = Math.max(1, Math.min(40, Math.round(data.width!)));
   if (Number.isFinite(data.transparency)) base.transparency = Math.max(0, Math.min(100, Math.round(data.transparency!)));
   if (Number.isFinite(data.timerSeconds)) base.timerSeconds = Math.max(10, Math.min(7200, Math.round(data.timerSeconds!)));
+  if (typeof data.timerText === 'string') base.timerText = data.timerText.slice(0, 120);
+  if (typeof data.timerColor === 'string' && /^#[0-9a-f]{6}$/i.test(data.timerColor)) base.timerColor = data.timerColor;
+  if (data.timerDirection === 'up') base.timerDirection = 'up';
   if (Array.isArray(data.colors) && data.colors.length === 5 && data.colors.every(c => typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c))) base.colors = [...data.colors];
   if (data.shortcuts && typeof data.shortcuts === 'object') {
     for (const action of actions) {
@@ -82,6 +90,8 @@ export type Command =
   | { type: 'collapse-tools' }
   | { type: 'toggle-toolbar-orientation' }
   | { type: 'timer-resize'; phase: 'start' | 'move' | 'end' | 'cancel'; x: number; y: number }
+  | { type: 'timer-control'; action: 'reset' | 'direction' | 'start' }
+  | { type: 'timer-settings'; settings: Partial<Pick<Settings, 'timerText' | 'timerSeconds' | 'timerColor'>> }
   | { type: 'mini-hit'; interactive: boolean }
   | { type: 'mini-pointer'; phase: 'start' | 'move' | 'end' | 'cancel'; x: number; y: number }
   | { type: 'preferences' }

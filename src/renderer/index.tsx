@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { actionLabels, actions, defaults, type Action, type Command, type Settings, type State, type Tool, type ToolbarMode } from '../shared';
 import { MINI_RADIUS, MINI_SIZE } from '../toolbar';
-import { Pencil, Slash, ArrowUpRight, RectangleHorizontal, Circle, Undo2, Redo2, Trash2, Eye, EyeOff, Settings as SettingsIcon, Timer as TimerIcon, GripVertical, MoveDiagonal, PanelTopClose, RotateCw, Power, X, type LucideIcon } from 'lucide-react';
+import { Pencil, Slash, ArrowUpRight, RectangleHorizontal, Circle, Undo2, Redo2, Trash2, Eye, EyeOff, Settings as SettingsIcon, Timer as TimerIcon, GripVertical, MoveDiagonal, RotateCcw, ArrowDownUp, Play, Pause, PanelTopClose, RotateCw, Power, X, type LucideIcon } from 'lucide-react';
 import { DrawingHistory, type Stroke } from '../model';
 import { paintStroke } from './draw';
 
@@ -35,7 +35,7 @@ function App() {
   if (role === 'overlay') return <Overlay state={state} />;
   if (role === 'preferences') return <Preferences state={state} />;
   if (role === 'mini') return <MiniLauncher state={state} />;
-  if (role === 'timer-window') return state.timerEnd ? <Timer end={state.timerEnd} /> : null;
+  if (role === 'timer-window') return state.timer.visible ? <Timer state={state} /> : null;
   return <Toolbar state={state} />;
 }
 
@@ -165,17 +165,46 @@ function Overlay({ state }: { state: State }) {
     {state.drawing && state.settings.toolbarMode !== 'hidden' && <div className="drawing-hint">{toolNames[state.tool]} · {state.holding ? 'Suelta el atajo para interactuar' : 'Esc para interactuar'}</div>}
   </div>;
 }
-function Timer({ end }: { end: number }) {
+function Timer({ state }: { state: State }) {
   const [now, setNow] = useState(Date.now());
   const pointer = useRef<number | null>(null);
   useEffect(() => { const id = setInterval(() => setNow(Date.now()), 250); return () => clearInterval(id); }, []);
-  const left = Math.max(0, Math.ceil((end - now) / 1000));
+  const [config, setConfig] = useState(false);
+  const elapsed = state.timer.elapsedMs + (state.timer.startedAt === null ? 0 : Math.max(0, now - state.timer.startedAt));
+  const down = state.settings.timerDirection === 'down';
+  const seconds = down ? Math.max(0, Math.ceil(state.settings.timerSeconds - elapsed / 1000)) : Math.floor(elapsed / 1000);
+  const configure = (settings: Partial<Pick<Settings, 'timerText' | 'timerSeconds' | 'timerColor'>>) => command({ type: 'timer-settings', settings });
+  const control = (value: 'reset' | 'direction' | 'start') => command({ type: 'timer-control', action: value });
+  useEffect(() => {
+    const close = (event: KeyboardEvent) => { if (event.key === 'Escape') setConfig(false); };
+    document.addEventListener('keydown', close);
+    return () => document.removeEventListener('keydown', close);
+  }, []);
   const resize = (phase: 'start' | 'move' | 'end' | 'cancel', event: React.PointerEvent) => {
     void command({ type: 'timer-resize', phase, x: event.screenX, y: event.screenY });
   };
-  return <div className={`timer-panel ${left <= 10 ? 'ending' : ''}`}>
+  return <div className={`timer-panel ${down && seconds <= 10 ? 'ending' : ''}`}>
     <div className="timer-grip" title="Arrastrar temporizador" aria-label="Arrastrar temporizador"><GripVertical aria-hidden="true" /></div>
-    <span className="timer-clock" role="timer">{Math.floor(left / 60).toString().padStart(2, '0')}:{(left % 60).toString().padStart(2, '0')}</span>
+    <div className="timer-content">
+      <input className="timer-caption" aria-label="Texto del temporizador" maxLength={120} value={state.settings.timerText} style={{ color: state.settings.timerColor }} onChange={event => void configure({ timerText: event.target.value })} />
+      <span className="timer-clock" role="timer" style={{ color: state.settings.timerColor }}>{Math.floor(seconds / 60).toString().padStart(2, '0')}:{(seconds % 60).toString().padStart(2, '0')}</span>
+      <div className="timer-controls">
+        <button title="Reiniciar" aria-label="Reiniciar temporizador" onClick={() => void control('reset')}><RotateCcw aria-hidden="true" /><span>Reset</span></button>
+        <button title={down ? 'Cambiar a cuenta ascendente' : 'Cambiar a cuenta atrás'} aria-label={down ? 'Cambiar a cuenta ascendente' : 'Cambiar a cuenta atrás'} aria-pressed={!down} onClick={() => void control('direction')}><ArrowDownUp aria-hidden="true" /></button>
+        <button title={state.timer.running ? 'Pausar' : 'Iniciar'} onClick={() => void control('start')}>{state.timer.running ? <Pause aria-hidden="true" /> : <Play aria-hidden="true" />}<span>{state.timer.running ? 'Pausar' : 'Iniciar'}</span></button>
+      </div>
+    </div>
+    <button className="timer-gear" title="Configurar temporizador" aria-label="Configurar temporizador" aria-expanded={config} onClick={() => setConfig(!config)}><SettingsIcon aria-hidden="true" /></button>
+    {config && <div className="timer-config" role="dialog" aria-label="Configuración del temporizador">
+      <div className="timer-config-heading"><strong>Temporizador</strong><button aria-label="Cerrar configuración" onClick={() => setConfig(false)}><X aria-hidden="true" /></button></div>
+      <label>Texto<input maxLength={120} value={state.settings.timerText} onChange={event => void configure({ timerText: event.target.value })} /></label>
+      <label>Tiempo (segundos)<input type="number" min="10" max="7200" defaultValue={state.settings.timerSeconds} key={state.settings.timerSeconds} onBlur={event => {
+        const value = Number(event.target.value);
+        if (Number.isFinite(value) && value >= 10 && value <= 7200) void configure({ timerSeconds: value });
+        else event.target.value = String(state.settings.timerSeconds);
+      }} onKeyDown={event => { if (event.key === 'Enter') event.currentTarget.blur(); }} /></label>
+      <label>Color<input type="color" value={state.settings.timerColor} onChange={event => void configure({ timerColor: event.target.value })} /></label>
+    </div>}
     <button className="timer-resize" title="Arrastrar para cambiar el tamaño" aria-label="Cambiar tamaño del temporizador"
       onPointerDown={event => {
         if (event.button !== 0 || pointer.current !== null) return;
@@ -217,7 +246,7 @@ function Toolbar({ state }: { state: State }) {
         {(Object.keys(toolNames) as Tool[]).map(tool => { const ToolIcon = toolIcons[tool]; return <button key={tool} className={`icon-button ${state.tool === tool && state.drawing ? 'selected' : ''}`} title={tip(toolNames[tool], tool)} aria-label={toolNames[tool]} aria-pressed={state.tool === tool && state.drawing} onClick={() => void command({ type: 'tool', tool })}><ToolIcon size={21} aria-hidden="true" /></button>; })}
         <button className={`board-button board-white ${state.background === 'white' ? 'active' : ''}`} aria-label="Pizarra blanca" aria-pressed={state.background === 'white'} onClick={() => void action('white')} title={tip('Pizarra blanca', 'white')} />
         <button className={`board-button board-black ${state.background === 'black' ? 'active' : ''}`} aria-label="Pizarra negra" aria-pressed={state.background === 'black'} onClick={() => void action('black')} title={tip('Pizarra negra', 'black')} />
-        <button className={`icon-button timer-button ${state.timerEnd ? 'selected' : ''}`} aria-label="Temporizador" aria-pressed={!!state.timerEnd} onClick={() => void action('timer')} title={tip('Temporizador', 'timer')}><span className="timer-five" aria-hidden="true"><TimerIcon size={22} /><span className="timer-number">5</span></span></button>
+        <button className={`icon-button timer-button ${state.timer.visible ? 'selected' : ''}`} aria-label="Temporizador" aria-pressed={state.timer.visible} onClick={() => void action('timer')} title={tip('Temporizador', 'timer')}><span className="timer-five" aria-hidden="true"><TimerIcon size={22} /><span className="timer-number">5</span></span></button>
       </div>
       <div className="divider" />
       <div className="colors">{state.settings.colors.map((color, index) => <button key={index} className={`swatch ${state.color === index && state.drawing ? 'active' : ''}`} style={{ backgroundColor: color }} title={tip(`Color ${index + 1}`, `color${index}` as Action)} aria-label={`Color ${index + 1}`} aria-pressed={state.color === index && state.drawing} onClick={() => void command({ type: 'color', index })} />)}</div>
@@ -239,6 +268,7 @@ function Toolbar({ state }: { state: State }) {
 function Preferences({ state }: { state: State }) {
   const [draft, setDraft] = useState<Settings>(() => structuredClone(state.settings));
   useEffect(() => { setDraft(previous => ({ ...previous, transparency: state.settings.transparency })); }, [state.settings.transparency]);
+  useEffect(() => { setDraft(previous => ({ ...previous, timerText: state.settings.timerText, timerColor: state.settings.timerColor, timerDirection: state.settings.timerDirection, timerSeconds: state.settings.timerSeconds })); }, [state.settings.timerText, state.settings.timerColor, state.settings.timerDirection, state.settings.timerSeconds]);
   useEffect(() => { setDraft(previous => ({ ...previous, toolbarOrientation: state.settings.toolbarOrientation })); }, [state.settings.toolbarOrientation]);
   const [message, setMessage] = useState('');
   const [saving, setSaving] = useState(false);
@@ -314,7 +344,7 @@ function Preferences({ state }: { state: State }) {
         event.currentTarget.blur();
       }} /><button className="remove-shortcut" disabled={name === 'toggle'} aria-label={`Eliminar atajo de ${actionLabels[name]}`} onClick={() => field('shortcuts', { ...draft.shortcuts, [name]: '' })}><X size={16} aria-hidden="true" /></button></div>)}</div>
     </section>
-    <section><h2>Temporizador</h2><div className="setting-row"><label htmlFor="timer-duration">Duración en minutos</label><input id="timer-duration" type="number" min="1" max="120" step="1" value={draft.timerSeconds / 60} onChange={e => field('timerSeconds', Math.max(1, Number(e.target.value)) * 60)} /></div><p className="help">El atajo inicia o cancela la cuenta atrás. Cambiar la duración se aplica al siguiente temporizador.</p></section>
+    <section><h2>Temporizador</h2><div className="setting-row"><label htmlFor="timer-duration">Duración en minutos</label><input id="timer-duration" type="number" min="1" max="120" step="1" value={draft.timerSeconds / 60} onChange={e => field('timerSeconds', Math.max(1, Number(e.target.value)) * 60)} /></div><p className="help">El atajo muestra u oculta el temporizador. Cambiar la duración reinicia el temporizador y lo deja preparado para iniciar.</p></section>
     {state.shortcutErrors.length > 0 && <div className="notice" role="alert">{state.shortcutErrors.join('\n')}</div>}
     {state.holdError && <div className="notice" role="alert">{state.holdError}</div>}
     {state.wayland && <div className="notice">Esta versión utiliza X11/XWayland. La superposición sobre aplicaciones Wayland nativas no está garantizada.</div>}
