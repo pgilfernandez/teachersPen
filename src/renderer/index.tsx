@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { actionLabels, actions, defaults, type Action, type Command, type Settings, type State, type Tool, type ToolbarMode } from '../shared';
 import { MINI_RADIUS, MINI_SIZE } from '../toolbar';
-import { Pencil, Slash, ArrowUpRight, RectangleHorizontal, Circle, Undo2, Redo2, Trash2, Eye, EyeOff, Settings as SettingsIcon, Timer as TimerIcon, Whiteboard, Blackboard, GripVertical, MoveDiagonal, RotateCcw, ArrowDownUp, Play, Pause, PanelTopClose, RectangleVertical, Power, X, Info, type EditableIcon } from './icons';
+import { Pencil, Slash, MoveUpRight, RectangleHorizontal, Circle, Undo2, Redo2, Trash2, Eye, EyeOff, Settings as SettingsIcon, Timer as TimerIcon, Whiteboard, Blackboard, GripVertical, MoveDiagonal, RotateCcw, ArrowDownUp, Play, Pause, PanelTopClose, RectangleVertical, Power, X, Info, type EditableIcon } from './icons';
 import { DrawingHistory, type Stroke } from '../model';
 import { paintStroke, strokeCursor } from './draw';
 import { appVersion, appCommit } from '../build-info';
@@ -16,7 +16,7 @@ document.body.className = role;
 const command = (value: Command) => window.pen.command(value);
 const action = (value: Action) => command({ type: 'action', action: value });
 const toolNames: Record<Tool, string> = { freehand: 'Lápiz', line: 'Línea', arrow: 'Flecha', rectangle: 'Rectángulo', circle: 'Círculo' };
-const toolIcons: Record<Tool, EditableIcon> = { freehand: Pencil, line: Slash, arrow: ArrowUpRight, rectangle: RectangleHorizontal, circle: Circle };
+const toolIcons: Record<Tool, EditableIcon> = { freehand: Pencil, line: Slash, arrow: MoveUpRight, rectangle: RectangleHorizontal, circle: Circle };
 function keyLabel(value: string, language: Language) { const t = translator(language); return value.replace(/Control/g, 'Ctrl').replace(/Shift/g, t("Mayús")).replace(/Space/g, t("Espacio")); }
 
 function App() {

@@ -2,7 +2,7 @@ import type { ComponentType } from 'react';
 import InfoSource from './assets/icons/info.svg';
 import PencilSource from './assets/icons/pencil.svg';
 import SlashSource from './assets/icons/slash.svg';
-import ArrowUpRightSource from './assets/icons/arrow-up-right.svg';
+import MoveUpRightSource from './assets/icons/move-up-right.svg';
 import RectangleHorizontalSource from './assets/icons/rectangle-horizontal.svg';
 import RectangleVerticalSource from './assets/icons/rectangle-vertical.svg';
 import CircleSource from './assets/icons/circle.svg';
@@ -38,7 +38,7 @@ function icon(source: string): EditableIcon {
 
 export const Pencil = icon(PencilSource);
 export const Slash = icon(SlashSource);
-export const ArrowUpRight = icon(ArrowUpRightSource);
+export const MoveUpRight = icon(MoveUpRightSource);
 export const RectangleHorizontal = icon(RectangleHorizontalSource);
 export const Circle = icon(CircleSource);
 export const Undo2 = icon(Undo2Source);
