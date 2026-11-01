@@ -19,7 +19,7 @@ Los dos modos aparecen como opciones visibles y la opción marcada indica el mod
 
 ## Presentación de la barra
 
-Por defecto, la barra horizontal mide 40 px de alto y es una sola fila sin logotipo ni botón de interacción: asa de seis puntos, herramientas, fondos blanco/negro, temporizador con un 5, colores, diámetro del trazo y acciones. Preferencias, Contraer, Girar y Salir están juntos al final y usan iconos Lucide. Los controles muestran tooltips con su función y, cuando corresponde, su atajo. Borrar dibujo está a la derecha de Ver/ocultar. El campo del diámetro tiene 68 px de ancho. Contraer una barra visible pasa al modo mínimo.
+Por defecto, la barra horizontal mide 40 px de alto y es una sola fila sin logotipo ni botón de interacción: asa de seis puntos, herramientas, fondos blanco/negro, temporizador, colores, diámetro del trazo y acciones. Preferencias, Contraer, Girar y Salir están juntos al final y usan iconos Lucide. Los controles muestran tooltips con su función y, cuando corresponde, su atajo. Borrar dibujo está a la derecha de Ver/ocultar. El campo del diámetro tiene 68 px de ancho. Contraer una barra visible pasa al modo mínimo.
 
 A la derecha del ancho del trazo está su opacidad, de 100% (opaco) a 0% (invisible); al bajar el valor aumenta la transparencia. Se guarda automáticamente y se aplica a los trazos nuevos; cada trazo conserva su propio valor al deshacer o rehacer.
 
@@ -121,7 +121,7 @@ Todos los iconos propios tienen archivos SVG editables en `src/renderer/assets/i
 - `tray.svg` y `tray-template.svg`: bandeja del sistema y variante monocroma de la barra superior de macOS.
 - `pencil.svg`, `slash.svg`, `arrow-up-right.svg`, `rectangle-horizontal.svg` y `circle.svg`: herramientas de dibujo.
 - `grip-vertical.svg`, `settings.svg`, `panel-top-close.svg`, `rotate-cw.svg`, `power.svg`: movimiento, preferencias, contraer, orientación y salir.
-- `timer-five.svg`, `rotate-ccw.svg`, `arrow-down-up.svg`, `play.svg`, `pause.svg`, `move-diagonal.svg`: temporizador y sus controles.
+- `timer.svg`, `rotate-ccw.svg`, `arrow-down-up.svg`, `play.svg`, `pause.svg`, `move-diagonal.svg`: temporizador y sus controles.
 - `whiteboard.svg`, `blackboard.svg`, `undo2.svg`, `redo2.svg`, `trash2.svg`, `eye.svg`, `eye-off.svg`, `x.svg`: fondos y demás acciones.
 
 El botón mínimo conserva su archivo personalizado `src/renderer/assets/mini-launcher.svg`, que se copia a `dist/mini-launcher.svg`. Su alpha normal/hover se configura en `.mini-launcher` dentro de `src/renderer/styles.css`.

@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { actionLabels, actions, defaults, type Action, type Command, type Settings, type State, type Tool, type ToolbarMode } from '../shared';
 import { MINI_RADIUS, MINI_SIZE } from '../toolbar';
-import { Pencil, Slash, ArrowUpRight, RectangleHorizontal, Circle, Undo2, Redo2, Trash2, Eye, EyeOff, Settings as SettingsIcon, TimerFive, Whiteboard, Blackboard, GripVertical, MoveDiagonal, RotateCcw, ArrowDownUp, Play, Pause, PanelTopClose, RotateCw, Power, X, type EditableIcon } from './icons';
+import { Pencil, Slash, ArrowUpRight, RectangleHorizontal, Circle, Undo2, Redo2, Trash2, Eye, EyeOff, Settings as SettingsIcon, Timer as TimerIcon, Whiteboard, Blackboard, GripVertical, MoveDiagonal, RotateCcw, ArrowDownUp, Play, Pause, PanelTopClose, RotateCw, Power, X, type EditableIcon } from './icons';
 import { DrawingHistory, type Stroke } from '../model';
 import { paintStroke } from './draw';
 
@@ -246,7 +246,7 @@ function Toolbar({ state }: { state: State }) {
         {(Object.keys(toolNames) as Tool[]).map(tool => { const ToolIcon = toolIcons[tool]; return <button key={tool} className={`icon-button ${state.tool === tool && state.drawing ? 'selected' : ''}`} title={tip(`${toolNames[tool]}: pulsa para dibujar; vuelve a pulsar para salir`, tool)} aria-label={toolNames[tool]} aria-pressed={state.tool === tool && state.drawing} onClick={() => void command({ type: 'tool', tool })}><ToolIcon size={21} aria-hidden="true" /></button>; })}
         <button className={`board-button board-white ${state.background === 'white' ? 'active' : ''}`} aria-label="Pizarra blanca" aria-pressed={state.background === 'white'} onClick={() => void action('white')} title={tip('Activar o desactivar el fondo blanco', 'white')}><Whiteboard /></button>
         <button className={`board-button board-black ${state.background === 'black' ? 'active' : ''}`} aria-label="Pizarra negra" aria-pressed={state.background === 'black'} onClick={() => void action('black')} title={tip('Activar o desactivar el fondo negro', 'black')}><Blackboard /></button>
-        <button className={`icon-button timer-button ${state.timer.visible ? 'selected' : ''}`} aria-label="Temporizador" aria-pressed={state.timer.visible} onClick={() => void action('timer')} title={tip('Mostrar u ocultar el temporizador', 'timer')}><span className="timer-five" aria-hidden="true"><TimerFive size={22} /></span></button>
+        <button className={`icon-button timer-button ${state.timer.visible ? 'selected' : ''}`} aria-label="Temporizador" aria-pressed={state.timer.visible} onClick={() => void action('timer')} title={tip('Mostrar u ocultar el temporizador', 'timer')}><span className="timer-symbol" aria-hidden="true"><TimerIcon size={22} /></span></button>
       </div>
       <div className="divider" />
       <div className="colors">{state.settings.colors.map((color, index) => <button key={index} className={`swatch ${state.color === index && state.drawing ? 'active' : ''}`} style={{ backgroundColor: color }} title={tip(`Dibujar con el color ${index + 1} (${color})`, `color${index}` as Action)} aria-label={`Color ${index + 1}`} aria-pressed={state.color === index && state.drawing} onClick={() => void command({ type: 'color', index })} />)}</div>
