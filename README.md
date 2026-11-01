@@ -21,6 +21,8 @@ Los dos modos aparecen como opciones visibles y la opción marcada indica el mod
 
 Por defecto, la barra horizontal mide 40 px de alto y es una sola fila sin logotipo ni botón de interacción: asa de seis puntos, herramientas, fondos blanco/negro, temporizador, colores, diámetro del trazo y acciones. Preferencias, Contraer, Girar y Salir están juntos al final y usan iconos Lucide. Los controles muestran tooltips con su función y, cuando corresponde, su atajo. Borrar dibujo está a la derecha de Ver/ocultar. El campo del diámetro tiene 68 px de ancho. Contraer una barra visible pasa al modo mínimo.
 
+Al activar el dibujo, el puntero muestra un círculo con el diámetro, color y opacidad actuales como previsualización antes de trazar. No forma parte del dibujo y desaparece mientras se realiza un trazo.
+
 A la derecha del ancho del trazo está su opacidad, de 100% (opaco) a 0% (invisible); al bajar el valor aumenta la transparencia. Se guarda automáticamente y se aplica a los trazos nuevos; cada trazo conserva su propio valor al deshacer o rehacer.
 
 Junto a **Contraer** está **Girar barra**, con un icono Lucide de rotación. Alterna la ventana completa entre fila horizontal y columna vertical, con los controles en posición normal y el asa de seis puntos para moverla. La orientación se guarda automáticamente. La barra se puede arrastrar hasta el borde superior, incluida la zona de la barra de menús de macOS, y mantiene su posición al recalcular su tamaño o girarla. La barra vertical mide 40 px de ancho y sus campos numéricos, sin etiquetas visibles, miden 36 px con 2 px de margen a cada lado. La columna se ajusta a la altura disponible del monitor y permite desplazamiento si no caben todos los controles.

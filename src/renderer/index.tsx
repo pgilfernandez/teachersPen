@@ -4,7 +4,7 @@ import { actionLabels, actions, defaults, type Action, type Command, type Settin
 import { MINI_RADIUS, MINI_SIZE } from '../toolbar';
 import { Pencil, Slash, ArrowUpRight, RectangleHorizontal, Circle, Undo2, Redo2, Trash2, Eye, EyeOff, Settings as SettingsIcon, Timer as TimerIcon, Whiteboard, Blackboard, GripVertical, MoveDiagonal, RotateCcw, ArrowDownUp, Play, Pause, PanelTopClose, RotateCw, Power, X, type EditableIcon } from './icons';
 import { DrawingHistory, type Stroke } from '../model';
-import { paintStroke } from './draw';
+import { paintStroke, strokeCursor } from './draw';
 
 import { translate, languages, languageNames, type Language } from '../i18n';
 
@@ -84,6 +84,7 @@ function MiniLauncher({ state }: { state: State }) {
 
 function Overlay({ state }: { state: State }) {
   const t = translator(state.settings.language);
+  const [tracing, setTracing] = useState(false);
   const canvas = useRef<HTMLCanvasElement>(null);
   const history = useRef(new DrawingHistory());
   const current = useRef<Stroke | null>(null);
@@ -112,6 +113,7 @@ function Overlay({ state }: { state: State }) {
     if (current.current) history.current.add(current.current);
     current.current = null;
     pointerId.current = null;
+    setTracing(false);
     redraw();
   };
   useEffect(() => {
@@ -139,12 +141,13 @@ function Overlay({ state }: { state: State }) {
   }, []);
   useEffect(() => { if (!state.drawing) finish(); redraw(); }, [state.drawing, state.visible]);
   return <div className={`overlay-surface ${state.background} ${state.drawing ? 'drawing' : ''}`}>
-    <canvas ref={canvas}
+    <canvas ref={canvas} style={{ cursor: state.drawing && !tracing ? strokeCursor(state.settings.colors[state.color], state.settings.width, state.settings.transparency) : undefined }}
       onPointerDown={event => {
         if (!state.drawing || event.button !== 0 || pointerId.current !== null) return;
         event.preventDefault();
         void command({ type: 'active-display' });
         pointerId.current = event.pointerId;
+        setTracing(true);
         // Synthetic smoke-test events do not have an active native pointer.
         if (event.isTrusted) event.currentTarget.setPointerCapture(event.pointerId);
         current.current = { tool: state.tool, color: state.settings.colors[state.color], width: state.settings.width, transparency: state.settings.transparency, points: [{ x: event.clientX, y: event.clientY }] };

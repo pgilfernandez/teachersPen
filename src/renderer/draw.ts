@@ -1,5 +1,11 @@
 import type { Stroke } from '../model';
 
+export function strokeCursor(color: string, width: number, transparency: number): string {
+  // A fixed, even canvas keeps the hotspot exactly centered, including odd widths.
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48"><circle cx="24" cy="24" r="${width / 2}" fill="${color}" opacity="${1 - transparency / 100}"/></svg>`;
+  return `url("data:image/svg+xml,${encodeURIComponent(svg)}") 24 24, crosshair`;
+}
+
 export function paintStroke(ctx: CanvasRenderingContext2D, stroke: Stroke) {
   if (!stroke.points.length) return;
   const first = stroke.points[0];
