@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { actionLabels, actions, defaults, type Action, type Command, type Settings, type State, type Tool, type ToolbarMode } from '../shared';
 import { MINI_RADIUS, MINI_SIZE } from '../toolbar';
-import { Pencil, Slash, ArrowUpRight, RectangleHorizontal, Circle, Undo2, Redo2, Trash2, Eye, EyeOff, Settings as SettingsIcon, Timer as TimerIcon, GripVertical, PanelTopClose, RotateCw, Power, X, type LucideIcon } from 'lucide-react';
+import { Pencil, Slash, ArrowUpRight, RectangleHorizontal, Circle, Undo2, Redo2, Trash2, Eye, EyeOff, Settings as SettingsIcon, Timer as TimerIcon, GripVertical, MoveDiagonal, PanelTopClose, RotateCw, Power, X, type LucideIcon } from 'lucide-react';
 import { DrawingHistory, type Stroke } from '../model';
 import { paintStroke } from './draw';
 
@@ -35,6 +35,7 @@ function App() {
   if (role === 'overlay') return <Overlay state={state} />;
   if (role === 'preferences') return <Preferences state={state} />;
   if (role === 'mini') return <MiniLauncher state={state} />;
+  if (role === 'timer-window') return state.timerEnd ? <Timer end={state.timerEnd} /> : null;
   return <Toolbar state={state} />;
 }
 
@@ -161,15 +162,39 @@ function Overlay({ state }: { state: State }) {
       }}
       onPointerCancel={finish} onLostPointerCapture={finish}
     />
-    {state.timerEnd && <Timer end={state.timerEnd} />}
     {state.drawing && state.settings.toolbarMode !== 'hidden' && <div className="drawing-hint">{toolNames[state.tool]} · {state.holding ? 'Suelta el atajo para interactuar' : 'Esc para interactuar'}</div>}
   </div>;
 }
 function Timer({ end }: { end: number }) {
   const [now, setNow] = useState(Date.now());
+  const pointer = useRef<number | null>(null);
   useEffect(() => { const id = setInterval(() => setNow(Date.now()), 250); return () => clearInterval(id); }, []);
   const left = Math.max(0, Math.ceil((end - now) / 1000));
-  return <div className={`timer ${left <= 10 ? 'ending' : ''}`} role="timer">{Math.floor(left / 60).toString().padStart(2, '0')}:{(left % 60).toString().padStart(2, '0')}</div>;
+  const resize = (phase: 'start' | 'move' | 'end' | 'cancel', event: React.PointerEvent) => {
+    void command({ type: 'timer-resize', phase, x: event.screenX, y: event.screenY });
+  };
+  return <div className={`timer-panel ${left <= 10 ? 'ending' : ''}`}>
+    <div className="timer-grip" title="Arrastrar temporizador" aria-label="Arrastrar temporizador"><GripVertical aria-hidden="true" /></div>
+    <span className="timer-clock" role="timer">{Math.floor(left / 60).toString().padStart(2, '0')}:{(left % 60).toString().padStart(2, '0')}</span>
+    <button className="timer-resize" title="Arrastrar para cambiar el tamaño" aria-label="Cambiar tamaño del temporizador"
+      onPointerDown={event => {
+        if (event.button !== 0 || pointer.current !== null) return;
+        event.preventDefault();
+        pointer.current = event.pointerId;
+        event.currentTarget.setPointerCapture(event.pointerId);
+        resize('start', event);
+      }}
+      onPointerMove={event => { if (pointer.current === event.pointerId) resize('move', event); }}
+      onPointerUp={event => {
+        if (pointer.current !== event.pointerId) return;
+        pointer.current = null;
+        resize('end', event);
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      }}
+      onPointerCancel={event => { if (pointer.current === event.pointerId) { pointer.current = null; resize('cancel', event); } }}
+      onLostPointerCapture={event => { if (pointer.current === event.pointerId) { pointer.current = null; resize('cancel', event); } }}
+    ><MoveDiagonal aria-hidden="true" /></button>
+  </div>;
 }
 function Toolbar({ state }: { state: State }) {
   const element = useRef<HTMLElement>(null);

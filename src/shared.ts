@@ -81,6 +81,7 @@ export type Command =
   | { type: 'show-tools' }
   | { type: 'collapse-tools' }
   | { type: 'toggle-toolbar-orientation' }
+  | { type: 'timer-resize'; phase: 'start' | 'move' | 'end' | 'cancel'; x: number; y: number }
   | { type: 'mini-hit'; interactive: boolean }
   | { type: 'mini-pointer'; phase: 'start' | 'move' | 'end' | 'cancel'; x: number; y: number }
   | { type: 'preferences' }

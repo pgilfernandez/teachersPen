@@ -16,6 +16,13 @@ let miniPosition: Point | null = null;
 let accessory = false;
 const miniDrag = new MiniDrag();
 let preferences: BrowserWindow | undefined;
+let timerWindow: BrowserWindow | undefined;
+let timerReady: Promise<void> | undefined;
+let timerResize: { pointer: Point; bounds: Electron.Rectangle } | null = null;
+let timerGeometrySave: ReturnType<typeof setTimeout> | undefined;
+const TIMER_WIDTH = 240;
+const TIMER_HEIGHT = 76;
+const TIMER_RATIO = TIMER_WIDTH / TIMER_HEIGHT;
 let tray: Tray;
 let activeDisplay: number;
 let quitting = false;
@@ -46,7 +53,7 @@ else {
   app.on('second-instance', () => { if (toolbar) showTools(); });
   app.whenReady().then(start).catch(error => { console.error(error); app.exit(1); });
 }
-function windows() { return [...overlays.values(), toolbar, mini, preferences].filter((win): win is BrowserWindow => !!win && !win.isDestroyed()); }
+function windows() { return [...overlays.values(), toolbar, mini, preferences, timerWindow].filter((win): win is BrowserWindow => !!win && !win.isDestroyed()); }
 function broadcast() { for (const win of windows()) win.webContents.send('pen:state', state); }
 function settingsPath() { return path.join(app.getPath('userData'), 'settings.json'); }
 function saveSettings(settings: Settings) {
@@ -155,6 +162,63 @@ function rememberMiniPosition() {
     renameSync(`${file}.tmp`, file);
   } catch (error) { console.error('No se pudo guardar la posición del círculo', error); }
 }
+function rememberTimerBounds() {
+  clearTimeout(timerGeometrySave);
+  if (smoke || !timerWindow || timerWindow.isDestroyed()) return;
+  const file = path.join(app.getPath('userData'), 'timer-window.json');
+  try {
+    writeFileSync(`${file}.tmp`, JSON.stringify(timerWindow.getBounds()));
+    renameSync(`${file}.tmp`, file);
+  } catch (error) { console.error('No se pudo guardar el tamaño del temporizador', error); }
+}
+function timerBounds(): Electron.Rectangle {
+  let area = (screen.getAllDisplays().find(display => display.id === activeDisplay) || screen.getPrimaryDisplay()).workArea;
+  let position: Point = { x: area.x + area.width - TIMER_WIDTH - 32, y: area.y + 155 };
+  let width = TIMER_WIDTH;
+  if (!smoke) {
+    try {
+      const saved = JSON.parse(readFileSync(path.join(app.getPath('userData'), 'timer-window.json'), 'utf8'));
+      const point = readPosition(saved);
+      if (point) { position = point; area = screen.getDisplayNearestPoint(point).workArea; }
+      if (Number.isFinite(saved.width)) width = saved.width;
+    } catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') console.error('No se pudo cargar el tamaño del temporizador', error); }
+  }
+  width = Math.round(Math.max(180, Math.min(width, 960, area.width, area.height * TIMER_RATIO)));
+  const size = { width, height: Math.round(width / TIMER_RATIO) };
+  return { ...fitPosition(position, size, area), ...size };
+}
+async function showTimer() {
+  if (!timerWindow || timerWindow.isDestroyed()) {
+    const win = createWindow('timer-window', {
+      ...timerBounds(), title: 'Temporizador · TeachersPen', frame: false, transparent: true,
+      backgroundColor: '#00000000', hasShadow: false, resizable: false, focusable: false,
+      skipTaskbar: true, roundedCorners: false, acceptFirstMouse: true
+    });
+    timerWindow = win;
+    win.setAlwaysOnTop(true, 'screen-saver', 1);
+    if (process.platform === 'darwin') win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: state.settings.toolbarMode === 'hidden' });
+    const saveLater = () => {
+      if (timerResize) return;
+      clearTimeout(timerGeometrySave);
+      timerGeometrySave = setTimeout(rememberTimerBounds, 200);
+    };
+    win.on('moved', saveLater);
+    win.on('move', saveLater);
+    win.on('closed', () => { if (timerWindow === win) { timerWindow = undefined; timerReady = undefined; timerResize = null; } });
+    timerReady = new Promise<void>(resolve => win.webContents.once('did-finish-load', () => resolve()));
+  }
+  const win = timerWindow;
+  await timerReady;
+  if (!quitting && state.timerEnd && win && !win.isDestroyed()) win.showInactive();
+}
+function resizeTimer(pointer: Point) {
+  if (!timerResize || !timerWindow) return;
+  const { bounds, pointer: start } = timerResize;
+  const area = screen.getDisplayMatching(bounds).workArea;
+  const width = Math.round(Math.max(180, Math.min(bounds.width + pointer.x - start.x + pointer.y - start.y, 960, area.width, area.height * TIMER_RATIO)));
+  const size = { width, height: Math.round(width / TIMER_RATIO) };
+  timerWindow.setBounds({ ...fitPosition(bounds, size, area), ...size });
+}
 function createWindow(role: string, options: Electron.BrowserWindowConstructorOptions) {
   const win = new BrowserWindow({
     icon: path.join(__dirname, 'icons', 'app-256.png'), ...options, show: false,
@@ -166,6 +230,7 @@ function createWindow(role: string, options: Electron.BrowserWindowConstructorOp
     console.error(`Renderer ${role}: ${details.reason}`);
     // Fail open: never leave an invisible input-blocking overlay after a crash.
     if (role === 'overlay') setDrawing(false);
+    if (role === 'timer-window') win.hide();
   });
   win.loadFile(path.join(__dirname, 'index.html'), { query: { role } });
   return win;
@@ -210,7 +275,10 @@ function perform(action: Action, fromShortcut = false) {
     case 'timer':
       clearTimeout(timerTimeout);
       state.timerEnd = state.timerEnd ? null : Date.now() + state.settings.timerSeconds * 1000;
-      if (state.timerEnd) timerTimeout = setTimeout(() => { state.timerEnd = null; broadcast(); }, state.settings.timerSeconds * 1000 + 1000);
+      if (state.timerEnd) {
+        void showTimer().catch(error => { console.error('No se pudo abrir el temporizador', error); timerWindow?.hide(); });
+        timerTimeout = setTimeout(() => { state.timerEnd = null; timerResize = null; timerWindow?.hide(); broadcast(); }, state.settings.timerSeconds * 1000 + 1000);
+      } else { timerResize = null; timerWindow?.hide(); }
       break;
   }
   broadcast();
@@ -369,6 +437,18 @@ async function start() {
           prepareToolbarLayout();
           break;
         }
+        case 'timer-resize': {
+          if (event.sender !== timerWindow?.webContents || !timerWindow) return { ok: false, error: 'Ventana no autorizada' };
+          const pointer = readPosition(command);
+          if (!pointer) return { ok: false, error: 'Posición no válida' };
+          if (command.phase === 'start') timerResize = { pointer, bounds: timerWindow.getBounds() };
+          else if (command.phase === 'move') resizeTimer(pointer);
+          else {
+            if (command.phase === 'end') resizeTimer(pointer);
+            timerResize = null; rememberTimerBounds();
+          }
+          return { ok: true };
+        }
         case 'mini-hit':
           if (event.sender === mini?.webContents) updateMiniHit(command.interactive === true);
           return { ok: true };
@@ -463,6 +543,11 @@ async function start() {
     if (activeDisplay === display.id) activeDisplay = screen.getPrimaryDisplay().id;
     if (mini) moveMini(mini.getBounds());
     if (state.settings.toolbarOrientation === 'vertical') prepareToolbarLayout();
+    if (timerWindow) {
+      const bounds = timerWindow.getBounds();
+      const area = screen.getDisplayMatching(bounds).workArea;
+      timerWindow.setBounds({ ...fitPosition(bounds, bounds, area), width: bounds.width, height: bounds.height });
+    }
   });
   screen.on('display-metrics-changed', () => {
     if (rebuilding) return;
@@ -737,5 +822,5 @@ async function runSmoke() {
   console.log('SMOKE OK: ventanas reales, dibujo Canvas, deshacer, IPC, pizarras, modo interacción, preferencias y atajos registrados.');
   app.quit();
 }
-app.on('before-quit', () => { quitting = true; hold.stop(); clearTimeout(timerTimeout); globalShortcut.unregisterAll(); });
+app.on('before-quit', () => { quitting = true; hold.stop(); clearTimeout(timerTimeout); clearTimeout(timerGeometrySave); rememberTimerBounds(); globalShortcut.unregisterAll(); });
 app.on('window-all-closed', () => { if (quitting) app.quit(); });
