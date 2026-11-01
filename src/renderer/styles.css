@@ -50,7 +50,7 @@ canvas { width: 100%; height: 100%; display: block; touch-action: none; }
 .icon-button { width: 32px; height: 34px; padding: 0; border-radius: 6px; background: transparent; color: #44515d; display: inline-flex; align-items: center; justify-content: center; }
 .icon-button:hover { background: #edf1f5; }
 .icon-button.has-warning { color: #9b680c; background: #fff2d2; }
-.board-button { width: 26px; height: 26px; margin: 0 3px; padding: 0; border: 1px solid #aab6c2; border-radius: 3px; }
+.board-button { width: 26px; height: 26px; margin: 0 3px; padding: 0; overflow: hidden; border: 1px solid #aab6c2; border-radius: 3px; }
 .board-white { background: #fff; }
 .board-black { background: #15191f; }
 .board-button.active { outline: 2px solid #2474df; outline-offset: 2px; }
@@ -58,7 +58,6 @@ canvas { width: 100%; height: 100%; display: block; touch-action: none; }
 .timer-button:hover { --timer-face: #edf1f5; }
 .timer-button.selected { --timer-face: #e2edff; }
 .timer-five { position: relative; display: inline-flex; width: 22px; height: 22px; }
-.timer-number { position: absolute; top: 8px; left: 7px; width: 8px; height: 11px; background: var(--timer-face); color: inherit; font-size: 10px; font-weight: 700; line-height: 11px; text-align: center; }
 .colors { gap: 6px; padding: 0 4px; }
 .swatch { width: 21px; height: 21px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px #00000012; }
 .swatch.active { outline: 2px solid #415064; outline-offset: 2px; }
@@ -115,3 +114,5 @@ input[type=color] { width: 35px; height: 32px; padding: 2px; cursor: pointer; }
 .notice { white-space: pre-line; background: #fff0d4; color: #876018; padding: 14px; border-radius: 8px; font-size: 12px; line-height: 1.6; margin-bottom: 20px; }
 .save-message { white-space: pre-line; font-size: 12px; line-height: 1.5; color: #315f87; min-height: 18px; }
 .version { font-size: 10px; color: #94a0a8; text-align: center; margin-top: 28px; }
+
+.board-button svg { display: block; width: 100%; height: 100%; }

@@ -115,11 +115,18 @@ Para generar instaladores: `npm run dist:mac`, `npm run dist:win`, `npm run dist
 
 ## Iconos
 
-Los iconos propios de la interfaz son SVG de [Lucide](https://lucide.dev/guide/react/), incluidos en el bundle sin peticiones de red. Se usa `PencilLine` como identidad de TeachersPen en el círculo mínimo, el Dock y la bandeja del sistema; las herramientas utilizan los símbolos de lápiz, línea, flecha, rectángulo y círculo correspondientes.
+Todos los iconos propios tienen archivos SVG editables en `src/renderer/assets/icons/`, basados en [Lucide](https://lucide.dev/) y acompañados de su licencia. La interfaz utiliza estos archivos directamente al compilar, sin peticiones de red ni regeneración de los originales. Puedes abrirlos con Inkscape, Illustrator, un editor de texto u otro editor SVG.
 
-`scripts/build-icons.mjs` genera automáticamente PNG, ICNS e ICO a partir del mismo icono oficial. El rasterizador se usa solo al compilar y no se distribuye con la app. Se incluye la licencia de Lucide en `dist/icons/LICENSE-lucide.txt`. Los requisitos de sistema siguen siendo los mismos.
+- `app.svg`: imagen de la aplicación, usada para el Dock, los iconos de ventana y los paquetes de macOS, Windows y Linux.
+- `tray.svg` y `tray-template.svg`: bandeja del sistema y variante monocroma de la barra superior de macOS.
+- `pencil.svg`, `slash.svg`, `arrow-up-right.svg`, `rectangle-horizontal.svg` y `circle.svg`: herramientas de dibujo.
+- `grip-vertical.svg`, `settings.svg`, `panel-top-close.svg`, `rotate-cw.svg`, `power.svg`: movimiento, preferencias, contraer, orientación y salir.
+- `timer-five.svg`, `rotate-ccw.svg`, `arrow-down-up.svg`, `play.svg`, `pause.svg`, `move-diagonal.svg`: temporizador y sus controles.
+- `whiteboard.svg`, `blackboard.svg`, `undo2.svg`, `redo2.svg`, `trash2.svg`, `eye.svg`, `eye-off.svg`, `x.svg`: fondos y demás acciones.
 
-El diseño del botón mínimo está en el SVG editable `src/renderer/assets/mini-launcher.svg`: únicamente el lápiz, sin fondo ni borde. No se regenera al compilar; se copia directamente a `dist/mini-launcher.svg`. Puedes editar ese archivo fuente y recompilar la app. Su alpha normal/hover se configura en `.mini-launcher` dentro de `src/renderer/styles.css`.
+El botón mínimo conserva su archivo personalizado `src/renderer/assets/mini-launcher.svg`, que se copia a `dist/mini-launcher.svg`. Su alpha normal/hover se configura en `.mini-launcher` dentro de `src/renderer/styles.css`.
+
+Después de editar los SVG, recompila y empaqueta la app. `scripts/build-icons.mjs` lee los originales y genera PNG, ICNS e ICO para los sistemas que requieren esos formatos; también copia los SVG a `dist/icons/`. El rasterizador se usa solo al compilar y no se distribuye con la app. Los SVG originales nunca se sobrescriben al compilar y los requisitos de sistema se mantienen.
 
 ## Organización
 

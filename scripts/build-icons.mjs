@@ -1,20 +1,18 @@
-import { mkdir, writeFile, copyFile } from 'node:fs/promises';
-import { createElement } from 'react';
-import { renderToStaticMarkup } from 'react-dom/server';
-import { PencilLine } from 'lucide-react';
+import { mkdir, writeFile, readFile, cp } from 'node:fs/promises';
 import { Resvg } from '@resvg/resvg-js';
 
 const folder = 'dist/icons';
 await mkdir(folder, { recursive: true });
-const svg = props => renderToStaticMarkup(createElement(PencilLine, { strokeWidth: 2, ...props }));
+const sourceFolder = 'src/renderer/assets/icons';
+// Never regenerate source SVGs: edits in a vector editor survive every build.
+await cp(sourceFolder, folder, { recursive: true });
 const png = (source, size) => new Resvg(source, { fitTo: { mode: 'width', value: size } }).render().asPng();
-const appSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024"><rect x="24" y="24" width="976" height="976" rx="210" fill="#2474df"/>${svg({ size: 640, x: 192, y: 192, color: '#ffffff', strokeWidth: 1.7 })}</svg>`;
-await writeFile(`${folder}/app.svg`, appSvg);
+const appSvg = await readFile(`${sourceFolder}/app.svg`, 'utf8');
 const sizes = [16, 32, 48, 64, 128, 256, 512, 1024];
 const images = new Map(sizes.map(size => [size, png(appSvg, size)]));
 for (const [size, data] of images) await writeFile(`${folder}/app-${size}.png`, data);
-for (const [name, color] of [['trayTemplate', '#000000'], ['tray', '#2474df']]) {
-  const source = svg({ size: 24, color });
+for (const [name, file] of [['trayTemplate', 'tray-template'], ['tray', 'tray']]) {
+  const source = await readFile(`${sourceFolder}/${file}.svg`, 'utf8');
   await writeFile(`${folder}/${name}.png`, png(source, 16));
   await writeFile(`${folder}/${name}@2x.png`, png(source, 32));
 }
@@ -41,4 +39,3 @@ for (const [index, size] of icoSizes.entries()) {
   offset += data.length;
 }
 await writeFile(`${folder}/app.ico`, Buffer.concat([icoHeader, ...icoSizes.map(size => images.get(size))]));
-await copyFile('node_modules/lucide-react/LICENSE', `${folder}/LICENSE-lucide.txt`);
