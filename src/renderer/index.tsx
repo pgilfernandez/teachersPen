@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { actionLabels, actions, defaults, type Action, type Command, type Settings, type State, type Tool, type ToolbarMode } from '../shared';
 import { MINI_RADIUS, MINI_SIZE } from '../toolbar';
-import { Pencil, Slash, ArrowUpRight, RectangleHorizontal, Circle, Undo2, Redo2, Trash2, Eye, EyeOff, Settings as SettingsIcon, Timer as TimerIcon, GripVertical, PanelTopClose, Power, X, type LucideIcon } from 'lucide-react';
+import { Pencil, Slash, ArrowUpRight, RectangleHorizontal, Circle, Undo2, Redo2, Trash2, Eye, EyeOff, Settings as SettingsIcon, Timer as TimerIcon, GripVertical, PanelTopClose, RotateCw, Power, X, type LucideIcon } from 'lucide-react';
 import { DrawingHistory, type Stroke } from '../model';
 import { paintStroke } from './draw';
 
@@ -177,15 +177,15 @@ function Toolbar({ state }: { state: State }) {
     const observer = new ResizeObserver(() => {
       if (element.current) {
         const bounds = element.current.getBoundingClientRect();
-        void command({ type: 'toolbar-size', width: bounds.width + 16, height: bounds.height + 16 });
+        void command({ type: 'toolbar-size', width: bounds.width + 16, height: bounds.height + 16, orientation: state.settings.toolbarOrientation });
       }
     });
     observer.observe(element.current!);
     return () => observer.disconnect();
-  }, []);
+  }, [state.settings.toolbarOrientation]);
   const tip = (label: string, name: Action) => `${label} · ${keyLabel(state.settings.shortcuts[name]) || 'Sin atajo'}`;
   const warning = state.holdError || state.shortcutErrors.join('\n') || (state.wayland ? 'Compatibilidad experimental con Wayland' : '');
-  return <main className="toolbar-shell" ref={element}>
+  return <main className={`toolbar-shell ${state.settings.toolbarOrientation === 'vertical' ? 'toolbar-vertical' : ''}`} style={state.settings.toolbarOrientation === 'vertical' ? { maxHeight: Math.max(48, state.toolbarAvailableHeight - 16) } : undefined} ref={element}>
     <div className="toolbar">
       <div className="drag-handle" title="Arrastra para mover la barra" role="img" aria-label="Mover barra"><GripVertical size={18} aria-hidden="true" /></div>
       <div className="button-group">
@@ -206,6 +206,7 @@ function Toolbar({ state }: { state: State }) {
       <div className="divider" />
       <button className={`icon-button ${warning ? 'has-warning' : ''}`} aria-label="Preferencias" title={warning ? `Preferencias\n${warning}` : 'Preferencias'} onClick={() => void command({ type: 'preferences' })}><SettingsIcon size={20} aria-hidden="true" /></button>
       <button className="icon-button" aria-label="Contraer barra" title={state.settings.toolbarMode === 'hidden' ? 'Ocultar barra' : 'Contraer barra'} onClick={() => void command({ type: 'collapse-tools' })}><PanelTopClose size={20} aria-hidden="true" /></button>
+      <button className={`icon-button ${state.settings.toolbarOrientation === 'vertical' ? 'selected' : ''}`} aria-label="Girar barra" aria-pressed={state.settings.toolbarOrientation === 'vertical'} title={state.settings.toolbarOrientation === 'horizontal' ? 'Poner la barra vertical' : 'Poner la barra horizontal'} onClick={() => void command({ type: 'toggle-toolbar-orientation' })}><RotateCw size={20} aria-hidden="true" /></button>
       <button className="icon-button" aria-label="Salir" title="Salir de TeachersPen" onClick={() => void command({ type: 'quit' })}><Power size={20} aria-hidden="true" /></button>
     </div>
   </main>;
@@ -213,6 +214,7 @@ function Toolbar({ state }: { state: State }) {
 function Preferences({ state }: { state: State }) {
   const [draft, setDraft] = useState<Settings>(() => structuredClone(state.settings));
   useEffect(() => { setDraft(previous => ({ ...previous, transparency: state.settings.transparency })); }, [state.settings.transparency]);
+  useEffect(() => { setDraft(previous => ({ ...previous, toolbarOrientation: state.settings.toolbarOrientation })); }, [state.settings.toolbarOrientation]);
   const [message, setMessage] = useState('');
   const [saving, setSaving] = useState(false);
   const [changingActivation, setChangingActivation] = useState(false);

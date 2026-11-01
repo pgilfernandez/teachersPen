@@ -29,7 +29,7 @@ const state: State = {
   drawing: false, tool: 'freehand', color: 1, visible: true, background: 'transparent', timerEnd: null,
   settings: defaults(), shortcutErrors: [], platform: process.platform,
   wayland: process.platform === 'linux' && !!process.env.WAYLAND_DISPLAY,
-  holding: false, holdAvailable: holdMonitor.available, holdError: null, toolbarExpanded: true
+  holding: false, holdAvailable: holdMonitor.available, holdError: null, toolbarExpanded: true, toolbarAvailableHeight: 0
 };
 const hold = new HoldActivation(holdMonitor, action => {
   state.holding = true;
@@ -107,9 +107,23 @@ function showTools() {
     const size = toolbar.getBounds();
     const position = fitPosition({ x: point.x, y: point.y + MINI_SIZE + 8 }, size, area);
     toolbar.setPosition(position.x, position.y);
+    if (state.settings.toolbarOrientation === 'vertical') prepareToolbarLayout(position, area);
   }
   state.toolbarExpanded = true;
   applyToolbarPresentation(); broadcast();
+}
+function prepareToolbarLayout(anchor?: Point, workArea?: Electron.Rectangle) {
+  if (!toolbar) return;
+  const bounds = toolbar.getBounds();
+  const area = workArea || screen.getDisplayMatching(bounds).workArea;
+  const areaChanged = state.toolbarAvailableHeight !== area.height;
+  state.toolbarAvailableHeight = area.height;
+  const vertical = state.settings.toolbarOrientation === 'vertical';
+  // Give the column room to measure itself before the renderer fits the final size.
+  const size = { width: Math.min(vertical ? 136 : 1000, area.width), height: vertical ? area.height : Math.min(72, area.height) };
+  const position = fitPosition(anchor || bounds, size, area);
+  toolbar.setBounds({ ...position, ...size });
+  if (areaChanged) broadcast();
 }
 function collapseTools() {
   if (state.settings.toolbarMode === 'visible') return setToolbarMode('minimal');
@@ -333,18 +347,28 @@ async function start() {
           else state.shortcutErrors = registerShortcuts(state.settings);
           break;
         case 'toolbar-size':
-          if (event.sender === toolbar?.webContents && Number.isFinite(command.width) && Number.isFinite(command.height)) {
-            const width = Math.max(200, Math.min(1600, Math.ceil(command.width)));
-            const height = Math.max(48, Math.min(180, Math.ceil(command.height)));
+          if (event.sender === toolbar?.webContents && command.orientation === state.settings.toolbarOrientation && Number.isFinite(command.width) && Number.isFinite(command.height)) {
             const bounds = toolbar.getBounds();
-            if (!toolbarSized) toolbar.setBounds({ x: Math.round(bounds.x + (bounds.width - width) / 2), y: bounds.y, width, height });
-            else toolbar.setContentSize(width, height);
+            const area = screen.getDisplayMatching(bounds).workArea;
+            const vertical = command.orientation === 'vertical';
+            const width = Math.max(vertical ? 80 : 200, Math.min(1600, Math.ceil(command.width)));
+            const height = Math.max(48, Math.min(vertical ? area.height : 180, Math.ceil(command.height)));
+            const anchor = { x: toolbarSized ? bounds.x : Math.round(bounds.x + (bounds.width - width) / 2), y: bounds.y };
+            const position = fitPosition(anchor, { width, height }, area);
+            toolbar.setBounds({ ...position, width, height });
             toolbarSized = true;
           }
           break;
         case 'toolbar-mode': return setToolbarMode(command.mode);
         case 'show-tools': showTools(); break;
         case 'collapse-tools': return collapseTools();
+        case 'toggle-toolbar-orientation': {
+          const toolbarOrientation = state.settings.toolbarOrientation === 'horizontal' ? 'vertical' : 'horizontal';
+          const next: Settings = { ...state.settings, toolbarOrientation };
+          saveSettings(next); state.settings = next;
+          prepareToolbarLayout();
+          break;
+        }
         case 'mini-hit':
           if (event.sender === mini?.webContents) updateMiniHit(command.interactive === true);
           return { ok: true };
@@ -378,11 +402,13 @@ async function start() {
         case 'settings': {
           // Presentation is applied immediately by its own control, including tray changes.
           const next = parseSettings({ ...command.settings, toolbarMode: state.settings.toolbarMode });
+          const orientationChanged = next.toolbarOrientation !== state.settings.toolbarOrientation;
           const errors = registerShortcuts(next);
           if (errors.length) { state.shortcutErrors = registerShortcuts(state.settings); broadcast(); return { ok: false, error: errors.join('\n') }; }
           try { saveSettings(next); }
           catch (error) { state.shortcutErrors = registerShortcuts(state.settings); throw error; }
           state.settings = next; state.shortcutErrors = []; state.holdError = null;
+          if (orientationChanged) prepareToolbarLayout();
           break;
         }
         case 'quit': app.quit(); break;
@@ -394,14 +420,25 @@ async function start() {
   });
   await createOverlays();
   const area = screen.getPrimaryDisplay().workArea;
+  state.toolbarAvailableHeight = area.height;
+  const initialVertical = state.settings.toolbarOrientation === 'vertical';
+  const initialWidth = initialVertical ? 136 : 965;
   toolbar = createWindow('toolbar', {
-    x: area.x + Math.round((area.width - 965) / 2), y: area.y + 18,
-    width: 965, height: 72, frame: false, transparent: true, backgroundColor: '#00000000',
+    x: area.x + Math.round((area.width - initialWidth) / 2), y: initialVertical ? area.y : area.y + 18,
+    width: initialWidth, height: initialVertical ? area.height : 72, frame: false, transparent: true, backgroundColor: '#00000000',
     resizable: false, hasShadow: false, skipTaskbar: true
   });
   toolbar.setAlwaysOnTop(true, 'screen-saver', 1);
   if (process.platform === 'darwin') toolbar.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: state.settings.toolbarMode === 'hidden' });
   toolbar.on('close', event => { if (!quitting) { event.preventDefault(); collapseTools(); } });
+  let toolbarDisplay = screen.getDisplayMatching(toolbar.getBounds()).id;
+  toolbar.on('moved', () => {
+    const display = screen.getDisplayMatching(toolbar.getBounds());
+    if (display.id !== toolbarDisplay) {
+      toolbarDisplay = display.id;
+      if (state.settings.toolbarOrientation === 'vertical') prepareToolbarLayout();
+    }
+  });
   await new Promise<void>(resolve => toolbar.webContents.once('did-finish-load', () => resolve()));
   mini = createWindow('mini', {
     x: area.x + 24, y: area.y + 24, width: MINI_SIZE, height: MINI_SIZE,
@@ -425,6 +462,7 @@ async function start() {
     overlays.get(display.id)?.destroy();
     if (activeDisplay === display.id) activeDisplay = screen.getPrimaryDisplay().id;
     if (mini) moveMini(mini.getBounds());
+    if (state.settings.toolbarOrientation === 'vertical') prepareToolbarLayout();
   });
   screen.on('display-metrics-changed', () => {
     if (rebuilding) return;
@@ -432,6 +470,7 @@ async function start() {
     setDrawing(false);
     for (const display of screen.getAllDisplays()) overlays.get(display.id)?.setBounds(display.bounds);
     if (mini) moveMini(mini.getBounds());
+    if (state.settings.toolbarOrientation === 'vertical') prepareToolbarLayout();
     rebuilding = false;
   });
   app.on('activate', () => { if (state.settings.toolbarMode !== 'hidden') applyToolbarPresentation(); });
@@ -477,11 +516,11 @@ async function runSmoke() {
     await clickToolButton(board); assert.equal(state.drawing, true);
     await clickToolButton(board); assert.equal(state.drawing, false); assert.equal(state.background, 'transparent');
   }
-  const compactBar = await toolbar.webContents.executeJavaScript(`({grip:!!document.querySelector('.drag-handle .lucide-grip-vertical'),logo:!!document.querySelector('.brand'),footer:!!document.querySelector('.toolbar-footer'),width:document.querySelector('.width-control input').getBoundingClientRect().width,timer:document.querySelector('.timer-number').textContent,last:Array.from(document.querySelectorAll('.toolbar > button')).slice(-3).map(b=>b.getAttribute('aria-label'))})`);
+  const compactBar = await toolbar.webContents.executeJavaScript(`({grip:!!document.querySelector('.drag-handle .lucide-grip-vertical'),logo:!!document.querySelector('.brand'),footer:!!document.querySelector('.toolbar-footer'),width:document.querySelector('.width-control input').getBoundingClientRect().width,timer:document.querySelector('.timer-number').textContent,last:Array.from(document.querySelectorAll('.toolbar > button')).slice(-4).map(b=>b.getAttribute('aria-label'))})`);
   assert.equal(compactBar.grip, true);
   assert.equal(compactBar.logo, false); assert.equal(compactBar.footer, false);
   assert.ok(compactBar.width >= 68); assert.equal(compactBar.timer, '5');
-  assert.deepEqual(compactBar.last, ['Preferencias', 'Contraer barra', 'Salir']);
+  assert.deepEqual(compactBar.last, ['Preferencias', 'Contraer barra', 'Girar barra', 'Salir']);
   assert.ok(toolbar.getBounds().height <= 76, 'La ventana debe ajustarse a una sola fila');
   if (state.settings.toolbarMode === 'visible') {
     await clickToolButton('Contraer barra');

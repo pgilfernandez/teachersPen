@@ -42,6 +42,16 @@ canvas { width: 100%; height: 100%; display: block; touch-action: none; }
 .width-control { display: flex; align-items: center; margin-left: 6px; gap: 2px; }
 .width-control span { font-size: 10px; color: #82909c; }
 .width-control input { width: 68px; height: 30px; border: 1px solid #dce1e5; background: #fff; border-radius: 5px; font-size: 12px; padding-left: 8px; }
+.toolbar-vertical { width: 120px; overflow-y: auto; overflow-x: hidden; }
+.toolbar-vertical .toolbar { flex-direction: column; gap: 2px; padding: 8px; }
+.toolbar-vertical .button-group, .toolbar-vertical .colors { flex-direction: column; }
+.toolbar-vertical .button-group { gap: 2px; }
+.toolbar-vertical .colors { gap: 4px; padding: 3px 0; }
+.toolbar-vertical .drag-handle { width: 34px; height: 22px; margin: 0; flex-shrink: 0; }
+.toolbar-vertical .icon-button { height: 28px; flex-shrink: 0; }
+.toolbar-vertical .board-button { width: 24px; height: 24px; margin: 2px 0; flex-shrink: 0; }
+.toolbar-vertical .divider { width: 28px; height: 1px; margin: 4px 0; }
+.toolbar-vertical .width-control { margin: 0; gap: 4px; }
 .preferences { background: #f6f5f1; }
 .preferences-main { max-width: 700px; padding: 30px 36px; margin: auto; }
 .eyebrow { color: #6b7c8b; font-size: 10px; font-weight: 700; letter-spacing: 1.8px; }

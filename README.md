@@ -19,9 +19,11 @@ Los dos modos aparecen como opciones visibles y la opción marcada indica el mod
 
 ## Presentación de la barra
 
-La barra completa es una sola fila sin logotipo ni botón de interacción: asa de seis puntos, herramientas, fondos blanco/negro, temporizador con un 5, colores, diámetro del trazo y acciones. Preferencias, Contraer y Salir están juntos al final y usan iconos Lucide. El campo del diámetro tiene 68 px de ancho. Contraer una barra visible pasa al modo mínimo.
+Por defecto, la barra completa es una sola fila sin logotipo ni botón de interacción: asa de seis puntos, herramientas, fondos blanco/negro, temporizador con un 5, colores, diámetro del trazo y acciones. Preferencias, Contraer, Girar y Salir están juntos al final y usan iconos Lucide. El campo del diámetro tiene 68 px de ancho. Contraer una barra visible pasa al modo mínimo.
 
 A la derecha del ancho del trazo está su transparencia, de 0% (opaco) a 100% (invisible). Se guarda automáticamente y se aplica a los trazos nuevos; cada trazo conserva su propio valor al deshacer o rehacer.
+
+Junto a **Contraer** está **Girar barra**, con un icono Lucide de rotación. Alterna la ventana completa entre fila horizontal y columna vertical, con los controles en posición normal y el asa de seis puntos para moverla. La orientación se guarda automáticamente. La columna se ajusta a la altura disponible del monitor y permite desplazamiento si no caben todos los controles.
 
 En **Preferencias → Barra de dibujo** puedes elegir un modo, que se aplica y guarda inmediatamente:
 
