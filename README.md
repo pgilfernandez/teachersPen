@@ -207,7 +207,7 @@ App icons are editable SVG files in `src/renderer/assets/icons/`, based on [Luci
 | `app.svg` | App identity for the Dock, window icons, and platform packages |
 | `tray.svg`, `tray-template.svg` | System tray and monochrome macOS menu-bar artwork |
 | `pencil.svg`, `slash.svg`, `arrow-up-right.svg`, `rectangle-horizontal.svg`, `circle.svg` | Drawing tools |
-| `grip-vertical.svg`, `settings.svg`, `panel-top-close.svg`, `rotate-cw.svg`, `power.svg` | Moving, preferences, collapsing, orientation, and quitting |
+| `grip-vertical.svg`, `settings.svg`, `panel-top-close.svg`, `rectangle-vertical.svg`, `power.svg` | Moving, preferences, collapsing, orientation, and quitting |
 | `timer.svg`, `rotate-ccw.svg`, `arrow-down-up.svg`, `play.svg`, `pause.svg`, `move-diagonal.svg` | Timer and its controls |
 | `whiteboard.svg`, `blackboard.svg`, `undo2.svg`, `redo2.svg`, `trash2.svg`, `eye.svg`, `eye-off.svg`, `x.svg`, `info.svg` | Backgrounds and other actions |
 

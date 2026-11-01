@@ -4,6 +4,7 @@ import PencilSource from './assets/icons/pencil.svg';
 import SlashSource from './assets/icons/slash.svg';
 import ArrowUpRightSource from './assets/icons/arrow-up-right.svg';
 import RectangleHorizontalSource from './assets/icons/rectangle-horizontal.svg';
+import RectangleVerticalSource from './assets/icons/rectangle-vertical.svg';
 import CircleSource from './assets/icons/circle.svg';
 import Undo2Source from './assets/icons/undo2.svg';
 import Redo2Source from './assets/icons/redo2.svg';
@@ -61,3 +62,5 @@ export const Whiteboard = icon(WhiteboardSource);
 export const Blackboard = icon(BlackboardSource);
 
 export const Info = icon(InfoSource);
+
+export const RectangleVertical = icon(RectangleVerticalSource);
