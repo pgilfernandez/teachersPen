@@ -291,7 +291,31 @@ pub fn configure(w: &Window, role: &str) -> Result<()> {
 }
 
 pub fn ignore(w: &Window, enabled: bool) -> Result<()> {
-    #[cfg(not(target_os = "linux"))]
+    #[cfg(target_os = "macos")]
+    {
+        let window = w.clone();
+        w.run_on_main_thread(move || unsafe {
+            use cocoa::base::{id, BOOL, NO, YES};
+            use objc::{class, msg_send, sel, sel_impl};
+            let Ok(ptr) = window.ns_window() else {
+                return;
+            };
+            let ns = ptr as id;
+            let _: () = msg_send![ns,setIgnoresMouseEvents:if enabled{YES}else{NO}];
+            if enabled {
+                let key: BOOL = msg_send![ns, isKeyWindow];
+                if key == YES {
+                    let _: () = msg_send![ns, resignKeyWindow];
+                }
+                // WebKit otherwise leaves its custom drawing cursor cached
+                // until another pointer event, despite already passing clicks.
+                let cursor: id = msg_send![class!(NSCursor), arrowCursor];
+                let _: () = msg_send![cursor, set];
+            }
+        })
+        .map_err(|e| e.to_string())
+    }
+    #[cfg(target_os = "windows")]
     {
         w.set_ignore_cursor_events(enabled)
             .map_err(|e| e.to_string())

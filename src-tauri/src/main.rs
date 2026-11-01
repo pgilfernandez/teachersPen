@@ -62,7 +62,11 @@ fn err(e: impl std::fmt::Display) -> String {
 }
 fn trace(message: impl std::fmt::Display) {
     if std::env::var_os("TEACHERSPEN_DEBUG_SHORTCUTS").is_some() {
-        eprintln!("TeachersPen: {}", message);
+        let time = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_millis();
+        eprintln!("TeachersPen {}: {}", time, message);
     }
 }
 fn number(v: &Value, name: &str) -> f64 {

@@ -113,9 +113,13 @@ function Overlay({ state }: { state: State }) {
     });
   };
   const finish = () => {
+    const captured = pointerId.current;
     if (current.current) history.current.add(current.current);
     current.current = null;
     pointerId.current = null;
+    // Keyboard release can end a stroke before pointerup. Explicitly give up
+    // capture so WebKit cannot retain the pointer until the next mouse click.
+    if (captured !== null && canvas.current?.hasPointerCapture(captured)) canvas.current.releasePointerCapture(captured);
     setTracing(false);
     redraw();
   };
