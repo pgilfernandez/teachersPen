@@ -166,7 +166,7 @@ npm run dist:win
 npm run dist:linux
 ```
 
-The macOS configuration produces separate x64 and arm64 builds. Windows and Linux packages should be built and validated on their respective systems. Build Linux packages on the oldest distribution you intend to support to avoid unnecessarily raising the glibc requirement.
+The macOS workflow produces one installer per job and uploads only the matching architecture, rather than bundling both DMGs into each artifact. For a local build, select `--x64` or `--arm64` explicitly. Windows and Linux packages should be built and validated on their respective systems. Build Linux packages on the oldest distribution you intend to support to avoid unnecessarily raising the glibc requirement.
 
 The local macOS app is placed in `release/mac/TeachersPen.app`. Local packages are not signed or notarized.
 

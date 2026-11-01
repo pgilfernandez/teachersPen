@@ -52,7 +52,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: TeachersPen-macOS-${{ matrix.arch }}-${{ github.sha }}
-          path: release/*.dmg
+          path: release/*-macOS-${{ matrix.arch }}.dmg
           if-no-files-found: error
           retention-days: 14
           compression-level: 0

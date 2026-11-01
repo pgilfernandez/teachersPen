@@ -46,7 +46,8 @@
       "category": "public.app-category.education",
       "identity": null,
       "minimumSystemVersion": "11.0",
-      "target": [{ "target": "dmg", "arch": ["x64", "arm64"] }]
+      "artifactName": "${productName}-${version}-macOS-${arch}.${ext}",
+      "target": ["dmg"]
     },
     "win": {
       "icon": "dist/icons/app.ico",
