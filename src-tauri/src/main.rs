@@ -16,6 +16,11 @@ struct Helpers(Mutex<HashMap<String, CommandChild>>);
 fn err(e: impl std::fmt::Display) -> String {
     e.to_string()
 }
+fn trace(message: impl std::fmt::Display) {
+    if std::env::var_os("TEACHERSPEN_DEBUG_SHORTCUTS").is_some() {
+        eprintln!("TeachersPen: {}", message);
+    }
+}
 fn number(v: &Value, name: &str) -> f64 {
     v[name].as_f64().unwrap_or(0.0)
 }
@@ -146,6 +151,11 @@ fn storage_file(name: &str) -> Result<std::path::PathBuf> {
 #[tauri::command]
 async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) -> Result<Value> {
     if op == "request" {
+        trace(format!(
+            "request {} {}",
+            text(&args["command"], "type"),
+            text(&args["command"], "action")
+        ));
         let payload = json!({"source":window.label(),"id":args["id"],"command":args["command"]});
         app.emit_to("controller", "host-request", payload)
             .map_err(err)?;
@@ -161,6 +171,7 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
         return Err("Unauthorized window".into());
     }
     match op.as_str() {
+        "trace" => trace(text(&args, "message")),
         "environment" => {
             return Ok(
                 json!({"platform":if cfg!(target_os="macos"){"darwin"}else if cfg!(target_os="windows"){"win32"}else{"linux"},"wayland":std::env::var_os("WAYLAND_DISPLAY").is_some()}),
@@ -219,7 +230,13 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
         "reply" => app
             .emit_to(text(&args, "label"), "pen:reply", args["value"].clone())
             .map_err(err)?,
-        "broadcast" => app.emit_all("pen:state", args.clone()).map_err(err)?,
+        "broadcast" => {
+            trace(format!(
+                "state drawing={} holding={} activation={}",
+                args["drawing"], args["holding"], args["settings"]["activation"]
+            ));
+            app.emit_all("pen:state", args.clone()).map_err(err)?;
+        }
         "action" => app
             .emit_to(text(&args, "label"), "pen:action", args["action"].clone())
             .map_err(err)?,
@@ -250,6 +267,7 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
                     let handle = app.clone();
                     let id = action.clone();
                     if let Err(e) = app.global_shortcut_manager().register(shortcut, move || {
+                        trace(format!("shortcut {}", id));
                         let _ = handle.emit_to("controller", "host-shortcut", id.clone());
                     }) {
                         errors.push(
@@ -274,6 +292,7 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
         }
         "watch" => {
             let token = text(&args, "token").to_string();
+            trace(format!("watch {} {}", token, text(&args, "shortcut")));
             let (mut rx, child) = Command::new_sidecar("key-state")
                 .map_err(err)?
                 .args([
@@ -295,6 +314,7 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
                 while let Some(event) = rx.recv().await {
                     match event {
                         CommandEvent::Stdout(s) => {
+                            trace(format!("key {} {}", token, s.trim()));
                             if s.trim() == "up" {
                                 released = true;
                             }
@@ -304,7 +324,10 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
                                 json!({"token":token,"event":s.trim()}),
                             );
                         }
-                        CommandEvent::Stderr(s) | CommandEvent::Error(s) => error = s,
+                        CommandEvent::Stderr(s) | CommandEvent::Error(s) => {
+                            trace(format!("key error {} {}", token, s));
+                            error = s;
+                        }
                         CommandEvent::Terminated(_) => {
                             if !released {
                                 let _=handle.emit_to("controller","host-key",json!({"token":token,"event":"error","error":if error.is_empty(){"The shortcut monitor stopped"}else{&error}}));

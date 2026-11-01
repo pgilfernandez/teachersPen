@@ -68,10 +68,11 @@ export async function startController() {
     return () => { clearTimeout(timeout); watches.delete(token); void host('stop-watch', { token }); };
   } };
   const hold = new HoldActivation(monitor, action => { void enqueue(async () => {
+    await host('trace', { message: `hold activate ${action}` });
     state.holding = true; state.holdError = null;
     if (action !== 'toggle') await perform(action, true); else activeDisplay = (await cursor()).display;
     await setDrawing(true);
-  }); }, () => { void enqueue(() => setDrawing(false)); }, message => { state.holdError = message; void broadcast(); });
+  }); }, () => { void enqueue(async () => { await host('trace', { message: 'hold release' }); await setDrawing(false); }); }, message => { state.holdError = message; void host('trace', { message: `hold error ${message}` }); void broadcast(); });
   async function setDrawing(value: boolean) {
     if (!value) { hold.dismiss(); state.holding = false; }
     state.drawing = value;
@@ -318,6 +319,7 @@ export async function startController() {
     });
   });
   await listen<Action>('host-shortcut', event => { void enqueue(async () => {
+    await host('trace', { message: `shortcut received ${event.payload} initialized=${initialized} recording=${recording} activation=${state.settings.activation}` });
     if (!initialized || recording || !actions.includes(event.payload)) return;
     const action = event.payload;
     if (state.settings.activation === 'hold' && isDrawingShortcut(action)) hold.press(action, state.settings.shortcuts[action]);
