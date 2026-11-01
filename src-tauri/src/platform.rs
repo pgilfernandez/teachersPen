@@ -272,12 +272,12 @@ pub fn configure(w: &Window, role: &str) -> Result<()> {
                     for y in 3..45 {
                         let half = (21.0_f64.powi(2) - (y as f64 + 0.5 - 24.0).powi(2)).sqrt();
                         let x = (24.0 - half).ceil() as i32;
-                        let _ = region.union_rectangle(&gtk::cairo::RectangleInt::new(
+                        let _ = region.union_rectangle(&gtk::cairo::RectangleInt {
                             x,
                             y,
-                            48 - x * 2,
-                            1,
-                        ));
+                            width: 48 - x * 2,
+                            height: 1,
+                        });
                     }
                     gdk.input_shape_combine_region(Some(&region), 0, 0);
                 }
