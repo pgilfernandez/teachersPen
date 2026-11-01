@@ -1,1 +1,58 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2474df" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pencil-line" aria-hidden="true"><path d="M13 21h8"></path><path d="m15 5 4 4"></path><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path></svg>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Custom TeachersPen tray artwork. Editable SVG source. -->
+
+<svg
+   width="24"
+   height="24"
+   viewBox="5.5 3.5 26 26"
+   version="1.1"
+   id="svg3"
+   sodipodi:docname="tray.svg"
+   inkscape:version="1.4.4 (dcaf3e7d, 2026-05-05)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs3">
+    <inkscape:path-effect
+       effect="spiro"
+       id="path-effect5"
+       is_visible="true"
+       lpeversion="1" />
+  </defs>
+  <sodipodi:namedview
+     id="namedview3"
+     pagecolor="#000000"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     showgrid="true"
+     inkscape:zoom="8.4676091"
+     inkscape:cx="49.482681"
+     inkscape:cy="20.489845"
+     inkscape:current-layer="svg3">
+    <inkscape:grid
+       id="grid3"
+       units="px"
+       originx="25"
+       originy="25"
+       spacingx="1"
+       spacingy="1"
+       empcolor="#e50000"
+       empopacity="0.14901961"
+       color="#0099e5"
+       opacity="0.10196078"
+       empspacing="10"
+       enabled="true"
+       visible="true" />
+  </sodipodi:namedview>
+  <path
+     id="path4"
+     style="opacity:1;fill:#ffffff;fill-rule:evenodd;stroke-width:0.999998"
+     d="m 24.501422,6.1249996 c 0.886503,-4.874e-4 1.772641,0.3334246 2.44398,1.0041063 1.3427,1.341361 1.34487,3.5467721 0.0025,4.8891881 l -8.888424,8.888427 c -0.103489,0.103219 -0.229559,0.180962 -0.368254,0.22709 l -5.33232,1.781123 c -0.736926,0.245966 -1.4384,-0.454786 -1.193193,-1.191916 l 1.774985,-5.334775 c 0.04648,-0.138812 0.124655,-0.264892 0.228318,-0.368254 l 8.888427,-8.888428 c 0.670813,-0.6708245 1.557478,-1.0060739 2.443981,-1.0065614 z m 0,1.8731862 c -0.400128,2.673e-4 -0.799954,0.155503 -1.1109,0.4664552 l -1.557715,1.557715 2.224255,2.220573 1.557715,-1.557716 c 0.621104,-0.6211 0.619358,-1.6006067 -0.0025,-2.2217995 C 25.301423,8.1528183 24.90155,7.9979182 24.501422,7.9981858 Z m -4.000468,3.3560222 -5.840511,5.841739 -1.109672,3.3327 3.3327,-1.112127 5.840511,-5.840511 z m 1.139133,8.204703 h 3.142436 c 0.315197,2.6e-5 0.609531,0.157557 0.784381,0.41981 l 3.770923,5.656384 c 0.41748,0.626495 -0.03153,1.46549 -0.784382,1.465651 H 8.4418582 C 7.6890062,27.100595 7.2399964,26.2616 7.6574768,25.635105 L 8.914451,23.749644 c 0.2888086,-0.433191 0.8740979,-0.55025 1.307302,-0.261461 0.433191,0.288808 0.550249,0.874098 0.261461,1.307302 l -0.279874,0.41981 h 16.588623 l -2.513948,-3.770923 h -2.637928 c -0.520656,0 -0.942731,-0.422075 -0.942731,-0.94273 0,-0.520656 0.422075,-0.942731 0.942731,-0.942731 z"
+     sodipodi:nodetypes="scscccccccsscccccsccccccsccccccccccccsss" />
+</svg>
