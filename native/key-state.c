@@ -15,7 +15,8 @@
 #include <unistd.h>
 #endif
 
-enum { MOD_CTRL = 1, MOD_SHIFT = 2, MOD_ALT = 4, MOD_META = 8 };
+/* Prefix modifier names to avoid WinUser.h hotkey macro collisions. */
+enum { TP_MOD_CTRL = 1, TP_MOD_SHIFT = 2, TP_MOD_ALT = 4, TP_MOD_META = 8 };
 static unsigned int modifiers;
 static int keycode = -1;
 #if defined(__APPLE__)
@@ -108,15 +109,15 @@ static int parse_shortcut(const char *shortcut) {
   strcpy(copy, shortcut);
   char *token = strtok(copy, "+");
   while (token) {
-    if (equal(token, "Control") || equal(token, "Ctrl")) modifiers |= MOD_CTRL;
-    else if (equal(token, "Shift")) modifiers |= MOD_SHIFT;
-    else if (equal(token, "Alt") || equal(token, "Option")) modifiers |= MOD_ALT;
-    else if (equal(token, "Command") || equal(token, "Cmd") || equal(token, "Super") || equal(token, "Meta")) modifiers |= MOD_META;
+    if (equal(token, "Control") || equal(token, "Ctrl")) modifiers |= TP_MOD_CTRL;
+    else if (equal(token, "Shift")) modifiers |= TP_MOD_SHIFT;
+    else if (equal(token, "Alt") || equal(token, "Option")) modifiers |= TP_MOD_ALT;
+    else if (equal(token, "Command") || equal(token, "Cmd") || equal(token, "Super") || equal(token, "Meta")) modifiers |= TP_MOD_META;
     else if (equal(token, "CommandOrControl") || equal(token, "CmdOrCtrl")) {
 #if defined(__APPLE__)
-      modifiers |= MOD_META;
+      modifiers |= TP_MOD_META;
 #else
-      modifiers |= MOD_CTRL;
+      modifiers |= TP_MOD_CTRL;
 #endif
     } else {
       if (keycode != -1 || (keycode = resolve_key(token)) < 0) return 0;
@@ -131,26 +132,26 @@ static int shortcut_down(void) {
   /* Read keys and modifiers from the same state table. Prefer physical HID
      state so session events/auto-repeat cannot look like a physical release. */
   #define MAC_DOWN(code) CGEventSourceKeyState(key_state_source, (CGKeyCode)(code))
-  if ((modifiers & MOD_CTRL) && !(MAC_DOWN(kVK_Control) || MAC_DOWN(kVK_RightControl))) return 0;
-  if ((modifiers & MOD_SHIFT) && !(MAC_DOWN(kVK_Shift) || MAC_DOWN(kVK_RightShift))) return 0;
-  if ((modifiers & MOD_ALT) && !(MAC_DOWN(kVK_Option) || MAC_DOWN(kVK_RightOption))) return 0;
-  if ((modifiers & MOD_META) && !(MAC_DOWN(kVK_Command) || MAC_DOWN(kVK_RightCommand))) return 0;
+  if ((modifiers & TP_MOD_CTRL) && !(MAC_DOWN(kVK_Control) || MAC_DOWN(kVK_RightControl))) return 0;
+  if ((modifiers & TP_MOD_SHIFT) && !(MAC_DOWN(kVK_Shift) || MAC_DOWN(kVK_RightShift))) return 0;
+  if ((modifiers & TP_MOD_ALT) && !(MAC_DOWN(kVK_Option) || MAC_DOWN(kVK_RightOption))) return 0;
+  if ((modifiers & TP_MOD_META) && !(MAC_DOWN(kVK_Command) || MAC_DOWN(kVK_RightCommand))) return 0;
   return MAC_DOWN(keycode);
 #elif defined(_WIN32)
-  if ((modifiers & MOD_CTRL) && !(GetAsyncKeyState(VK_CONTROL) & 0x8000)) return 0;
-  if ((modifiers & MOD_SHIFT) && !(GetAsyncKeyState(VK_SHIFT) & 0x8000)) return 0;
-  if ((modifiers & MOD_ALT) && !(GetAsyncKeyState(VK_MENU) & 0x8000)) return 0;
-  if ((modifiers & MOD_META) && !((GetAsyncKeyState(VK_LWIN) | GetAsyncKeyState(VK_RWIN)) & 0x8000)) return 0;
+  if ((modifiers & TP_MOD_CTRL) && !(GetAsyncKeyState(VK_CONTROL) & 0x8000)) return 0;
+  if ((modifiers & TP_MOD_SHIFT) && !(GetAsyncKeyState(VK_SHIFT) & 0x8000)) return 0;
+  if ((modifiers & TP_MOD_ALT) && !(GetAsyncKeyState(VK_MENU) & 0x8000)) return 0;
+  if ((modifiers & TP_MOD_META) && !((GetAsyncKeyState(VK_LWIN) | GetAsyncKeyState(VK_RWIN)) & 0x8000)) return 0;
   return (GetAsyncKeyState(keycode) & 0x8000) != 0;
 #else
   char keys[32];
   if (!XQueryKeymap(display, keys)) return 0;
   #define DOWN(code) ((code) > 0 && (keys[(code) / 8] & (1 << ((code) % 8))))
   #define MOD_DOWN(left, right) (DOWN(XKeysymToKeycode(display, (left))) || DOWN(XKeysymToKeycode(display, (right))))
-  if ((modifiers & MOD_CTRL) && !MOD_DOWN(XK_Control_L, XK_Control_R)) return 0;
-  if ((modifiers & MOD_SHIFT) && !MOD_DOWN(XK_Shift_L, XK_Shift_R)) return 0;
-  if ((modifiers & MOD_ALT) && !MOD_DOWN(XK_Alt_L, XK_Alt_R)) return 0;
-  if ((modifiers & MOD_META) && !MOD_DOWN(XK_Super_L, XK_Super_R)) return 0;
+  if ((modifiers & TP_MOD_CTRL) && !MOD_DOWN(XK_Control_L, XK_Control_R)) return 0;
+  if ((modifiers & TP_MOD_SHIFT) && !MOD_DOWN(XK_Shift_L, XK_Shift_R)) return 0;
+  if ((modifiers & TP_MOD_ALT) && !MOD_DOWN(XK_Alt_L, XK_Alt_R)) return 0;
+  if ((modifiers & TP_MOD_META) && !MOD_DOWN(XK_Super_L, XK_Super_R)) return 0;
   return DOWN(keycode) != 0;
 #endif
 }
