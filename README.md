@@ -85,7 +85,7 @@ The horizontal toolbar is **40 px high**. It has a six-dot drag handle (2 × 3),
 
 Drag the six-dot handle to move the toolbar, including to the top edge of the screen and into the macOS menu-bar area. Resizing or rotating the toolbar preserves its position.
 
-**Rotate toolbar**, next to Collapse, switches between horizontal and vertical layouts. The vertical toolbar is **40 px wide**, with **36 px numeric fields** and no visible unit labels. The horizontal stroke-width field is 68 px wide. Orientation is saved automatically. The vertical layout fits the available monitor height and supports scrolling when necessary.
+**Rotate toolbar**, next to Collapse, switches between horizontal and vertical layouts. The vertical toolbar is **40 px wide**, with **36 px numeric fields** and no visible unit labels. The horizontal stroke-width and opacity fields are 47.6 px wide. Orientation is saved automatically. The vertical layout fits the available monitor height and supports scrolling when necessary.
 
 In **Preferences → Drawing toolbar**, select a mode. Changes are applied and saved immediately:
 
