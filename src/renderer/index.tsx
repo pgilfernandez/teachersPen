@@ -189,9 +189,9 @@ function Timer({ state }: { state: State }) {
       <input className="timer-caption" aria-label="Texto del temporizador" maxLength={120} value={state.settings.timerText} style={{ color: state.settings.timerColor }} onChange={event => void configure({ timerText: event.target.value })} />
       <span className="timer-clock" role="timer" style={{ color: state.settings.timerColor }}>{Math.floor(seconds / 60).toString().padStart(2, '0')}:{(seconds % 60).toString().padStart(2, '0')}</span>
       <div className="timer-controls">
-        <button title="Reiniciar" aria-label="Reiniciar temporizador" onClick={() => void control('reset')}><RotateCcw aria-hidden="true" /><span>Reset</span></button>
+        <button title="Reiniciar" aria-label="Reiniciar temporizador" onClick={() => void control('reset')}><RotateCcw aria-hidden="true" /></button>
         <button title={down ? 'Cambiar a cuenta ascendente' : 'Cambiar a cuenta atrás'} aria-label={down ? 'Cambiar a cuenta ascendente' : 'Cambiar a cuenta atrás'} aria-pressed={!down} onClick={() => void control('direction')}><ArrowDownUp aria-hidden="true" /></button>
-        <button title={state.timer.running ? 'Pausar' : 'Iniciar'} onClick={() => void control('start')}>{state.timer.running ? <Pause aria-hidden="true" /> : <Play aria-hidden="true" />}<span>{state.timer.running ? 'Pausar' : 'Iniciar'}</span></button>
+        <button title={state.timer.running ? 'Pausar' : 'Iniciar'} aria-label={state.timer.running ? 'Pausar temporizador' : 'Iniciar temporizador'} onClick={() => void control('start')}>{state.timer.running ? <Pause aria-hidden="true" /> : <Play aria-hidden="true" />}</button>
       </div>
     </div>
     <button className="timer-gear" title="Configurar temporizador" aria-label="Configurar temporizador" aria-expanded={config} onClick={() => setConfig(!config)}><SettingsIcon aria-hidden="true" /></button>

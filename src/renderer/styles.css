@@ -25,6 +25,8 @@ canvas { width: 100%; height: 100%; display: block; touch-action: none; }
 .timer-grip svg, .timer-resize svg { width: 7vw; height: 7vw; pointer-events: none; }
 .timer-controls { display: flex; align-items: center; justify-content: center; gap: 1vw; width: 100%; }
 .timer-controls button, .timer-gear, .timer-config-heading button { display: inline-flex; align-items: center; justify-content: center; gap: 1vw; padding: 1.5vw; border: 0; border-radius: 2vw; background: #ffffff14; color: #fff; font-size: 3.8vw; }
+.timer-controls button, .timer-grip, .timer-resize { opacity: .5; }
+.timer-controls button:hover, .timer-grip:hover, .timer-resize:hover { opacity: .65; }
 .timer-controls button:hover { background: #ffffff30; }
 .timer-controls button[aria-pressed="true"] { background: #ffffff35; }
 .timer-controls svg { width: 4.5vw; height: 4.5vw; }
