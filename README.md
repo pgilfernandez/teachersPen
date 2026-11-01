@@ -37,8 +37,6 @@ When drawing is ready, the pointer previews a circle with the current stroke dia
 
 Stroke opacity ranges from **100% opaque** to **0% invisible**. Changes are saved automatically and apply to new strokes. Each stroke retains its own opacity when undone or redone.
 
-On macOS, the drawing canvas is a nonactivating panel: activating a drawing shortcut and drawing on the canvas preserve the focused application underneath. Escape is registered globally only while drawing, so it can exit without focusing the overlay. Preferences and other editable windows can still receive focus when used.
-
 Annotations remain visible when you leave drawing mode, and clicks pass through to the applications underneath. Drawings stay fixed in screen coordinates and are held in memory only.
 
 ### Keyboard activation
@@ -59,7 +57,7 @@ On macOS, **Ctrl means Control, not Command**.
 | Shortcut | Action |
 | --- | --- |
 | `Ctrl+Shift+Space` | Enter or exit drawing mode |
-| `Esc` | Exit drawing; on macOS it works globally while drawing is active |
+| `Esc` | Exit drawing when the overlay has focus |
 | `Ctrl+Shift+A` | Freehand pencil |
 | `Ctrl+Shift+Q` | Line |
 | `Ctrl+Shift+W` | Arrow |

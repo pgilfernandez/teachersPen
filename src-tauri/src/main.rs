@@ -21,8 +21,6 @@ struct Helpers(Mutex<HashMap<String, CommandChild>>);
 struct LiveState {
     down: Mutex<HashSet<String>>,
     published: Mutex<Value>,
-    #[cfg(target_os = "macos")]
-    escape: std::sync::atomic::AtomicBool,
 }
 fn any_held(app: &tauri::AppHandle) -> bool {
     app.state::<LiveState>()
@@ -38,15 +36,12 @@ fn release_native(app: &tauri::AppHandle, token: &str) {
             return;
         }
     }
-    end_drawing_native(app, true);
-}
-fn end_drawing_native(app: &tauri::AppHandle, holding_only: bool) {
     let next = {
         let live = app.state::<LiveState>();
         let Ok(mut state) = live.published.lock() else {
             return;
         };
-        if state["drawing"] != true || (holding_only && state["holding"] != true) {
+        if state["holding"] != true {
             return;
         }
         state["drawing"] = json!(false);
@@ -60,27 +55,7 @@ fn end_drawing_native(app: &tauri::AppHandle, holding_only: bool) {
         }
     }
     let _ = app.emit_all("pen:state", next);
-    trace("native drawing release");
-}
-#[cfg(target_os = "macos")]
-fn sync_escape(app: &tauri::AppHandle, drawing: bool) -> Result<()> {
-    use std::sync::atomic::Ordering;
-    let live = app.state::<LiveState>();
-    if drawing && !live.escape.load(Ordering::Relaxed) {
-        let handle = app.clone();
-        app.global_shortcut_manager()
-            .register("Escape", move || {
-                end_drawing_native(&handle, false);
-                let _ = handle.emit_to("controller", "host-escape", ());
-            })
-            .map_err(err)?;
-        live.escape.store(true, Ordering::Relaxed);
-    } else if !drawing && live.escape.swap(false, Ordering::Relaxed) {
-        app.global_shortcut_manager()
-            .unregister("Escape")
-            .map_err(err)?;
-    }
-    Ok(())
+    trace("native hold release");
 }
 fn err(e: impl std::fmt::Display) -> String {
     e.to_string()
@@ -317,12 +292,6 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
                 args["holding"] = json!(false);
             }
             *app.state::<LiveState>().published.lock().map_err(err)? = args.clone();
-            #[cfg(target_os = "macos")]
-            if let Err(error) = sync_escape(&app, args["drawing"] == true) {
-                end_drawing_native(&app, false);
-                let _ = app.emit_to("controller", "host-escape", ());
-                return Err(format!("Escape: {}", error));
-            }
             trace(format!(
                 "state drawing={} holding={} activation={}",
                 args["drawing"], args["holding"], args["settings"]["activation"]
@@ -349,10 +318,6 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
             app.global_shortcut_manager()
                 .unregister_all()
                 .map_err(err)?;
-            #[cfg(target_os = "macos")]
-            app.state::<LiveState>()
-                .escape
-                .store(false, std::sync::atomic::Ordering::Relaxed);
             let mut errors = Vec::new();
             if let Some(entries) = args.as_object() {
                 for (action, value) in entries {
