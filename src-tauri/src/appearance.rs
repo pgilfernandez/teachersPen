@@ -51,7 +51,7 @@ pub fn changed(window: &Window, theme: &Theme) {
 
 #[cfg(target_os = "linux")]
 mod linux {
-    use gtk::prelude::*;
+    use gtk::traits::SettingsExt;
     use std::sync::Mutex;
     use tauri::{AppHandle, Manager};
     use zbus::{
