@@ -87,7 +87,7 @@ canvas { width: 100%; height: 100%; display: block; touch-action: none; }
 .timer-panel { position: relative; width: 100%; height: 100%; display: flex; align-items: center; gap: 1vw; padding: 3vw 2vw; background: var(--ui-timer); color: #fff; border: 1px solid #ffffff40; border-radius: 5vw; user-select: none; }
 .timer-panel.ending { background: #a92c2c; }
 .timer-content { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2vw; }
-.timer-caption { width: 100%; padding: 0; border: 0; background: transparent; font-size: 5vw; line-height: 1.3; text-align: center; }
+.timer-caption { width: 100%; padding: 0; border: 0; background: transparent; font-size: 5vw; line-height: 1.3; text-align: center; white-space: nowrap; overflow: hidden; }
 .timer-clock { text-align: center; font-size: 18vw; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; }
 .timer-grip, .timer-resize { display: flex; align-items: center; justify-content: center; flex: 0 0 8vw; height: 55%; padding: 0; color: #c3cdd7; }
 .timer-grip { -webkit-app-region: drag; cursor: grab; }
@@ -95,14 +95,16 @@ canvas { width: 100%; height: 100%; display: block; touch-action: none; }
 .timer-resize:hover { background: #ffffff20; color: #fff; }
 .timer-grip svg, .timer-resize svg { width: 7vw; height: 7vw; pointer-events: none; }
 .timer-controls { display: flex; align-items: center; justify-content: center; gap: 1vw; width: 100%; }
-.timer-controls button, .timer-gear, .timer-config-heading button { display: inline-flex; align-items: center; justify-content: center; gap: 1vw; padding: 1.5vw; border: 0; border-radius: 2vw; background: #ffffff14; color: #fff; font-size: 3.8vw; }
+.timer-controls button, .timer-gear, .timer-close, .timer-config-heading button { display: inline-flex; align-items: center; justify-content: center; gap: 1vw; padding: 1.5vw; border: 0; border-radius: 2vw; background: #ffffff14; color: #fff; font-size: 3.8vw; }
 .timer-controls button, .timer-grip, .timer-resize { opacity: .5; }
-.timer-controls button:hover, .timer-grip:hover, .timer-resize:hover { opacity: .65; }
+.timer-panel button:hover, .timer-grip:hover { opacity: .8; }
 .timer-controls button:hover { background: #ffffff30; }
 .timer-controls button[aria-pressed="true"] { background: #ffffff35; }
 .timer-controls svg { width: 4.5vw; height: 4.5vw; }
-.timer-gear { position: absolute; top: 2vw; right: 2vw; padding: 1vw; background: transparent; opacity: .4; }
-.timer-gear svg, .timer-config-heading svg { width: 5vw; height: 5vw; }
+.timer-gear, .timer-close { position: absolute; right: 2vw; padding: 1vw; background: transparent; opacity: .4; }
+.timer-gear { bottom: 2vw; }
+.timer-close { top: 2vw; }
+.timer-gear svg, .timer-close svg, .timer-config-heading svg { width: 5vw; height: 5vw; }
 .timer-config { -webkit-app-region: no-drag; position: absolute; z-index: 1; top: 2vw; right: 2vw; bottom: 2vw; left: 2vw; padding: 3vw; border: 1px solid var(--ui-border); border-radius: 3vw; background: var(--ui-dialog); color: var(--ui-text); box-shadow: 0 1vw 3vw #0005; font-size: 4vw; display: flex; flex-direction: column; justify-content: space-between; }
 .timer-config-heading { display: flex; justify-content: space-between; align-items: center; }
 .timer-config-heading button { padding: .5vw; }
