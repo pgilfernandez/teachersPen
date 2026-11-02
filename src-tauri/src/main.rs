@@ -1,5 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod appearance;
 #[cfg(target_os = "macos")]
 mod mac_hold;
 mod platform;
@@ -211,6 +212,9 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
         app.emit_to("controller", "host-request", payload)
             .map_err(err)?;
         return Ok(Value::Null);
+    }
+    if op == "theme" {
+        return appearance::theme(&window).map(|theme| json!(theme));
     }
     if op == "drag" {
         if ["toolbar", "timer-window"].contains(&window.label()) {
@@ -483,6 +487,7 @@ fn main() {
     builder.plugin(tauri_plugin_single_instance::init(|app,_,_| { let _=app.emit_to("controller","host-menu","show"); })).manage(LiveState::default()).system_tray(tray)
         .invoke_handler(tauri::generate_handler![host])
         .setup(|app| {
+            appearance::watch(&app.handle());
             #[cfg(target_os = "macos")]
             mac_hold::install(&app.handle())?;
             create_window(&app.handle(),&json!({"label":"controller","role":"controller","title":"TeachersPen","bounds":{"width":1,"height":1}}))?; Ok(()) })
@@ -491,7 +496,9 @@ fn main() {
             let _=app.emit_to("controller","host-menu",id);
         }})
         .on_window_event(|event| {
-            let w=event.window();if w.label()=="controller"{return;}
+            let w=event.window();
+            if let WindowEvent::ThemeChanged(theme)=event.event() {appearance::changed(w,theme);return;}
+            if w.label()=="controller"{return;}
             let kind=match event.event(){
                 WindowEvent::CloseRequested{api,..}=>{api.prevent_close();let _=w.hide();"close"},
                 WindowEvent::Moved(_)=>"move",

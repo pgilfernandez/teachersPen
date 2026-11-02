@@ -1,3 +1,4 @@
+import './theme';
 import './compat';
 import dialogPolyfill from 'dialog-polyfill';
 import React, { useEffect, useRef, useState } from 'react';
