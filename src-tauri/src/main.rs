@@ -170,7 +170,9 @@ fn create_window(app: &tauri::AppHandle, v: &Value) -> Result<()> {
         .disable_file_drop_handler()
         .on_navigation(|url| {
             matches!(url.scheme(), "tauri" | "asset")
-                || (url.scheme() == "http" && url.host_str() == Some("tauri.localhost"))
+                // Tauri 1.8 uses HTTPS for the local WebView2 origin on Windows.
+                || (matches!(url.scheme(), "http" | "https")
+                    && url.host_str() == Some("tauri.localhost"))
         })
         .inner_size(number(b, "width").max(1.0), number(b, "height").max(1.0));
     if b["x"].is_number() {
