@@ -189,6 +189,26 @@ pub fn work_area(m: &Monitor) -> Option<Value> {
 
 pub fn configure(w: &Window, role: &str) -> Result<()> {
     #[cfg(target_os = "windows")]
+    {
+        let window = w.clone();
+        w.run_on_main_thread(move || {
+            #[link(name = "user32")]
+            extern "system" {
+                fn SendMessageW(w: isize, message: u32, wparam: usize, lparam: isize) -> isize;
+            }
+            if let Ok(hwnd) = window.hwnd() {
+                unsafe {
+                    // Tauri assigns ICON_SMALL only. Windows uses ICON_BIG for
+                    // the taskbar; borrow the same icon owned by the window.
+                    let icon = SendMessageW(hwnd.0, 0x007F, 0, 0);
+                    if icon != 0 {
+                        SendMessageW(hwnd.0, 0x0080, 1, icon);
+                    }
+                }
+            }
+        }).map_err(|e| e.to_string())?;
+    }
+    #[cfg(target_os = "windows")]
     if role != "preferences" {
         let window = w.clone();
         w.run_on_main_thread(move || {
