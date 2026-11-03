@@ -313,8 +313,8 @@ function perform(action: Action, fromShortcut = false) {
         // Opening a board from a clean, hidden canvas must not reveal the old ink.
         // Clear through the history so the user can still explicitly undo it.
         if (!state.visible) sendDrawingAction('clear');
-        setDrawing(true);
-      } else if (!fromShortcut) setDrawing(false);
+        state.visible = true;
+      }
       break;
     case 'timer':
       state.timer.visible = !state.timer.visible;
@@ -726,7 +726,7 @@ async function runSmoke() {
   await clickToolButton('Color 2'); assert.equal(state.drawing, true);
   await clickToolButton('Color 2'); assert.equal(state.drawing, false);
   for (const board of ['Pizarra blanca', 'Pizarra negra']) {
-    await clickToolButton(board); assert.equal(state.drawing, true);
+    await clickToolButton(board); assert.equal(state.drawing, false);
     await clickToolButton(board); assert.equal(state.drawing, false); assert.equal(state.background, 'transparent');
   }
   const compactBar = await toolbar.webContents.executeJavaScript(`({grip:!!document.querySelector('.drag-handle .lucide-grip-vertical'),logo:!!document.querySelector('.brand'),footer:!!document.querySelector('.toolbar-footer'),width:document.querySelector('.width-control input').getBoundingClientRect().width,timer:!!document.querySelector('.timer-symbol svg'),last:Array.from(document.querySelectorAll('.toolbar > button')).slice(-4).map(b=>b.getAttribute('aria-label'))})`);
@@ -796,7 +796,7 @@ async function runSmoke() {
   assert.equal(await hasInk(), false, 'Borrar todo y cambiar a negro debe mantener el lienzo limpio');
   perform('white');
   perform('white'); assert.equal(state.background, 'transparent');
-  assert.equal(state.drawing, false, 'Pulsar de nuevo la pizarra debe salir del dibujo');
+  assert.equal(state.drawing, false, 'Cambiar el fondo no debe activar el dibujo');
   perform('toggle'); assert.equal(state.drawing, true);
   perform('toggle'); assert.equal(state.drawing, false);
   openPreferences();

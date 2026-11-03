@@ -1,6 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { HoldActivation, type HoldMonitor } from '../src/hold';
+import { HoldActivation, isDrawingShortcut, type HoldMonitor } from '../src/hold';
+
+test('background shortcuts do not activate held drawing', () => {
+  assert.equal(isDrawingShortcut('white'), false);
+  assert.equal(isDrawingShortcut('black'), false);
+  assert.equal(isDrawingShortcut('freehand'), true);
+});
 
 function setup() {
   const listeners = new Map<string, { down: () => void; up: () => void; error: (message: string) => void }>();

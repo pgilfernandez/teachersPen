@@ -129,8 +129,10 @@ export async function startController() {
       case 'visible': state.visible = !state.visible; if (!state.visible) await setDrawing(false); break;
       case 'white': case 'black':
         state.background = state.background === action ? 'transparent' : action;
-        if (state.background !== 'transparent') { if (!state.visible) await sendAction('clear'); await setDrawing(true); }
-        else if (!fromShortcut) await setDrawing(false);
+        if (state.background !== 'transparent') {
+          if (!state.visible) await sendAction('clear');
+          state.visible = true;
+        }
         break;
       case 'timer':
         state.timer.visible = !state.timer.visible;
