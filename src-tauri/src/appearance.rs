@@ -82,7 +82,16 @@ mod linux {
     pub fn publish(app: &AppHandle) {
         let handle = app.clone();
         let _ = app.run_on_main_thread(move || {
-            let _ = handle.emit_all("pen:theme", current(&handle));
+            let theme = current(&handle);
+            // Linux StatusNotifier/AppIndicator hosts do not apply macOS's
+            // template tint. Supply the contrasting artwork explicitly.
+            let icon = if theme == "dark" {
+                include_bytes!("../../dist/icons/trayLight.png").as_slice()
+            } else {
+                include_bytes!("../../dist/icons/trayTemplate.png").as_slice()
+            };
+            let _ = handle.tray_handle().set_icon(tauri::Icon::Raw(icon.to_vec()));
+            let _ = handle.emit_all("pen:theme", theme);
         });
     }
     fn update(app: &AppHandle, value: Option<&OwnedValue>) {
@@ -121,6 +130,7 @@ mod linux {
     }
     pub fn watch(app: &AppHandle) {
         app.manage(Preference::default());
+        publish(app);
         if let Some(settings) = gtk::Settings::default() {
             let handle = app.clone();
             settings.connect_gtk_theme_name_notify(move |_| publish(&handle));
