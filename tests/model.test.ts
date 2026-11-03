@@ -4,6 +4,26 @@ import { DrawingHistory, type Stroke } from '../src/model';
 import { actions, defaults, parseSettings } from '../src/shared';
 
 const stroke: Stroke = { tool: 'freehand', color: '#ff0000', width: 6, points: [{ x: 4, y: 7 }, { x: 8, y: 12 }] };
+
+test('undo and redo availability follows edits, clearing and branching', () => {
+  const history = new DrawingHistory();
+  const available = () => [history.canUndo, history.canRedo];
+  assert.deepEqual(available(), [false, false]);
+  history.clear(); history.undo(); history.redo();
+  assert.deepEqual(available(), [false, false]);
+  history.add(stroke);
+  assert.deepEqual(available(), [true, false]);
+  history.undo();
+  assert.deepEqual(available(), [false, true]);
+  history.redo();
+  assert.deepEqual(available(), [true, false]);
+  history.clear(); history.undo();
+  assert.deepEqual(available(), [true, true]);
+  history.add(stroke);
+  assert.deepEqual(available(), [true, false]);
+  history.undo(); history.undo();
+  assert.deepEqual(available(), [false, true]);
+});
 test('clear can be undone and a new stroke invalidates redo', () => {
   const history = new DrawingHistory();
   history.add(stroke); history.clear();

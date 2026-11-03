@@ -97,6 +97,9 @@ function Overlay({ state }: { state: State }) {
   const latest = useRef(state);
   latest.current = state;
   const frame = useRef<number | null>(null);
+  const publishHistory = () => {
+    void command({ type: 'history-state', canUndo: history.current.canUndo, canRedo: history.current.canRedo });
+  };
   const redraw = () => {
     if (frame.current !== null) return;
     frame.current = requestAnimationFrame(() => {
@@ -116,7 +119,7 @@ function Overlay({ state }: { state: State }) {
   };
   const finish = () => {
     const captured = pointerId.current;
-    if (current.current) history.current.add(current.current);
+    if (current.current) { history.current.add(current.current); publishHistory(); }
     current.current = null;
     pointerId.current = null;
     // Keyboard release can end a stroke before pointerup. Explicitly give up
@@ -140,6 +143,7 @@ function Overlay({ state }: { state: State }) {
       if (value === 'undo') history.current.undo();
       if (value === 'redo') history.current.redo();
       if (value === 'clear') history.current.clear();
+      publishHistory();
       redraw();
     });
     window.addEventListener('blur', finish);
@@ -288,8 +292,8 @@ function Toolbar({ state }: { state: State }) {
       <label className="width-control" title={t("Grosor del trazo en píxeles")}><span>px</span><input title={t("Grosor del trazo en píxeles (1–40)")} aria-label={t("Grosor")} type="number" min="1" max="40" value={state.settings.width} onChange={e => void command({ type: 'width', width: Number(e.target.value) })} /></label>
       <label className="width-control" title={t("Opacidad de los trazos: 100% opaco, 0% transparente")}><input title={t("Opacidad del trazo: 100% opaco, 0% transparente")} aria-label={t("Opacidad de los trazos")} type="number" min="0" max="100" step="1" value={100 - state.settings.transparency} onChange={e => void command({ type: 'transparency', transparency: 100 - Number(e.target.value) })} /><span>%</span></label>
       <div className="divider" />
-      <button className="icon-button" aria-label={t("Deshacer")} title={tip(t("Deshacer el último cambio de dibujo"), 'undo')} onClick={() => void action('undo')}><Undo2 size={21} aria-hidden="true" /></button>
-      <button className="icon-button" aria-label={t("Rehacer")} title={tip(t("Rehacer el último cambio deshecho"), 'redo')} onClick={() => void action('redo')}><Redo2 size={21} aria-hidden="true" /></button>
+      <button className="icon-button" aria-label={t("Deshacer")} disabled={!state.canUndo} title={tip(t("Deshacer el último cambio de dibujo"), 'undo')} onClick={() => void action('undo')}><Undo2 size={21} aria-hidden="true" /></button>
+      <button className="icon-button" aria-label={t("Rehacer")} disabled={!state.canRedo} title={tip(t("Rehacer el último cambio deshecho"), 'redo')} onClick={() => void action('redo')}><Redo2 size={21} aria-hidden="true" /></button>
       <button className={`icon-button ${!state.visible ? 'selected' : ''}`} aria-label={t("Ocultar o mostrar")} title={tip(state.visible ? t("Ocultar los dibujos sin borrarlos") : t("Volver a mostrar los dibujos"), 'visible')} onClick={() => void action('visible')}>{state.visible ? <Eye size={21} aria-hidden="true" /> : <EyeOff size={21} aria-hidden="true" />}</button>
       <button className="icon-button" aria-label={t("Borrar todo")} title={tip(t("Borrar todos los dibujos de las pantallas"), 'clear')} onClick={() => void action('clear')}><Trash2 size={20} aria-hidden="true" /></button>
       <div className="divider" />

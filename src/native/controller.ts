@@ -11,6 +11,7 @@ type Reply = { ok: boolean; error?: string };
 export async function startController() {
   const environment = await host<{ platform: string; wayland: boolean }>('environment');
   const state: State = {
+    canUndo: false, canRedo: false,
     drawing: false, tool: 'freehand', color: 1, visible: true, background: 'transparent', timerEnd: null,
     timer: { visible: false, running: false, elapsedMs: 0, startedAt: null }, settings: defaults(),
     shortcutErrors: [], platform: environment.platform, wayland: environment.wayland,
@@ -36,7 +37,13 @@ export async function startController() {
   function enqueue<T>(fn: () => Promise<T>): Promise<T> {
     const next = queue.then(fn); queue = next.catch(error => console.error('TeachersPen:', error)); return next;
   }
-  const broadcast = () => host('broadcast', state);
+  const histories = new Map<string, { canUndo: boolean; canRedo: boolean }>();
+  const broadcast = () => {
+    const history = histories.get(`overlay-${activeDisplay}`);
+    state.canUndo = history?.canUndo ?? false;
+    state.canRedo = history?.canRedo ?? false;
+    return host('broadcast', state);
+  };
   const write = (name: string, value: unknown) => host('write', { name, value });
   const read = async (name: string): Promise<any> => { try { return await host('read', { name }); } catch (e) { console.error(name, e); return null; } };
   const win = (label: string, action: string, values: object = {}) => host('window', { label, action, ...values });
@@ -227,6 +234,9 @@ export async function startController() {
     if (!c || typeof c !== 'object') throw new Error(t('Comando no autorizado'));
     switch (c.type) {
       case 'active-display': if (overlayLabels.has(source)) activeDisplay = Number(source.slice(8)); break;
+      case 'history-state':
+        if (!overlayLabels.has(source) || typeof c.canUndo !== 'boolean' || typeof c.canRedo !== 'boolean') throw new Error(t('Ventana no autorizada'));
+        histories.set(source, { canUndo: c.canUndo, canRedo: c.canRedo }); break;
       case 'action': if (actions.includes(c.action)) await perform(c.action); break;
       case 'tool': if (tools.includes(c.tool)) { const exit = state.drawing && state.tool === c.tool; state.tool = c.tool; await setDrawing(!exit); } break;
       case 'color': if (Number.isInteger(c.index) && c.index >= 0 && c.index < 5) state.color = c.index; break;

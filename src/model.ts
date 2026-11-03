@@ -5,6 +5,8 @@ export class DrawingHistory {
   strokes: Stroke[] = [];
   private future: Stroke[][] = [];
   private past: Stroke[][] = [];
+  get canUndo() { return this.past.length > 0; }
+  get canRedo() { return this.future.length > 0; }
   private commit(next: Stroke[]) {
     this.past.push(this.strokes);
     if (this.past.length > 100) this.past.shift();

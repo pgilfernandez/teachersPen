@@ -36,6 +36,7 @@ let timerTimeout: ReturnType<typeof setTimeout> | undefined;
 const nativeDirectory = app.isPackaged ? path.join(process.resourcesPath, 'app.asar.unpacked', 'dist', 'native') : path.join(__dirname, 'native');
 const holdMonitor = new NativeHoldMonitor(path.join(nativeDirectory, process.platform === 'win32' ? 'key-state.exe' : 'key-state'));
 const state: State = {
+  canUndo: false, canRedo: false,
   drawing: false, tool: 'freehand', color: 1, visible: true, background: 'transparent', timerEnd: null,
   timer: { visible: false, running: false, elapsedMs: 0, startedAt: null },
   settings: defaults(), shortcutErrors: [], platform: process.platform,
@@ -59,7 +60,13 @@ else {
 }
 const t = (source: string, values?: Record<string, string | number>) => translate(state.settings.language, source, values);
 function windows() { return [...overlays.values(), toolbar, mini, preferences, timerWindow].filter((win): win is BrowserWindow => !!win && !win.isDestroyed()); }
-function broadcast() { for (const win of windows()) win.webContents.send('pen:state', state); }
+const histories = new Map<number, { canUndo: boolean; canRedo: boolean }>();
+function broadcast() {
+  const history = histories.get(activeDisplay);
+  state.canUndo = history?.canUndo ?? false;
+  state.canRedo = history?.canRedo ?? false;
+  for (const win of windows()) win.webContents.send('pen:state', state);
+}
 function settingsPath() { return path.join(app.getPath('userData'), 'settings.json'); }
 function saveSettings(settings: Settings) {
   if (smoke) return;
@@ -363,7 +370,7 @@ async function createOverlays() {
     overlay.setAlwaysOnTop(true, 'screen-saver');
     if (process.platform === 'darwin') overlay.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: state.settings.toolbarMode === 'hidden' });
     overlay.setIgnoreMouseEvents(true);
-    overlay.on('closed', () => { overlays.delete(display.id); });
+    overlay.on('closed', () => { overlays.delete(display.id); histories.delete(display.id); });
     await new Promise<void>(resolve => overlay.webContents.once('did-finish-load', () => { overlay.showInactive(); resolve(); }));
     overlay.setIgnoreMouseEvents(smoke || !state.drawing);
     overlay.setFocusable(state.drawing);
@@ -428,6 +435,10 @@ async function start() {
       switch (command.type) {
         case 'active-display':
           for (const [id, overlay] of overlays) if (overlay.webContents === event.sender) activeDisplay = id;
+          break;
+        case 'history-state':
+          if (typeof command.canUndo !== 'boolean' || typeof command.canRedo !== 'boolean') break;
+          for (const [id, overlay] of overlays) if (overlay.webContents === event.sender) histories.set(id, { canUndo: command.canUndo, canRedo: command.canRedo });
           break;
         case 'action': if (actions.includes(command.action)) perform(command.action); break;
         case 'tool':
