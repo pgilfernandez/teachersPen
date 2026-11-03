@@ -177,13 +177,19 @@ jobs:
         run: npm ci
       - name: Build AppImage and DEB
         run: npm run dist:linux -- --ci --verbose
-      - name: Upload Linux packages
+      - name: Upload Linux AppImage
         uses: actions/upload-artifact@v4
         with:
-          name: TeachersPen-Linux-x64-${{ steps.commit.outputs.sha }}
-          path: |
-            src-tauri/target/release/bundle/appimage/*.AppImage
-            src-tauri/target/release/bundle/deb/*.deb
+          name: TeachersPen-Linux-x64-AppImage-${{ steps.commit.outputs.sha }}
+          path: src-tauri/target/release/bundle/appimage/*.AppImage
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0
+      - name: Upload Linux DEB
+        uses: actions/upload-artifact@v4
+        with:
+          name: TeachersPen-Linux-x64-DEB-${{ steps.commit.outputs.sha }}
+          path: src-tauri/target/release/bundle/deb/*.deb
           if-no-files-found: error
           retention-days: 14
           compression-level: 0
