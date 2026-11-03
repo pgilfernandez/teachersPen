@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { HoldActivation, ShortcutPress, isDrawingShortcut, type HoldMonitor } from '../src/hold';
+import { HoldActivation, isDrawingShortcut, type HoldMonitor } from '../src/hold';
 
 test('background shortcuts do not activate held drawing', () => {
   assert.equal(isDrawingShortcut('white'), false);
@@ -68,25 +68,4 @@ test('monitor failure releases drawing and stopped monitors cannot activate it l
   hold.press('toggle', 'Ctrl+Space'); hold.stop();
   listeners.get('Ctrl+Space')!.down();
   assert.deepEqual(events, ['arrow', 'native failure', 'released', 'stop:Ctrl+Space']);
-});
-
-test('radial shortcut opens immediately and ignores repeats until release', () => {
-  const listeners = new Map<string, { up: () => void }>();
-  const monitor: HoldMonitor = { watch(shortcut, down, up) {
-    listeners.set(shortcut, { up }); return () => {};
-  } };
-  const press = new ShortcutPress(monitor, () => {});
-  assert.equal(press.press('pie', 'Ctrl+P'), true);
-  for (let i = 0; i < 10; i++) assert.equal(press.press('pie', 'Ctrl+P'), false);
-  assert.equal(press.press('pie2', 'Ctrl+O'), true);
-  listeners.get('Ctrl+P')!.up();
-  assert.equal(press.press('pie', 'Ctrl+P'), true);
-  assert.equal(press.press('pie2', 'Ctrl+O'), false);
-  press.stop();
-  assert.equal(press.press('pie2', 'Ctrl+O'), true);
-});
-test('radial shortcut still opens when released before the monitor starts', () => {
-  const press = new ShortcutPress({ watch(shortcut, down, up) { up(); return () => {}; } }, () => {});
-  assert.equal(press.press('pie', 'Ctrl+P'), true);
-  assert.equal(press.press('pie', 'Ctrl+P'), true);
 });

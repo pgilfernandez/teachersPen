@@ -91,8 +91,8 @@ posiciones separadas por 45°, empezando arriba y siguiendo el sentido horario.
 En Preferencias → Menús radiales puedes cambiar cada atajo, asignar o vaciar
 las ocho posiciones de cada menú y ajustar
 el radio y la duración de animación compartidos, y elegir activación por clic o al pasar el
-puntero con un retardo configurable. Escape, el botón central, un clic fuera
-o el mismo atajo cierran el menú. Cerca de los bordes se desplaza el círculo
+puntero con un retardo configurable. Escape, el botón central o un clic fuera cierran el menú. El atajo sólo abre
+el menú: mantenerlo pulsado o volver a pulsarlo no lo cierra. Cerca de los bordes se desplaza el círculo
 para que todas las opciones permanezcan visibles.
 
 La paleta dispone de ocho colores editables en la pestaña General. Los colores

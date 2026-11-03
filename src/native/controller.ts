@@ -2,7 +2,7 @@ import { listen } from '@tauri-apps/api/event';
 import { host } from './host';
 import { actions, actionLabels, defaults, parseSettings, tools, type Action, type Command, type Settings, type State, type ToolbarMode } from '../shared';
 import { translate, isLanguage, defaultTimerText, isDefaultTimerText } from '../i18n';
-import { HoldActivation, ShortcutPress, isDrawingShortcut, type HoldMonitor } from '../hold';
+import { HoldActivation, isDrawingShortcut, type HoldMonitor } from '../hold';
 import { MiniDrag, MINI_SIZE, MINI_RADIUS, fitPosition, readPosition, toolbarClosing, toolbarOpening, type Area } from '../toolbar';
 import type { Point } from '../model';
 
@@ -75,7 +75,6 @@ export async function startController() {
     void host('watch', { token, shortcut }).catch(e => { const entry = watches.get(token); if (entry) { clearTimeout(entry.timeout); watches.delete(token); error(String(e)); } });
     return () => { clearTimeout(timeout); watches.delete(token); void host('stop-watch', { token }); };
   } };
-  const piePress = new ShortcutPress(monitor, message => { void host('trace', { message: `pie shortcut monitor: ${message}` }); });
   const hold = new HoldActivation(monitor, action => { void enqueue(async () => {
     await host('trace', { message: `hold activate ${action}` });
     state.holding = true; state.holdError = null;
@@ -132,7 +131,8 @@ export async function startController() {
     if (geometry.has('pie')) await win('pie', 'hide');
   }
   async function showPie(menu: 0 | 1) {
-    if (state.pie?.menu === menu) { await closePie(); return; }
+    // Opening is idempotent: repeated global shortcuts must never dismiss a menu.
+    if (state.pie?.menu === menu) return;
     const point = await cursor(); activeDisplay = point.display;
     const display = displays.find(d => d.id === activeDisplay) || nearest(point);
     await create('pie', 'pie', display.bounds);
@@ -169,7 +169,7 @@ export async function startController() {
     await broadcast();
   }
   async function register(settings: Settings): Promise<string[]> {
-    piePress.stop(); hold.stop(); if (state.holding) await setDrawing(false);
+    hold.stop(); if (state.holding) await setDrawing(false);
     const accepted: Partial<Record<Action, string>> = {}; const errors: string[] = []; const seen = new Set<string>();
     for (const action of actions) {
       const shortcut = settings.shortcuts[action]; if (!shortcut) continue;
@@ -372,7 +372,6 @@ export async function startController() {
     await host('trace', { message: `shortcut received ${event.payload} initialized=${initialized} recording=${recording} activation=${state.settings.activation}` });
     if (!initialized || recording || !actions.includes(event.payload)) return;
     const action = event.payload;
-    if ((action === 'pie' || action === 'pie2') && !piePress.press(action, state.settings.shortcuts[action])) return;
     if (state.settings.activation === 'hold' && isDrawingShortcut(action)) hold.press(action, state.settings.shortcuts[action]);
     else await perform(action, true);
   }); });
@@ -392,7 +391,7 @@ export async function startController() {
       if (e.bounds) geometry.set(e.label, e.bounds);
       if (!initialized) return;
       if (e.label === 'preferences' && ['blur', 'close'].includes(e.kind) && recording) { recording = false; state.shortcutErrors = await register(state.settings); await broadcast(); }
-      if (e.label === 'pie' && ['blur', 'close'].includes(e.kind)) { await closePie(); await broadcast(); }
+      if (e.label === 'pie' && e.kind === 'close') { await closePie(); await broadcast(); }
       if (e.kind === 'close') {
         if (e.label === 'toolbar') { await collapse(); await broadcast(); }
         if (e.label === 'timer-window') { stopTimer(); state.timer.visible = false; await broadcast(); }

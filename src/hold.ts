@@ -54,27 +54,3 @@ export class HoldActivation {
     for (const key of entries) key.stop?.();
   }
 }
-
-/** Accept a shortcut immediately, then ignore repeats until physical release. */
-export class ShortcutPress {
-  private held = new Map<Action, { stop?: StopWatching }>();
-  constructor(private monitor: HoldMonitor, private error: (message: string) => void) {}
-  press(action: Action, shortcut: string): boolean {
-    if (this.held.has(action)) return false;
-    const entry: { stop?: StopWatching } = {};
-    this.held.set(action, entry);
-    const release = () => { if (this.held.get(action) === entry) this.held.delete(action); };
-    try {
-      entry.stop = this.monitor.watch(shortcut, () => {}, release, message => {
-        release(); this.error(message);
-      });
-      if (this.held.get(action) !== entry) entry.stop();
-    } catch (error) { release(); this.error(String(error)); }
-    return true;
-  }
-  stop() {
-    const entries = [...this.held.values()];
-    this.held.clear();
-    for (const entry of entries) entry.stop?.();
-  }
-}
