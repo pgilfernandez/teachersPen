@@ -210,7 +210,7 @@ function Timer({ state }: { state: State }) {
   return <div className={`timer-panel ${down && seconds <= 10 ? 'ending' : ''}`}>
     <div className="timer-grip" title={t("Arrastrar temporizador")} aria-label={t("Arrastrar temporizador")}><GripVertical aria-hidden="true" /></div>
     <div className="timer-content">
-      <input className="timer-caption" aria-label={t("Texto del temporizador")} maxLength={120} value={state.settings.timerText} style={{ color: state.settings.timerColor }} onChange={event => void configure({ timerText: event.target.value })} />
+      <span className="timer-caption" aria-label={t("Texto del temporizador")} style={{ color: state.settings.timerColor }}>{state.settings.timerText}</span>
       <span className="timer-clock" role="timer" style={{ color: state.settings.timerColor }}>{Math.floor(seconds / 60).toString().padStart(2, '0')}:{(seconds % 60).toString().padStart(2, '0')}</span>
       <div className="timer-controls">
         <button title={t("Reiniciar")} aria-label={t("Reiniciar temporizador")} onClick={() => void control('reset')}><RotateCcw aria-hidden="true" /></button>
@@ -218,6 +218,7 @@ function Timer({ state }: { state: State }) {
         <button title={state.timer.running ? t("Pausar") : t("Iniciar")} aria-label={state.timer.running ? t("Pausar temporizador") : t("Iniciar temporizador")} onClick={() => void control('start')}>{state.timer.running ? <Pause aria-hidden="true" /> : <Play aria-hidden="true" />}</button>
       </div>
     </div>
+    <button className="timer-close" title={t("Cerrar")} aria-label={t("Cerrar")} onClick={() => void action('timer')}><X aria-hidden="true" /></button>
     <button className="timer-gear" title={t("Configurar temporizador")} aria-label={t("Configurar temporizador")} aria-expanded={config} onClick={() => setConfig(!config)}><SettingsIcon aria-hidden="true" /></button>
     {config && <div className="timer-config" role="dialog" aria-label={t("Configuración del temporizador")}>
       <div className="timer-config-heading"><strong>{t("Temporizador")}</strong><button aria-label={t("Cerrar configuración")} onClick={() => setConfig(false)}><X aria-hidden="true" /></button></div>
