@@ -279,6 +279,14 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
                     w.show().map_err(err)?;
                     platform::taskbar_style(&w)?;
                     if w.label().starts_with("overlay-") {
+                        #[cfg(target_os = "linux")]
+                        {
+                            // Showing a GTK window may rebuild its input region.
+                            // Start click-through unless drawing was published.
+                            let drawing = app.state::<LiveState>().published.lock()
+                                .map(|state| state["drawing"] == true).unwrap_or(false);
+                            platform::ignore(&w, !drawing)?;
+                        }
                         platform::raise_controls(&app);
                     }
                 }

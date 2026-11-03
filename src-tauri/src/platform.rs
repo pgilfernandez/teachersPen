@@ -457,19 +457,14 @@ pub fn ignore(w: &Window, enabled: bool) -> Result<()> {
             if let Ok(gtk) = window.gtk_window() {
                 gtk.realize();
                 gtk.set_accept_focus(!enabled);
-                if let Some(gdk) = gtk.window() {
-                    if enabled {
-                        gdk.input_shape_combine_region(&gtk::cairo::Region::create(), 0, 0);
-                    } else {
-                        let region =
-                            gtk::cairo::Region::create_rectangle(&gtk::cairo::RectangleInt {
-                                x: 0,
-                                y: 0,
-                                width: gtk.allocated_width().max(1),
-                                height: gtk.allocated_height().max(1),
-                            });
-                        gdk.input_shape_combine_region(&region, 0, 0);
-                    }
+                gtk.set_focus_on_map(!enabled);
+                if enabled {
+                    // Store the shape on GtkWidget so GTK preserves it when
+                    // mapping/resizing the window, including its first show.
+                    gtk.input_shape_combine_region(Some(&gtk::cairo::Region::create()));
+                } else {
+                    // Restore the full input area, following future resizes.
+                    gtk.input_shape_combine_region(None);
                 }
             }
         })
