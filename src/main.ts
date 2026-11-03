@@ -388,8 +388,8 @@ function makeTray() {
   tray = new Tray(icon);
   tray.setToolTip('TeachersPen');
   refreshTrayMenu();
-  // macOS opens the native context menu itself; other platforms can open it on click.
-  if (process.platform !== 'darwin') tray.on('click', () => tray.popUpContextMenu());
+  if (process.platform === 'win32') tray.on('click', showTools);
+  else if (process.platform !== 'darwin') tray.on('click', () => tray.popUpContextMenu());
 }
 function refreshTrayMenu() {
   if (!tray) return;

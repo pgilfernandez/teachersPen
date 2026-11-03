@@ -500,10 +500,19 @@ fn main() {
             #[cfg(target_os = "macos")]
             mac_hold::install(&app.handle())?;
             create_window(&app.handle(),&json!({"label":"controller","role":"controller","title":"TeachersPen","bounds":{"width":1,"height":1}}))?; Ok(()) })
-        .on_system_tray_event(|app,event| {if let SystemTrayEvent::MenuItemClick{id,..}=event {
-            if id=="quit" {tauri::api::process::kill_children();app.exit(0);}
-            let _=app.emit_to("controller","host-menu",id);
-        }})
+        .on_system_tray_event(|app,event| {
+            match event {
+                SystemTrayEvent::MenuItemClick{id,..} => {
+                    if id=="quit" {tauri::api::process::kill_children();app.exit(0);}
+                    let _=app.emit_to("controller","host-menu",id);
+                }
+                #[cfg(target_os = "windows")]
+                SystemTrayEvent::LeftClick{..} => {
+                    let _=app.emit_to("controller","host-menu","show");
+                }
+                _ => ()
+            }
+        })
         .on_window_event(|event| {
             let w=event.window();
             if matches!(event.event(), WindowEvent::Focused(true)) && w.label().starts_with("overlay-") {
