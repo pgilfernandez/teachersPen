@@ -188,6 +188,7 @@ pub fn work_area(m: &Monitor) -> Option<Value> {
 }
 
 pub fn configure(w: &Window, role: &str) -> Result<()> {
+    taskbar_style(w)?;
     #[cfg(target_os = "windows")]
     {
         let window = w.clone();
@@ -357,6 +358,31 @@ pub fn raise_controls(app: &tauri::AppHandle) {
     let _ = app;
 }
 
+// DeleteTab alone does not exclude a window from Alt+Tab. Windows tool windows
+// keep the mini launcher, overlays and dialogs out of the application switcher.
+pub fn taskbar_style(w: &Window) -> Result<()> {
+    #[cfg(target_os = "windows")]
+    if w.label() != "toolbar" {
+        let window = w.clone();
+        w.run_on_main_thread(move || {
+            #[link(name = "user32")]
+            extern "system" {
+                fn GetWindowLongPtrW(w: isize, index: i32) -> isize;
+                fn SetWindowLongPtrW(w: isize, index: i32, value: isize) -> isize;
+            }
+            if let Ok(hwnd) = window.hwnd() {
+                unsafe {
+                    let style = GetWindowLongPtrW(hwnd.0, -20);
+                    SetWindowLongPtrW(hwnd.0, -20, (style & !0x00040000) | 0x00000080);
+                }
+            }
+        }).map_err(|e| e.to_string())?;
+    }
+    #[cfg(not(target_os = "windows"))]
+    let _ = w;
+    Ok(())
+}
+
 pub fn ignore(w: &Window, enabled: bool) -> Result<()> {
     #[cfg(target_os = "macos")]
     {
@@ -385,7 +411,8 @@ pub fn ignore(w: &Window, enabled: bool) -> Result<()> {
     #[cfg(target_os = "windows")]
     {
         w.set_ignore_cursor_events(enabled)
-            .map_err(|e| e.to_string())
+            .map_err(|e| e.to_string())?;
+        taskbar_style(w)
     }
     #[cfg(target_os = "linux")]
     {

@@ -165,9 +165,9 @@ fn create_window(app: &tauri::AppHandle, v: &Value) -> Result<()> {
         .decorations(role == "preferences")
         .transparent(role != "preferences")
         .resizable(role == "preferences")
+        .minimizable(!cfg!(target_os = "windows"))
         .always_on_top(role != "preferences" && role != "controller")
-        .skip_taskbar(!(role == "preferences"
-            || (cfg!(target_os = "windows") && matches!(role, "toolbar" | "mini"))))
+        .skip_taskbar(if cfg!(target_os = "windows") { role != "toolbar" } else { role != "preferences" })
         .disable_file_drop_handler()
         .on_navigation(|url| {
             matches!(url.scheme(), "tauri" | "asset")
@@ -277,6 +277,7 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
             match text(&args, "action") {
                 "show" => {
                     w.show().map_err(err)?;
+                    platform::taskbar_style(&w)?;
                     if w.label().starts_with("overlay-") {
                         platform::raise_controls(&app);
                     }
