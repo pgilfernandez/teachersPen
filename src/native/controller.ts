@@ -3,7 +3,7 @@ import { host } from './host';
 import { actions, actionLabels, defaults, parseSettings, tools, type Action, type Command, type Settings, type State, type ToolbarMode } from '../shared';
 import { translate, isLanguage, defaultTimerText, isDefaultTimerText } from '../i18n';
 import { HoldActivation, isDrawingShortcut, type HoldMonitor } from '../hold';
-import { MiniDrag, MINI_SIZE, MINI_RADIUS, fitPosition, readPosition, toolbarOpening, type Area } from '../toolbar';
+import { MiniDrag, MINI_SIZE, MINI_RADIUS, fitPosition, readPosition, toolbarClosing, toolbarOpening, type Area } from '../toolbar';
 import type { Point } from '../model';
 
 type Display = { id: number; bounds: Area; workArea: Area; scaleFactor: number };
@@ -213,6 +213,12 @@ export async function startController() {
     miniDrag.cancel(); await presentation();
   }
   async function collapse() {
+    if (state.toolbarExpanded && state.settings.toolbarMode !== 'hidden') {
+      const bar = await bounds('toolbar');
+      const position = toolbarClosing(bar, areaFor(bar), state.settings.toolbarOrientation === 'vertical');
+      await move('mini', { ...await bounds('mini'), ...position });
+      await write('window-state.json', position);
+    }
     clearReveal();
     if (state.settings.toolbarMode === 'visible') await mode('minimal');
     else { state.toolbarExpanded = false; miniDrag.cancel(); await presentation(); }

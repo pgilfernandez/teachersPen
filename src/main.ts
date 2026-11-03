@@ -3,7 +3,7 @@ import { app, BrowserWindow, globalShortcut, ipcMain, Menu, nativeImage, powerMo
 import { readFileSync, writeFileSync, mkdirSync, renameSync } from 'node:fs';
 import path from 'node:path';
 import { actions, actionLabels, defaults, parseSettings, tools, type Action, type Command, type Settings, type State, type ToolbarMode } from './shared';
-import { MiniDrag, MINI_RADIUS, MINI_SIZE, fitPosition, readPosition, toolbarOpening } from './toolbar';
+import { MiniDrag, MINI_RADIUS, MINI_SIZE, fitPosition, readPosition, toolbarClosing, toolbarOpening } from './toolbar';
 import type { Point } from './model';
 import { HoldActivation, isDrawingShortcut } from './hold';
 import { NativeHoldMonitor } from './native-hold';
@@ -151,6 +151,11 @@ function prepareToolbarLayout(anchor?: Point, workArea?: Electron.Rectangle) {
   if (areaChanged) broadcast();
 }
 function collapseTools() {
+  if (toolbar && mini && state.toolbarExpanded && state.settings.toolbarMode !== 'hidden') {
+    const bar = toolbar.getBounds();
+    moveMini(toolbarClosing(bar, screen.getDisplayMatching(bar).workArea, state.settings.toolbarOrientation === 'vertical'));
+    rememberMiniPosition();
+  }
   toolbarRevealAnchor = null; state.toolbarReveal = null;
   clearTimeout(toolbarRevealTimeout);
   if (state.settings.toolbarMode === 'visible') return setToolbarMode('minimal');

@@ -3,6 +3,18 @@ import type { Point } from './model';
 export const MINI_SIZE = 48;
 export const MINI_RADIUS = 21;
 export interface Area extends Point { width: number; height: number }
+/** Place the visible launcher circle against the start of the visible bar. */
+export function toolbarClosing(bar: Area, area: Area, vertical: boolean): Point {
+  // The visible bar is 40 px thick with an 8 px outer margin; the circle
+  // has a 3 px transparent inset. Ignore extra native window allocation.
+  return fitPosition(vertical ? {
+    x: bar.x + 8 + 40 / 2 - MINI_SIZE / 2,
+    y: bar.y + 8 - MINI_SIZE + 3
+  } : {
+    x: bar.x + 8 - MINI_SIZE + 3,
+    y: bar.y + 8 + 40 / 2 - MINI_SIZE / 2
+  }, { width: MINI_SIZE, height: MINI_SIZE }, area);
+}
 export function toolbarOpening(launcher: Point, size: { width: number; height: number }, area: Area, vertical: boolean) {
   const center = { x: launcher.x + MINI_SIZE / 2, y: launcher.y + MINI_SIZE / 2 };
   const before = vertical ? center.y - area.y : center.x - area.x;
