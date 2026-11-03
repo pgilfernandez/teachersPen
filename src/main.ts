@@ -382,7 +382,7 @@ function openPreferences() {
   preferences.on('blur', finishRecording);
 }
 function makeTray() {
-  const icon = nativeImage.createFromPath(path.join(__dirname, 'icons', process.platform === 'darwin' ? 'trayTemplate.png' : 'tray.png'));
+  const icon = nativeImage.createFromPath(path.join(__dirname, 'icons', 'trayTemplate.png'));
   if (process.platform === 'darwin') icon.setTemplateImage(true);
   tray = new Tray(icon);
   tray.setToolTip('TeachersPen');
