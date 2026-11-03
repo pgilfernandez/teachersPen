@@ -314,6 +314,7 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
                 "get-bounds" => return bounds(&w),
                 _ => return Err("Unknown window operation".into()),
             }
+            platform::refresh_overlay_regions(&app);
         }
         "reply" => app
             .emit_to(text(&args, "label"), "pen:reply", args["value"].clone())
@@ -559,6 +560,9 @@ fn main() {
                 _=>return
             };
             let _=w.emit_to("controller","host-window",json!({"label":w.label(),"kind":kind,"bounds":bounds(w).ok()}));
+            if matches!(kind, "move" | "resize" | "scale" | "close") {
+                platform::refresh_overlay_regions(&w.app_handle());
+            }
         })
         .build(tauri::generate_context!()).expect("Could not start TeachersPen")
         .run(|_app,event| {if let tauri::RunEvent::ExitRequested{..}=event {tauri::api::process::kill_children();}});

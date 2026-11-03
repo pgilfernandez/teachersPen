@@ -337,6 +337,7 @@ pub fn configure(w: &Window, role: &str) -> Result<()> {
 // Desktop window managers can raise a focused overlay above its tool windows.
 // Restore their order without taking keyboard focus away from drawing.
 pub fn raise_controls(app: &tauri::AppHandle) {
+    refresh_overlay_regions(app);
     #[cfg(target_os = "windows")]
     for label in ["toolbar", "mini", "timer-window", "preferences"] {
         if let Some(window) = app.get_window(label) {
@@ -396,6 +397,55 @@ pub fn raise_controls(app: &tauri::AppHandle) {
         });
     }
     #[cfg(not(any(target_os = "windows", target_os = "linux")))]
+    let _ = app;
+}
+
+// Keep holes for the controls in both the visible and mouse-input regions.
+// XFWM can raise a full-screen drawing overlay on the first pointer press,
+// even after an explicit restack. Holes remain effective regardless of Z order.
+pub fn refresh_overlay_regions(app: &tauri::AppHandle) {
+    #[cfg(target_os = "linux")]
+    {
+        let handle = app.clone();
+        let _ = app.run_on_main_thread(move || {
+            use gtk::prelude::*;
+            let controls: Vec<_> = ["toolbar", "mini", "timer-window", "preferences"]
+                .iter()
+                .filter_map(|label| handle.get_window(label))
+                .filter(|window| window.is_visible().unwrap_or(false))
+                .filter_map(|window| Some((window.outer_position().ok()?, window.outer_size().ok()?)))
+                .collect();
+            for (label, window) in handle.windows() {
+                if !label.starts_with("overlay-") { continue; }
+                let (Ok(gtk), Ok(origin), Ok(scale)) =
+                    (window.gtk_window(), window.outer_position(), window.scale_factor()) else { continue; };
+                let region = gtk::cairo::Region::create_rectangle(&gtk::cairo::RectangleInt {
+                    x: 0, y: 0,
+                    width: gtk.allocated_width().max(1), height: gtk.allocated_height().max(1),
+                });
+                for (position, size) in &controls {
+                    // Native bounds are physical pixels; GTK shapes use logical
+                    // coordinates relative to each overlay, including on HiDPI.
+                    let x = (position.x as f64 - origin.x as f64) / scale;
+                    let y = (position.y as f64 - origin.y as f64) / scale;
+                    let right = x + size.width as f64 / scale;
+                    let bottom = y + size.height as f64 / scale;
+                    let _ = region.subtract_rectangle(&gtk::cairo::RectangleInt {
+                        x: x.floor() as i32, y: y.floor() as i32,
+                        width: (right.ceil() - x.floor()) as i32,
+                        height: (bottom.ceil() - y.floor()) as i32,
+                    });
+                }
+                gtk.shape_combine_region(Some(&region));
+                if gtk.accepts_focus() {
+                    gtk.input_shape_combine_region(Some(&region));
+                } else {
+                    gtk.input_shape_combine_region(Some(&gtk::cairo::Region::create()));
+                }
+            }
+        });
+    }
+    #[cfg(not(target_os = "linux"))]
     let _ = app;
 }
 
@@ -474,7 +524,9 @@ pub fn ignore(w: &Window, enabled: bool) -> Result<()> {
                 }
             }
         })
-        .map_err(|e| e.to_string())
+        .map_err(|e| e.to_string())?;
+        refresh_overlay_regions(&w.app_handle());
+        Ok(())
     }
 }
 pub fn dock(app: &tauri::AppHandle, hidden: bool) {
