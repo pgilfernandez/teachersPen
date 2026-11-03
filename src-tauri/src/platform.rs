@@ -359,10 +359,13 @@ pub fn raise_controls(app: &tauri::AppHandle) {
         let handle = app.clone();
         let _ = app.run_on_main_thread(move || {
             use gtk::prelude::*;
-            let parent = handle.windows().into_iter()
+            let overlays: Vec<_> = handle.windows().into_iter()
                 .filter(|(label, _)| label.starts_with("overlay-"))
                 .map(|(_, window)| window)
+                .collect();
+            let parent = overlays.iter()
                 .find(|window| window.is_focused().unwrap_or(false))
+                .or_else(|| overlays.first())
                 .and_then(|window| window.gtk_window().ok());
             for label in ["toolbar", "mini", "timer-window", "preferences"] {
                 if let Some(window) = handle.get_window(label) {
@@ -381,6 +384,9 @@ pub fn raise_controls(app: &tauri::AppHandle) {
                         if gtk.is_visible() {
                             gtk.set_keep_above(true);
                             if let Some(gdk) = gtk.window() {
+                                if let Some(overlay) = parent.as_ref().and_then(|gtk| gtk.window()) {
+                                    gdk.restack(Some(&overlay), true);
+                                }
                                 gdk.raise();
                             }
                         }
