@@ -48,7 +48,7 @@ export interface State {
   toolbarAvailableHeight: number;
 }
 export function defaults(): Settings {
-  const keys = ['Space', 'A', 'Q', 'W', 'S', 'O', 'E', 'D', 'C', 'R', 'F', 'Z', 'Y', 'X', 'H', 'T', 'V', 'B', 'L'];
+  const keys = ['Space', 'A', 'W', 'E', 'S', 'D', '1', '2', '3', '4', '5', 'Z', 'Y', 'X', 'C', 'T', 'V', 'B', 'Q'];
   return {
     language: 'en', activation: 'toggle',
     toolbarMode: 'visible',
