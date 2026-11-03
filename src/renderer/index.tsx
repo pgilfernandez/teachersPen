@@ -90,6 +90,8 @@ function MiniLauncher({ state }: { state: State }) {
 function Overlay({ state }: { state: State }) {
   const t = translator(state.settings.language);
   const [tracing, setTracing] = useState(false);
+  const [cursorRevision, setCursorRevision] = useState(0);
+  const refreshCursor = () => setCursorRevision(revision => revision + 1);
   const canvas = useRef<HTMLCanvasElement>(null);
   const history = useRef(new DrawingHistory());
   const current = useRef<Stroke | null>(null);
@@ -142,20 +144,23 @@ function Overlay({ state }: { state: State }) {
       finish();
       if (value === 'undo') history.current.undo();
       if (value === 'redo') history.current.redo();
-      if (value === 'clear') history.current.clear();
+      if (value === 'clear') { history.current.clear(); refreshCursor(); }
       publishHistory();
       redraw();
     });
     window.addEventListener('blur', finish);
+    window.addEventListener('focus', refreshCursor);
     return () => {
       off(); window.removeEventListener('resize', resize); window.removeEventListener('blur', finish);
+      window.removeEventListener('focus', refreshCursor);
       if (frame.current !== null) cancelAnimationFrame(frame.current);
     };
   }, []);
   useEffect(() => { if (!state.drawing) finish(); redraw(); }, [state.drawing, state.visible]);
   return <div className={`overlay-surface ${state.visible ? state.background : 'transparent'} ${state.drawing ? 'drawing' : ''}`}
     onContextMenuCapture={event => event.preventDefault()}>
-    <canvas ref={canvas} style={{ cursor: state.drawing && !tracing ? strokeCursor(state.settings.colors[state.color], state.settings.width, state.settings.transparency) : undefined }}
+    <canvas ref={canvas} style={{ cursor: state.drawing && !tracing ? strokeCursor(state.settings.colors[state.color], state.settings.width, state.settings.transparency, cursorRevision) : undefined }}
+      onPointerEnter={() => { if (latest.current.drawing) refreshCursor(); }}
       onPointerDown={event => {
         // macOS Control-click must draw while a Control shortcut is held,
         // rather than opening WebKit's Reload/Back context menu.

@@ -1,8 +1,10 @@
 import type { Stroke } from '../model';
 
-export function strokeCursor(color: string, width: number, transparency: number): string {
+export function strokeCursor(color: string, width: number, transparency: number, revision = 0): string {
   // A fixed, even canvas keeps the hotspot exactly centered, including odd widths.
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48"><circle cx="24" cy="24" r="${width / 2}" fill="${color}" opacity="${1 - transparency / 100}"/></svg>`;
+  // A new URL makes WebKit reinstall a cursor lost after native focus changes,
+  // even when its color, size and transparency remain identical.
+  const svg = `<svg data-revision="${revision}" xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48"><circle cx="24" cy="24" r="${width / 2}" fill="${color}" opacity="${1 - transparency / 100}"/></svg>`;
   return `url("data:image/svg+xml,${encodeURIComponent(svg)}") 24 24, crosshair`;
 }
 
