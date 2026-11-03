@@ -288,6 +288,9 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
                             platform::ignore(&w, !drawing)?;
                         }
                         platform::raise_controls(&app);
+                    } else {
+                        #[cfg(target_os = "linux")]
+                        platform::raise_controls(&app);
                     }
                 }
                 "hide" => w.hide().map_err(err)?,
@@ -295,6 +298,8 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
                 "focus" => {
                     if args["holding"] != true || any_held(&app) {
                         w.set_focus().map_err(err)?;
+                        #[cfg(target_os = "linux")]
+                        platform::raise_controls(&app);
                     }
                 }
                 "bounds" => {
