@@ -241,3 +241,8 @@ html.window-pie, body.pie { overflow: hidden; user-select: none; color-scheme: v
 .pie-item:hover, .pie-item:focus-visible { background: var(--ui-selected); outline: 2px solid var(--ui-selected-ink); }
 @keyframes pie-appear { from { opacity: 0; transform: translate(-50%, -50%) translate(var(--pie-origin-x), var(--pie-origin-y)) scale(.4); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
 @media (prefers-reduced-motion: reduce) { .pie-item { animation-duration: 0ms !important; } }
+
+.preferences-tabs { display: flex; margin-bottom: 14px; border-bottom: 1px solid var(--ui-border); }
+.preferences-tabs button { flex: 1; padding: 7px 10px; background: transparent; color: var(--ui-muted); border-bottom: 2px solid transparent; }
+.preferences-tabs button[aria-selected="true"] { color: var(--ui-selected-ink); border-bottom-color: var(--ui-selected-ink); }
+.pie-slot-options { margin-top: 16px; margin-bottom: 14px; }

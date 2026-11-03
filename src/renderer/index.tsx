@@ -72,7 +72,7 @@ function PieMenu({ state }: { state: State }) {
   const iconMap: Partial<Record<Action, EditableIcon>> = { ...toolIcons, undo: Undo2, redo: Redo2, clear: Trash2, visible: Eye, timer: TimerIcon, white: Whiteboard, black: Blackboard, toggle: Power };
   return <div className="pie-backdrop" onPointerDown={e => { if (e.target === e.currentTarget) close(); }} onContextMenu={e => { e.preventDefault(); close(); }}>
     <div className="pie-center" style={{ left: center.x, top: center.y }}><button aria-label={t('Cerrar')} onClick={close}><X size={16} /></button></div>
-    {settings.slots.map((name, index) => {
+    {settings[state.pie!.menu === 0 ? 'slots' : 'slots2'].map((name, index) => {
       if (!name) return null;
       const angle = (index * 45 - 90) * Math.PI / 180;
       const radius = settings.radius;
@@ -380,6 +380,7 @@ function Preferences({ state }: { state: State }) {
   useEffect(() => { setOpacityText(String(100 - state.settings.transparency)); }, [state.settings.transparency]);
   const [error, setError] = useState('');
   const [about, setAbout] = useState(false);
+  const [tab, setTab] = useState<'general' | 'radial'>('general');
   const [busy, setBusy] = useState(false);
   const pending = useRef(0);
   const [recording, setRecording] = useState<Action | null>(null);
@@ -417,6 +418,16 @@ function Preferences({ state }: { state: State }) {
         event.currentTarget.blur();
       }} /><button className="remove-shortcut" disabled={name === 'toggle'} aria-label={t('Eliminar atajo de {action}', { action: t(actionLabels[name]) })} onClick={() => changeShortcut(name, '')}><X size={16} aria-hidden="true" /></button></div>;
   return <main className="preferences-main">
+    <div className="preferences-tabs" role="tablist" aria-label={t('Preferencias')}>
+      {(['general', 'radial'] as const).map(name => <button key={name} id={'tab-' + name} role="tab" aria-selected={tab === name} aria-controls={'preferences-' + name} tabIndex={tab === name ? 0 : -1} onClick={() => setTab(name)} onKeyDown={event => {
+        if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) {
+          event.preventDefault();
+          const next = event.key === 'Home' ? 'general' : event.key === 'End' ? 'radial' : tab === 'general' ? 'radial' : 'general';
+          setTab(next); document.getElementById('tab-' + next)?.focus();
+        }
+      }}>{t(name === 'general' ? 'General' : 'Menús radiales')}</button>)}
+    </div>
+    <div id="preferences-general" role="tabpanel" aria-labelledby="tab-general" hidden={tab !== 'general'}>
     <div className="setting-row language-row"><label htmlFor="language">{t('Idioma')}</label><select id="language" value={state.settings.language} disabled={busy} onChange={event => void saveChange({ type: 'language', language: event.target.value as Language })}>{languages.map(code => <option key={code} value={code}>{languageNames[code]}</option>)}</select></div>
     <section><h2>{t("Dibujo")}</h2>
       <div className="setting-row"><span className="setting-label">{t("Trazo")}</span><div className="stroke-settings">
@@ -433,15 +444,23 @@ function Preferences({ state }: { state: State }) {
       <div className="setting-row"><label htmlFor="toolbar-mode">{t("Barra de dibujo")}</label><select id="toolbar-mode" value={state.settings.toolbarMode} disabled={busy} onChange={e => void saveChange({ type: 'toolbar-mode', mode: e.target.value as ToolbarMode })}><option value="visible">{t("Visible")}</option><option value="minimal">{t("Mínima")}</option><option value="hidden">{t("Oculta")}</option></select></div>
       <div className="setting-row"><label htmlFor="drawing-hints">{t('Ayuda al dibujar')}</label><input id="drawing-hints" type="checkbox" checked={state.settings.drawingHints} disabled={busy} onChange={event => void saveChange({ type: 'drawing-hints', enabled: event.target.checked })} /></div>
     </section>
-    <section><h2>{t('Menú radial')}</h2>
-      {shortcutRow('pie')}
+    <section><h2>{t("Colores")}</h2><div className="shortcut-list color-shortcuts">{state.settings.colors.map((color, index) => shortcutRow(`color${index}` as Action, <span className="color-preset"><span>{t("Color")} {index + 1}</span><input aria-label={t('Color {number}', { number: index + 1 })} type="color" value={color} onChange={event => void saveChange({ type: 'preset-color', index, color: event.target.value })} /></span>))}{shortcutRow('nextColor')}</div></section>
+    <section><h2>{t("Funciones")}</h2><div className="shortcut-list">{actions.filter(name => !name.startsWith('color') && name !== 'nextColor' && name !== 'pie' && name !== 'pie2').map(name => shortcutRow(name, name === 'toggle' ? t("Activar / salir") : t(actionLabels[name])))}</div>
+    </section>
+    </div>
+    <div id="preferences-radial" role="tabpanel" aria-labelledby="tab-radial" hidden={tab !== 'radial'}>
+      <section><h2>{t('Comportamiento general')}</h2>
       {(['animationMs', 'radius', 'hoverMs'] as const).map(key => <div className="setting-row" key={key}><label htmlFor={'pie-' + key}>{t({ animationMs: 'Duración de animación', radius: 'Radio del menú', hoverMs: 'Retardo al pasar sobre' }[key])}</label><span><input id={'pie-' + key} type="number" min={key === 'radius' ? 80 : 0} max={key === 'radius' ? 220 : key === 'hoverMs' ? 1500 : 1000} value={state.settings.pie[key]} disabled={busy} onChange={e => { if (e.target.value && e.target.validity.valid) void saveChange({ type: 'pie-settings', settings: { ...state.settings.pie, [key]: Number(e.target.value) } }); }} /> {key === 'radius' ? 'px' : 'ms'}</span></div>)}
       <div className="setting-row"><label htmlFor="pie-trigger">{t('Activar opción')}</label><select id="pie-trigger" value={state.settings.pie.trigger} disabled={busy} onChange={e => void saveChange({ type: 'pie-settings', settings: { ...state.settings.pie, trigger: e.target.value as 'click' | 'hover' } })}><option value="click">{t('Pulsar botón')}</option><option value="hover">{t('Pasar sobre')}</option></select></div>
-      {state.settings.pie.slots.map((name, index) => <div className="setting-row" key={index}><label htmlFor={'pie-slot-' + index}>{index * 45}°</label><select id={'pie-slot-' + index} value={name || ''} disabled={busy} onChange={e => void saveChange({ type: 'pie-settings', settings: { ...state.settings.pie, slots: state.settings.pie.slots.map((value, i) => i === index ? (e.target.value as Action || null) : value) } })}><option value="">{t('Sin asignar')}</option>{actions.filter(a => a !== 'pie').map(a => <option value={a} key={a}>{t(actionLabels[a])}</option>)}</select></div>)}
-    </section>
-    <section><h2>{t("Colores")}</h2><div className="shortcut-list color-shortcuts">{state.settings.colors.map((color, index) => shortcutRow(`color${index}` as Action, <span className="color-preset"><span>{t("Color")} {index + 1}</span><input aria-label={t('Color {number}', { number: index + 1 })} type="color" value={color} onChange={event => void saveChange({ type: 'preset-color', index, color: event.target.value })} /></span>))}{shortcutRow('nextColor')}</div></section>
-    <section><h2>{t("Funciones")}</h2><div className="shortcut-list">{actions.filter(name => !name.startsWith('color') && name !== 'nextColor' && name !== 'pie').map(name => shortcutRow(name, name === 'toggle' ? t("Activar / salir") : t(actionLabels[name])))}</div>
-    </section>
+      </section>
+      {(['slots', 'slots2'] as const).map((slotsKey, menu) => <section key={slotsKey}>
+        <h2>{t(menu === 0 ? 'Menú radial 1' : 'Menú radial 2')}</h2>
+        {shortcutRow(menu === 0 ? 'pie' : 'pie2', t('Atajo'))}
+        <div className="pie-slot-options">
+      {state.settings.pie[slotsKey].map((name, index) => <div className="setting-row" key={index}><label htmlFor={'pie-slot-' + slotsKey + '-' + index}>{index * 45}°</label><select id={'pie-slot-' + slotsKey + '-' + index} value={name || ''} disabled={busy} onChange={e => void saveChange({ type: 'pie-settings', settings: { ...state.settings.pie, [slotsKey]: state.settings.pie[slotsKey].map((value, i) => i === index ? (e.target.value as Action || null) : value) } })}><option value="">{t('Sin asignar')}</option>{actions.filter(a => a !== 'pie' && a !== 'pie2').map(a => <option value={a} key={a}>{t(actionLabels[a])}</option>)}</select></div>)}
+        </div>
+      </section>)}
+    </div>
     {state.shortcutErrors.length > 0 && <div className="notice" role="alert">{state.shortcutErrors.join('\n')}</div>}
     {state.holdError && <div className="notice" role="alert">{t(state.holdError)}</div>}
     {state.wayland && <div className="notice">{t("X11/XWayland: la superposición sobre aplicaciones Wayland nativas no está garantizada.")}</div>}

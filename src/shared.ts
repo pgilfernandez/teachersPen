@@ -6,15 +6,15 @@ export type ToolbarMode = 'visible' | 'minimal' | 'hidden';
 export const actionLabels = {
   toggle: 'Activar / salir del dibujo',
   freehand: 'Mano alzada', line: 'Línea', arrow: 'Flecha', rectangle: 'Rectángulo', circle: 'Círculo',
-  color0: 'Color 1', color1: 'Color 2', color2: 'Color 3', color3: 'Color 4', color4: 'Color 5',
+  color0: 'Color 1', color1: 'Color 2', color2: 'Color 3', color3: 'Color 4', color4: 'Color 5', color5: 'Color 6', color6: 'Color 7', color7: 'Color 8',
   undo: 'Deshacer', redo: 'Rehacer', clear: 'Borrar todo', visible: 'Ocultar / mostrar trazos',
   timer: 'Temporizador', white: 'Pizarra blanca', black: 'Pizarra negra',
-  nextColor: 'Siguiente color', pie: 'Menú radial'
+  nextColor: 'Siguiente color', pie: 'Menú radial 1', pie2: 'Menú radial 2'
 } as const;
 export type Action = keyof typeof actionLabels;
 export const actions = Object.keys(actionLabels) as Action[];
 export interface Settings {
-  pie: { animationMs: number; trigger: 'click' | 'hover'; radius: number; hoverMs: number; slots: (Action | null)[] };
+  pie: { animationMs: number; trigger: 'click' | 'hover'; radius: number; hoverMs: number; slots: (Action | null)[]; slots2: (Action | null)[] };
   language: Language;
   activation: 'toggle' | 'hold';
   toolbarMode: ToolbarMode;
@@ -30,7 +30,7 @@ export interface Settings {
   timerDirection: 'down' | 'up';
 }
 export interface State {
-  pie: { x: number; y: number; serial: number } | null;
+  pie: { menu: 0 | 1; x: number; y: number; serial: number } | null;
   hasDrawings: boolean;
   canUndo: boolean;
   canRedo: boolean;
@@ -53,15 +53,20 @@ export interface State {
   toolbarAvailableHeight: number;
 }
 export function defaults(): Settings {
-  const keys = ['Space', 'A', 'W', 'E', 'S', 'D', '1', '2', '3', '4', '5', 'Z', 'Y', 'X', 'C', 'T', 'V', 'B', 'Q', 'P'];
+  const keys: Partial<Record<Action, string>> = {
+    toggle: 'Space', freehand: 'A', line: 'W', arrow: 'E', rectangle: 'S', circle: 'D',
+    color0: '1', color1: '2', color2: '3', color3: '4', color4: '5',
+    undo: 'Z', redo: 'Y', clear: 'X', visible: 'C', timer: 'T', white: 'V', black: 'B',
+    nextColor: 'Q', pie: 'P', pie2: 'O'
+  };
   return {
-    pie: { animationMs: 160, trigger: 'click', radius: 100, hoverMs: 80, slots: ['freehand', 'line', 'arrow', 'rectangle', 'circle', 'nextColor', 'undo', 'clear'] },
+    pie: { animationMs: 160, trigger: 'click', radius: 100, hoverMs: 80, slots: ['freehand', 'line', 'arrow', 'rectangle', 'circle', 'nextColor', 'undo', 'clear'], slots2: ['color0', 'color1', 'color2', 'color3', 'color4', 'color5', 'color6', 'color7'] },
     language: 'en', activation: 'toggle',
     toolbarMode: 'visible',
     toolbarOrientation: 'horizontal', drawingHints: true,
-    width: 6, transparency: 0, colors: ['#ef4444', '#087bff', '#78cc00', '#e2cd00', '#bfc0c2'], timerSeconds: 300,
+    width: 6, transparency: 0, colors: ['#ef4444', '#087bff', '#78cc00', '#e2cd00', '#bfc0c2', '#a855f7', '#ff8a00', '#ffffff'], timerSeconds: 300,
     timerText: defaultTimerText('en'), timerColor: '#ffffff', timerDirection: 'down',
-    shortcuts: Object.fromEntries(actions.map((action, i) => [action, `Control+Shift+${keys[i]}`])) as Record<Action, string>
+    shortcuts: Object.fromEntries(actions.map(action => [action, keys[action] ? `Control+Shift+${keys[action]}` : ''])) as Record<Action, string>
   };
 }
 export function parseSettings(input: unknown): Settings {
@@ -73,7 +78,10 @@ export function parseSettings(input: unknown): Settings {
     for (const [key, min, max] of [['animationMs', 0, 1000], ['radius', 80, 220], ['hoverMs', 0, 1500]] as const)
       if (Number.isFinite(p[key])) base.pie[key] = Math.max(min, Math.min(max, Math.round(p[key])));
     if (p.trigger === 'hover') base.pie.trigger = 'hover';
-    if (Array.isArray(p.slots)) base.pie.slots = Array.from({ length: 8 }, (_, i) => actions.includes(p.slots[i] as Action) && p.slots[i] !== 'pie' ? p.slots[i] : null);
+    for (const key of ['slots', 'slots2'] as const) {
+      const slots = p[key];
+      if (Array.isArray(slots)) base.pie[key] = Array.from({ length: 8 }, (_, i) => actions.includes(slots[i] as Action) && slots[i] !== 'pie' && slots[i] !== 'pie2' ? slots[i] : null);
+    }
   }
   if (isLanguage(data.language)) base.language = data.language;
   base.timerText = defaultTimerText(base.language);
@@ -87,7 +95,7 @@ export function parseSettings(input: unknown): Settings {
   if (typeof data.timerText === 'string') base.timerText = isDefaultTimerText(data.timerText) ? defaultTimerText(base.language) : data.timerText.slice(0, 120);
   if (typeof data.timerColor === 'string' && /^#[0-9a-f]{6}$/i.test(data.timerColor)) base.timerColor = data.timerColor;
   if (data.timerDirection === 'up') base.timerDirection = 'up';
-  if (Array.isArray(data.colors) && data.colors.length === 5 && data.colors.every(c => typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c))) base.colors = [...data.colors];
+  if (Array.isArray(data.colors) && (data.colors.length === 5 || data.colors.length === 8) && data.colors.every(c => typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c))) base.colors = [...data.colors, ...base.colors.slice(data.colors.length)];
   if (data.shortcuts && typeof data.shortcuts === 'object') {
     for (const action of actions) {
       const key = data.shortcuts[action];

@@ -130,22 +130,23 @@ export async function startController() {
     state.pie = null;
     if (geometry.has('pie')) await win('pie', 'hide');
   }
-  async function showPie() {
-    if (state.pie) { await closePie(); return; }
+  async function showPie(menu: 0 | 1) {
+    if (state.pie?.menu === menu) { await closePie(); return; }
     const point = await cursor(); activeDisplay = point.display;
     const display = displays.find(d => d.id === activeDisplay) || nearest(point);
     await create('pie', 'pie', display.bounds);
     await move('pie', display.bounds);
-    state.pie = { x: point.x - display.bounds.x, y: point.y - display.bounds.y, serial: Date.now() };
+    state.pie = { menu, x: point.x - display.bounds.x, y: point.y - display.bounds.y, serial: Date.now() };
     await broadcast(); await win('pie', 'show'); await win('pie', 'focus');
   }
   async function perform(action: Action, fromShortcut = false) {
-    if (action !== 'pie' && state.pie) await closePie();
+    if (action !== 'pie' && action !== 'pie2' && state.pie) await closePie();
     if (fromShortcut) activeDisplay = (await cursor()).display;
     if (tools.includes(action as any)) { state.tool = action as State['tool']; await setDrawing(true); }
     else if (action.startsWith('color')) { state.color = Number(action.slice(-1)); if (fromShortcut) await setDrawing(true); }
     else switch (action) {
-      case 'pie': await showPie(); break;
+      case 'pie': await showPie(0); break;
+      case 'pie2': await showPie(1); break;
       case 'nextColor': state.color = (state.color + 1) % state.settings.colors.length; if (fromShortcut) await setDrawing(true); break;
       case 'toggle': await setDrawing(!state.drawing); break;
       case 'undo': case 'redo': await sendAction(action); break;
@@ -261,7 +262,7 @@ export async function startController() {
         await setDrawing(false); break;
       case 'pie-close': await closePie(); break;
       case 'pie-select':
-        if (source !== 'pie' || !state.pie || c.action === 'pie' || !state.settings.pie.slots.includes(c.action)) throw new Error(t('Comando no autorizado'));
+        if (source !== 'pie' || !state.pie || (c.action === 'pie' || c.action === 'pie2') || !state.settings.pie[state.pie.menu === 0 ? 'slots' : 'slots2'].includes(c.action)) throw new Error(t('Comando no autorizado'));
         await closePie(); await perform(c.action, true); break;
       case 'pie-settings':
         if (source !== 'preferences') throw new Error(t('Ventana no autorizada'));
@@ -272,11 +273,11 @@ export async function startController() {
         histories.set(source, { canUndo: c.canUndo, canRedo: c.canRedo, hasDrawings: c.hasDrawings }); break;
       case 'action': if (actions.includes(c.action)) await perform(c.action); break;
       case 'tool': if (tools.includes(c.tool)) { const exit = state.drawing && state.tool === c.tool; state.tool = c.tool; await setDrawing(!exit); } break;
-      case 'color': if (Number.isInteger(c.index) && c.index >= 0 && c.index < 5) state.color = c.index; break;
+      case 'color': if (Number.isInteger(c.index) && c.index >= 0 && c.index < state.settings.colors.length) state.color = c.index; break;
       case 'width': await save({ ...state.settings, width: parseSettings({ width: c.width }).width }); break;
       case 'transparency': await save({ ...state.settings, transparency: parseSettings({ transparency: c.transparency }).transparency }); break;
       case 'preset-color':
-        if (!Number.isInteger(c.index) || c.index < 0 || c.index >= 5 || !/^#[0-9a-f]{6}$/i.test(c.color)) throw new Error(t('No se han podido guardar.'));
+        if (!Number.isInteger(c.index) || c.index < 0 || c.index >= state.settings.colors.length || !/^#[0-9a-f]{6}$/i.test(c.color)) throw new Error(t('No se han podido guardar.'));
         await save({ ...state.settings, colors: state.settings.colors.map((color, index) => index === c.index ? c.color : color) }); break;
       case 'shortcut':
         if (!actions.includes(c.action) || typeof c.accelerator !== 'string' || c.accelerator.length >= 100 || (c.action === 'toggle' && !c.accelerator)) throw new Error(t('No se han podido guardar.'));

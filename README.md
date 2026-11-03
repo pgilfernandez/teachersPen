@@ -85,10 +85,15 @@ Report problems or suggest improvements through [GitHub Issues](https://github.c
 
 ### Menú radial
 
-Pulsa **Ctrl+Mayús+P** para abrir el menú radial junto al puntero. Admite ocho
+Pulsa **Ctrl+Mayús+P** para abrir el menú radial 1 junto al puntero o
+**Ctrl+Mayús+O** para abrir el menú radial 2 (colores por defecto). Admite ocho
 posiciones separadas por 45°, empezando arriba y siguiendo el sentido horario.
-En Preferencias puedes cambiar el atajo, asignar o vaciar cada posición, ajustar
-el radio y la duración de animación, y elegir activación por clic o al pasar el
+En Preferencias → Menús radiales puedes cambiar cada atajo, asignar o vaciar
+las ocho posiciones de cada menú y ajustar
+el radio y la duración de animación compartidos, y elegir activación por clic o al pasar el
 puntero con un retardo configurable. Escape, el botón central, un clic fuera
 o el mismo atajo cierran el menú. Cerca de los bordes se desplaza el círculo
 para que todas las opciones permanezcan visibles.
+
+La paleta dispone de ocho colores editables en la pestaña General. Los colores
+6, 7 y 8 no tienen atajo asignado por defecto.
