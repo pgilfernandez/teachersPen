@@ -312,7 +312,8 @@ function perform(action: Action, fromShortcut = false) {
       if (fromShortcut) setDrawing(true);
       break;
     case 'toggle': setDrawing(!state.drawing); break;
-    case 'undo': case 'redo': case 'clear': sendDrawingAction(action); break;
+    case 'undo': case 'redo': sendDrawingAction(action); break;
+    case 'clear': if (state.visible) sendDrawingAction(action); break;
     case 'visible': state.visible = !state.visible; if (!state.visible) setDrawing(false); break;
     case 'white': case 'black':
       state.background = state.background === action ? 'transparent' : action;

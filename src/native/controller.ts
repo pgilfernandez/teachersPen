@@ -132,7 +132,8 @@ export async function startController() {
     else switch (action) {
       case 'nextColor': state.color = (state.color + 1) % state.settings.colors.length; if (fromShortcut) await setDrawing(true); break;
       case 'toggle': await setDrawing(!state.drawing); break;
-      case 'undo': case 'redo': case 'clear': await sendAction(action); break;
+      case 'undo': case 'redo': await sendAction(action); break;
+      case 'clear': if (state.visible) await sendAction(action); break;
       case 'visible': state.visible = !state.visible; if (!state.visible) await setDrawing(false); break;
       case 'white': case 'black':
         state.background = state.background === action ? 'transparent' : action;
