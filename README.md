@@ -19,7 +19,7 @@ Annotations stay in place on the screen; they do not follow the content when you
 
 ## A toolbar that fits your workspace
 
-![TeachersPen horizontal toolbar with drawing tools, colors, stroke settings, and window controls](docs/images/bar.png)
+![TeachersPen horizontal toolbar with drawing tools, colors, and window controls](docs/images/bar.png)
 
 Move the toolbar wherever it suits you and choose a horizontal or vertical layout. Keep it visible, collapse it to a small floating button, or hide it and use keyboard shortcuts. You can reopen it from the menu-bar or system-tray icon.
 
@@ -56,6 +56,20 @@ Extract the ZIP, then follow the steps for your system:
 - **Linux:** make the `.AppImage` executable in its file properties and open it, or install the `.deb` on a compatible Debian/Ubuntu system. Additional system libraries may be required.
 
 You do not need development tools to use an installed package.
+
+## Development
+
+TeachersPen uses Tauri with the operating system's WebView and a shared React interface. Install Node.js, Rust, and the [Tauri platform prerequisites](https://v1.tauri.app/v1/guides/getting-started/prerequisites), then run:
+
+```sh
+npm ci
+npm run check
+npm start
+```
+
+`npm run check` runs TypeScript checking and the shared unit tests. `npm start` compiles and opens the native app; `npm run pack` compiles it without opening it. Create installers with `npm run dist:mac`, `npm run dist:win`, or `npm run dist:linux` on the corresponding system.
+
+Native window behavior, global shortcuts, held-key activation, and cursor previews need manual checks in the compiled app on each operating system. The former Electron integration checks have been removed with that implementation; they do not validate Tauri.
 
 ## License
 

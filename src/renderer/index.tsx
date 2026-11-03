@@ -170,7 +170,7 @@ function Overlay({ state }: { state: State }) {
         void command({ type: 'active-display' });
         pointerId.current = event.pointerId;
         setTracing(true);
-        // Synthetic smoke-test events do not have an active native pointer.
+        // Synthetic pointer events do not have an active native pointer.
         if (event.isTrusted) event.currentTarget.setPointerCapture(event.pointerId);
         current.current = { tool: state.tool, color: state.settings.colors[state.color], width: state.settings.width, transparency: state.settings.transparency, points: [{ x: event.clientX, y: event.clientY }] };
         redraw();

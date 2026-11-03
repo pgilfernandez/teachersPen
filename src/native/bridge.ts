@@ -60,7 +60,7 @@ export function installBridge() {
     window.addEventListener('resize', schedule);
     schedule();
   }
-  // Reuse the existing drag handles without Electron's CSS-only drag regions.
+  // Start native window dragging from the toolbar and timer handles.
   document.addEventListener('mousedown', event => {
     if (event.button === 0 && (event.target as Element).closest('.drag-handle, .timer-grip')) void host('drag');
   });

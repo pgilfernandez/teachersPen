@@ -7,24 +7,16 @@
   "author": "Pablo Gil Fern\u00e1ndez",
   "homepage": "https://github.com/pgilfernandez/teachersPen",
   "license": "PolyForm-Noncommercial-1.0.0",
-  "main": "dist/main.cjs",
   "scripts": {
     "build": "node scripts/build-light.mjs",
     "start": "npm run pack && node scripts/run-light.mjs",
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test tests/*.test.ts",
-    "smoke": "npm run build:electron && node scripts/run.mjs --smoke-test",
-    "test:hold:mac": "node scripts/test-hold-mac.mjs",
     "pack": "node scripts/pack-light.mjs",
     "dist:mac": "node scripts/dist-mac-light.mjs",
     "dist:win": "tauri build --bundles nsis",
     "dist:linux": "tauri build --bundles appimage,deb",
-    "build:electron": "node scripts/build.mjs",
-    "start:electron": "npm run build:electron && node scripts/run.mjs",
-    "pack:electron": "npm run build:electron && electron-builder --dir",
-    "dist:electron:mac": "npm run build:electron && electron-builder --mac",
-    "dist:electron:win": "npm run build:electron && electron-builder --win",
-    "dist:electron:linux": "npm run build:electron && electron-builder --linux"
+    "check": "npm run typecheck && npm test"
   },
   "dependencies": {
     "react": "18.3.1",
@@ -38,61 +30,9 @@
     "@types/react": "18.3.23",
     "@types/react-dom": "18.3.7",
     "dialog-polyfill": "0.5.6",
-    "electron": "37.10.3",
-    "electron-builder": "26.18.0",
     "esbuild": "0.25.5",
     "lucide-react": "1.66.0",
     "tsx": "4.20.3",
     "typescript": "5.8.3"
-  },
-  "build": {
-    "appId": "org.teacherspen.desktop",
-    "files": [
-      "dist/**/*",
-      "package.json",
-      "LICENSE.md",
-      "NOTICE.md"
-    ],
-    "asarUnpack": [
-      "dist/native/**"
-    ],
-    "directories": {
-      "output": "release"
-    },
-    "mac": {
-      "icon": "dist/icons/app.icns",
-      "category": "public.app-category.education",
-      "identity": null,
-      "minimumSystemVersion": "11.0",
-      "artifactName": "${productName}-${version}-macOS-${arch}.${ext}",
-      "target": [
-        "dmg"
-      ]
-    },
-    "win": {
-      "icon": "dist/icons/app.ico",
-      "target": [
-        {
-          "target": "nsis",
-          "arch": [
-            "x64"
-          ]
-        }
-      ]
-    },
-    "linux": {
-      "maintainer": "Pablo Gil Fern\u00e1ndez <pgilfernandez@users.noreply.github.com>",
-      "icon": "dist/icons/app-512.png",
-      "category": "Education",
-      "target": [
-        {
-          "target": "AppImage",
-          "arch": [
-            "x64"
-          ]
-        },
-        "deb"
-      ]
-    }
   }
 }

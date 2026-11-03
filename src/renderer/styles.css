@@ -94,8 +94,8 @@ canvas { width: 100%; height: 100%; display: block; touch-action: none; }
 .timer-caption { width: 100%; padding: 0; border: 0; background: transparent; font-size: 5vw; line-height: 1.3; text-align: center; white-space: nowrap; overflow: hidden; }
 .timer-clock { text-align: center; font-size: 18vw; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; }
 .timer-grip, .timer-resize { display: flex; align-items: center; justify-content: center; flex: 0 0 8vw; height: 55%; padding: 0; color: #c3cdd7; }
-.timer-grip { -webkit-app-region: drag; cursor: grab; }
-.timer-resize { background: transparent; border: 0; border-radius: 3vw; cursor: nwse-resize; touch-action: none; -webkit-app-region: no-drag; }
+.timer-grip { cursor: grab; }
+.timer-resize { background: transparent; border: 0; border-radius: 3vw; cursor: nwse-resize; touch-action: none; }
 .timer-resize:hover { background: #ffffff20; color: #fff; }
 .timer-grip svg, .timer-resize svg { width: 7vw; height: 7vw; pointer-events: none; }
 .timer-controls { display: flex; align-items: center; justify-content: center; gap: 1vw; width: 100%; }
@@ -109,7 +109,7 @@ canvas { width: 100%; height: 100%; display: block; touch-action: none; }
 .timer-gear { bottom: 2vw; }
 .timer-close { top: 2vw; }
 .timer-gear svg, .timer-close svg, .timer-config-heading svg { width: 5vw; height: 5vw; }
-.timer-config { -webkit-app-region: no-drag; position: absolute; z-index: 1; top: 2vw; right: 2vw; bottom: 2vw; left: 2vw; padding: 3vw; border: 1px solid var(--ui-border); border-radius: 3vw; background: var(--ui-dialog); color: var(--ui-text); box-shadow: 0 1vw 3vw #0005; font-size: 4vw; display: flex; flex-direction: column; justify-content: space-between; }
+.timer-config { position: absolute; z-index: 1; top: 2vw; right: 2vw; bottom: 2vw; left: 2vw; padding: 3vw; border: 1px solid var(--ui-border); border-radius: 3vw; background: var(--ui-dialog); color: var(--ui-text); box-shadow: 0 1vw 3vw #0005; font-size: 4vw; display: flex; flex-direction: column; justify-content: space-between; }
 .timer-config-heading { display: flex; justify-content: space-between; align-items: center; }
 .timer-config-heading button { padding: .5vw; }
 .timer-config label { display: flex; align-items: center; justify-content: space-between; gap: 2vw; }
@@ -124,7 +124,7 @@ canvas { width: 100%; height: 100%; display: block; touch-action: none; }
 .mini-launcher:focus, .mini-launcher:focus-visible { outline: none; box-shadow: none; }
 .mini-launcher:active { cursor: grabbing; }
 .mini-launcher img { display: block; width: 100%; height: 100%; pointer-events: none; user-select: none; }
-.drag-handle { display: flex; align-items: center; justify-content: center; width: 24px; height: 34px; margin-right: 3px; color: var(--ui-grip); -webkit-app-region: drag; cursor: grab; }
+.drag-handle { display: flex; align-items: center; justify-content: center; width: 24px; height: 34px; margin-right: 3px; color: var(--ui-grip); cursor: grab; }
 .selected { background: var(--ui-selected) !important; color: var(--ui-selected-ink) !important; border-color: var(--ui-selected-border) !important; }
 .divider { width: 1px; height: 24px; background: var(--ui-separator); margin: 0 6px; flex-shrink: 0; }
 .button-group, .colors { display: flex; align-items: center; gap: 3px; }

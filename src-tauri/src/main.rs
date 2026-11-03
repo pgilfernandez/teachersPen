@@ -155,7 +155,7 @@ fn create_window(app: &tauri::AppHandle, v: &Value) -> Result<()> {
         return Ok(());
     }
     let init = format!(
-        "window.__PEN_NATIVE__=true;window.__PEN_ROLE__={};",
+        "window.__PEN_ROLE__={};",
         serde_json::to_string(role).map_err(err)?
     );
     let b = &v["bounds"];
