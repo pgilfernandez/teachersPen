@@ -5,6 +5,7 @@ import SlashSource from './assets/icons/slash.svg';
 import MoveUpRightSource from './assets/icons/move-up-right.svg';
 import RectangleSource from './assets/icons/rectangle.svg';
 import RectangleVerticalSource from './assets/icons/rectangle-vertical.svg';
+import RectangleHorizontalSource from './assets/icons/rectangle-horizontal.svg';
 import CircleSource from './assets/icons/circle.svg';
 import Undo2Source from './assets/icons/undo2.svg';
 import Redo2Source from './assets/icons/redo2.svg';
@@ -64,3 +65,5 @@ export const Blackboard = icon(BlackboardSource);
 export const Info = icon(InfoSource);
 
 export const RectangleVertical = icon(RectangleVerticalSource);
+
+export const RectangleHorizontal = icon(RectangleHorizontalSource);
