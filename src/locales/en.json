@@ -144,5 +144,7 @@
   "Retardo al pasar sobre": "Hover delay",
   "Activar opción": "Activate option",
   "Pulsar botón": "Click button",
-  "Pasar sobre": "Hover"
+  "Pasar sobre": "Hover",
+  "Suelta el atajo o clic secundario para interactuar": "Release the shortcut or right-click to interact",
+  "Esc o clic secundario para interactuar": "Esc or right-click to interact"
 }

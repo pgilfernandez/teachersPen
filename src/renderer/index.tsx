@@ -69,7 +69,7 @@ function PieMenu({ state }: { state: State }) {
   }, []);
   const margin = settings.radius + 30;
   const center = { x: Math.max(Math.min(margin, innerWidth / 2), Math.min(state.pie!.x, innerWidth - margin)), y: Math.max(Math.min(margin, innerHeight / 2), Math.min(state.pie!.y, innerHeight - margin)) };
-  const iconMap: Partial<Record<Action, EditableIcon>> = { ...toolIcons, undo: Undo2, redo: Redo2, clear: Trash2, visible: Eye, timer: TimerIcon, white: Whiteboard, black: Blackboard, toggle: Power, nextColor: Circle };
+  const iconMap: Partial<Record<Action, EditableIcon>> = { ...toolIcons, undo: Undo2, redo: Redo2, clear: Trash2, visible: Eye, timer: TimerIcon, white: Whiteboard, black: Blackboard, toggle: Power };
   return <div className="pie-backdrop" onPointerDown={e => { if (e.target === e.currentTarget) close(); }} onContextMenu={e => { e.preventDefault(); close(); }}>
     <div className="pie-center" style={{ left: center.x, top: center.y }}><button aria-label={t('Cerrar')} onClick={close}><X size={16} /></button></div>
     {settings.slots.map((name, index) => {
@@ -77,10 +77,10 @@ function PieMenu({ state }: { state: State }) {
       const angle = (index * 45 - 90) * Math.PI / 180;
       const radius = settings.radius;
       const Icon = iconMap[name] || Circle;
-      const color = name.startsWith('color') ? state.settings.colors[Number(name.slice(-1))] : undefined;
-      return <button key={index} className="pie-item" style={{ left: center.x + Math.cos(angle) * radius, top: center.y + Math.sin(angle) * radius, animationDuration: settings.animationMs + 'ms', '--pie-origin-x': -Math.cos(angle) * radius + 'px', '--pie-origin-y': -Math.sin(angle) * radius + 'px', color } as React.CSSProperties} title={t(actionLabels[name])} aria-label={t(actionLabels[name])}
+      const color = name === 'nextColor' ? state.settings.colors[(state.color + 1) % state.settings.colors.length] : name.startsWith('color') ? state.settings.colors[Number(name.slice(-1))] : undefined;
+      return <button key={index} className="pie-item" style={{ left: center.x + Math.cos(angle) * radius, top: center.y + Math.sin(angle) * radius, animationDuration: settings.animationMs + 'ms', '--pie-origin-x': -Math.cos(angle) * radius + 'px', '--pie-origin-y': -Math.sin(angle) * radius + 'px', backgroundColor: color } as React.CSSProperties} title={t(actionLabels[name])} aria-label={t(actionLabels[name])}
         onPointerEnter={() => { cancelHover(); if (settings.trigger === 'hover') hover.current = setTimeout(() => choose(name), settings.hoverMs); }}
-        onPointerLeave={cancelHover} onPointerDown={e => e.stopPropagation()} onClick={() => choose(name)}><Icon size={24} /></button>;
+        onPointerLeave={cancelHover} onPointerDown={e => e.stopPropagation()} onClick={() => choose(name)}>{!color && <Icon size={24} />}</button>;
     })}
   </div>;
 }
@@ -166,6 +166,12 @@ function Overlay({ state }: { state: State }) {
     setTracing(false);
     redraw();
   };
+  const cancelDrawing = () => {
+    // Discard the unfinished stroke before releasing capture or losing focus.
+    current.current = null;
+    finish();
+    void command({ type: 'cancel-drawing' });
+  };
   useEffect(() => {
     const resize = () => {
       const element = canvas.current!;
@@ -201,6 +207,9 @@ function Overlay({ state }: { state: State }) {
         // macOS Control-click must draw while a Control shortcut is held,
         // rather than opening WebKit's Reload/Back context menu.
         const primary = event.button === 0 || (state.platform === 'darwin' && event.ctrlKey && event.button === 2);
+        if (state.drawing && event.button === 2 && !primary) {
+          event.preventDefault(); cancelDrawing(); return;
+        }
         if (!state.drawing || !primary || pointerId.current !== null) return;
         event.preventDefault();
         void command({ type: 'active-display' });
@@ -212,6 +221,9 @@ function Overlay({ state }: { state: State }) {
         redraw();
       }}
       onPointerMove={event => {
+        if (latest.current.drawing && (event.buttons & 2) !== 0 && !(state.platform === 'darwin' && event.ctrlKey)) {
+          event.preventDefault(); cancelDrawing(); return;
+        }
         if (pointerId.current !== event.pointerId || !current.current) return;
         const stroke = current.current;
         const point = { x: event.clientX, y: event.clientY };
@@ -230,7 +242,7 @@ function Overlay({ state }: { state: State }) {
       }}
       onPointerCancel={finish} onLostPointerCapture={finish}
     />
-    {state.drawing && state.settings.drawingHints && <div className="drawing-hint">{t(toolNames[state.tool])} · {state.holding ? t("Suelta el atajo para interactuar") : t("Esc para interactuar")}</div>}
+    {state.drawing && state.settings.drawingHints && <div className="drawing-hint">{t(toolNames[state.tool])} · {state.holding ? t("Suelta el atajo o clic secundario para interactuar") : t("Esc o clic secundario para interactuar")}</div>}
   </div>;
 }
 function Timer({ state }: { state: State }) {

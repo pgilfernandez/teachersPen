@@ -144,5 +144,7 @@
   "Retardo al pasar sobre": "Verzögerung bei Zeigerkontakt",
   "Activar opción": "Option aktivieren",
   "Pulsar botón": "Klicken",
-  "Pasar sobre": "Zeigerkontakt"
+  "Pasar sobre": "Zeigerkontakt",
+  "Suelta el atajo o clic secundario para interactuar": "Tastenkombination loslassen oder Rechtsklick zum Interagieren",
+  "Esc o clic secundario para interactuar": "Esc oder Rechtsklick zum Interagieren"
 }

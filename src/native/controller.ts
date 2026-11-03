@@ -256,6 +256,9 @@ export async function startController() {
   async function command(source: string, c: Command): Promise<Reply> {
     if (!c || typeof c !== 'object') throw new Error(t('Comando no autorizado'));
     switch (c.type) {
+      case 'cancel-drawing':
+        if (!overlayLabels.has(source)) throw new Error(t('Ventana no autorizada'));
+        await setDrawing(false); break;
       case 'pie-close': await closePie(); break;
       case 'pie-select':
         if (source !== 'pie' || !state.pie || c.action === 'pie' || !state.settings.pie.slots.includes(c.action)) throw new Error(t('Comando no autorizado'));

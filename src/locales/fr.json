@@ -144,5 +144,7 @@
   "Retardo al pasar sobre": "Délai de survol",
   "Activar opción": "Activer l’option",
   "Pulsar botón": "Cliquer",
-  "Pasar sobre": "Survoler"
+  "Pasar sobre": "Survoler",
+  "Suelta el atajo o clic secundario para interactuar": "Relâchez le raccourci ou faites un clic droit pour interagir",
+  "Esc o clic secundario para interactuar": "Échap ou clic droit pour interagir"
 }
