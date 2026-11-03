@@ -145,6 +145,7 @@ fn create_window(app: &tauri::AppHandle, v: &Value) -> Result<()> {
         "overlay",
         "preferences",
         "timer-window",
+        "pie",
     ]
     .contains(&role)
         || label.len() > 64

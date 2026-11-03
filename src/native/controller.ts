@@ -11,7 +11,7 @@ type Reply = { ok: boolean; error?: string };
 export async function startController() {
   const environment = await host<{ platform: string; wayland: boolean }>('environment');
   const state: State = {
-    hasDrawings: false, canUndo: false, canRedo: false,
+    pie: null, hasDrawings: false, canUndo: false, canRedo: false,
     drawing: false, tool: 'freehand', color: 1, visible: true, background: 'transparent', timerEnd: null,
     timer: { visible: false, running: false, elapsedMs: 0, startedAt: null }, settings: defaults(),
     shortcutErrors: [], platform: environment.platform, wayland: environment.wayland,
@@ -126,11 +126,26 @@ export async function startController() {
     }
     await win('timer-window', 'show');
   }
+  async function closePie() {
+    state.pie = null;
+    if (geometry.has('pie')) await win('pie', 'hide');
+  }
+  async function showPie() {
+    if (state.pie) { await closePie(); return; }
+    const point = await cursor(); activeDisplay = point.display;
+    const display = displays.find(d => d.id === activeDisplay) || nearest(point);
+    await create('pie', 'pie', display.bounds);
+    await move('pie', display.bounds);
+    state.pie = { x: point.x - display.bounds.x, y: point.y - display.bounds.y, serial: Date.now() };
+    await broadcast(); await win('pie', 'show'); await win('pie', 'focus');
+  }
   async function perform(action: Action, fromShortcut = false) {
+    if (action !== 'pie' && state.pie) await closePie();
     if (fromShortcut) activeDisplay = (await cursor()).display;
     if (tools.includes(action as any)) { state.tool = action as State['tool']; await setDrawing(true); }
     else if (action.startsWith('color')) { state.color = Number(action.slice(-1)); if (fromShortcut) await setDrawing(true); }
     else switch (action) {
+      case 'pie': await showPie(); break;
       case 'nextColor': state.color = (state.color + 1) % state.settings.colors.length; if (fromShortcut) await setDrawing(true); break;
       case 'toggle': await setDrawing(!state.drawing); break;
       case 'undo': case 'redo': await sendAction(action); break;
@@ -241,6 +256,13 @@ export async function startController() {
   async function command(source: string, c: Command): Promise<Reply> {
     if (!c || typeof c !== 'object') throw new Error(t('Comando no autorizado'));
     switch (c.type) {
+      case 'pie-close': await closePie(); break;
+      case 'pie-select':
+        if (source !== 'pie' || !state.pie || c.action === 'pie' || !state.settings.pie.slots.includes(c.action)) throw new Error(t('Comando no autorizado'));
+        await closePie(); await perform(c.action, true); break;
+      case 'pie-settings':
+        if (source !== 'preferences') throw new Error(t('Ventana no autorizada'));
+        await save(parseSettings({ ...state.settings, pie: c.settings })); break;
       case 'active-display': if (overlayLabels.has(source)) activeDisplay = Number(source.slice(8)); break;
       case 'history-state':
         if (!overlayLabels.has(source) || typeof c.canUndo !== 'boolean' || typeof c.canRedo !== 'boolean' || typeof c.hasDrawings !== 'boolean') throw new Error(t('Ventana no autorizada'));
@@ -364,6 +386,7 @@ export async function startController() {
       if (e.bounds) geometry.set(e.label, e.bounds);
       if (!initialized) return;
       if (e.label === 'preferences' && ['blur', 'close'].includes(e.kind) && recording) { recording = false; state.shortcutErrors = await register(state.settings); await broadcast(); }
+      if (e.label === 'pie' && ['blur', 'close'].includes(e.kind)) { await closePie(); await broadcast(); }
       if (e.kind === 'close') {
         if (e.label === 'toolbar') { await collapse(); await broadcast(); }
         if (e.label === 'timer-window') { stopTimer(); state.timer.visible = false; await broadcast(); }
@@ -398,7 +421,7 @@ export async function startController() {
     void enqueue(async () => {
       const next = await host<Display[]>('screens');
       if (JSON.stringify(next) === JSON.stringify(displays)) return;
-      await setDrawing(false); displays = next; activeDisplay = Math.min(activeDisplay, next.length - 1);
+      await closePie(); await setDrawing(false); displays = next; activeDisplay = Math.min(activeDisplay, next.length - 1);
       for (const d of next) {
         const label = `overlay-${d.id}`;
         if (!overlayLabels.has(label)) { await create(label, 'overlay', d.bounds); overlayLabels.add(label); }

@@ -137,5 +137,12 @@
   "Abrir en el navegador": "Open in browser",
   "Donar con PayPal": "Donate with PayPal",
   "Ayuda al dibujar": "Drawing hints",
-  "Siguiente color": "Next color"
+  "Siguiente color": "Next color",
+  "Menú radial": "Radial menu",
+  "Duración de animación": "Animation duration",
+  "Radio del menú": "Menu radius",
+  "Retardo al pasar sobre": "Hover delay",
+  "Activar opción": "Activate option",
+  "Pulsar botón": "Click button",
+  "Pasar sobre": "Hover"
 }

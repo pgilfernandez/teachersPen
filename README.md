@@ -82,3 +82,13 @@ When sharing the app or modified versions, retain the license and required notic
 ## Support
 
 Report problems or suggest improvements through [GitHub Issues](https://github.com/pgilfernandez/teachersPen/issues). If you would like to support development, you can contribute through [GitHub Sponsors](https://github.com/sponsors/pgilfernandez) or [PayPal](https://www.paypal.com/donate?hosted_button_id=6N7UZHDQW3J6A).
+
+### Menú radial
+
+Pulsa **Ctrl+Mayús+P** para abrir el menú radial junto al puntero. Admite ocho
+posiciones separadas por 45°, empezando arriba y siguiendo el sentido horario.
+En Preferencias puedes cambiar el atajo, asignar o vaciar cada posición, ajustar
+el radio y la duración de animación, y elegir activación por clic o al pasar el
+puntero con un retardo configurable. Escape, el botón central, un clic fuera
+o el mismo atajo cierran el menú. Cerca de los bordes se desplaza el círculo
+para que todas las opciones permanezcan visibles.

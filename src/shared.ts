@@ -9,11 +9,12 @@ export const actionLabels = {
   color0: 'Color 1', color1: 'Color 2', color2: 'Color 3', color3: 'Color 4', color4: 'Color 5',
   undo: 'Deshacer', redo: 'Rehacer', clear: 'Borrar todo', visible: 'Ocultar / mostrar trazos',
   timer: 'Temporizador', white: 'Pizarra blanca', black: 'Pizarra negra',
-  nextColor: 'Siguiente color'
+  nextColor: 'Siguiente color', pie: 'Menú radial'
 } as const;
 export type Action = keyof typeof actionLabels;
 export const actions = Object.keys(actionLabels) as Action[];
 export interface Settings {
+  pie: { animationMs: number; trigger: 'click' | 'hover'; radius: number; hoverMs: number; slots: (Action | null)[] };
   language: Language;
   activation: 'toggle' | 'hold';
   toolbarMode: ToolbarMode;
@@ -29,6 +30,7 @@ export interface Settings {
   timerDirection: 'down' | 'up';
 }
 export interface State {
+  pie: { x: number; y: number; serial: number } | null;
   hasDrawings: boolean;
   canUndo: boolean;
   canRedo: boolean;
@@ -51,8 +53,9 @@ export interface State {
   toolbarAvailableHeight: number;
 }
 export function defaults(): Settings {
-  const keys = ['Space', 'A', 'W', 'E', 'S', 'D', '1', '2', '3', '4', '5', 'Z', 'Y', 'X', 'C', 'T', 'V', 'B', 'Q'];
+  const keys = ['Space', 'A', 'W', 'E', 'S', 'D', '1', '2', '3', '4', '5', 'Z', 'Y', 'X', 'C', 'T', 'V', 'B', 'Q', 'P'];
   return {
+    pie: { animationMs: 160, trigger: 'click', radius: 100, hoverMs: 80, slots: ['freehand', 'line', 'arrow', 'rectangle', 'circle', 'nextColor', 'undo', 'clear'] },
     language: 'en', activation: 'toggle',
     toolbarMode: 'visible',
     toolbarOrientation: 'horizontal', drawingHints: true,
@@ -65,6 +68,13 @@ export function parseSettings(input: unknown): Settings {
   const base = defaults();
   if (!input || typeof input !== 'object') return base;
   const data = input as Partial<Settings>;
+  if (data.pie && typeof data.pie === 'object') {
+    const p = data.pie;
+    for (const [key, min, max] of [['animationMs', 0, 1000], ['radius', 80, 220], ['hoverMs', 0, 1500]] as const)
+      if (Number.isFinite(p[key])) base.pie[key] = Math.max(min, Math.min(max, Math.round(p[key])));
+    if (p.trigger === 'hover') base.pie.trigger = 'hover';
+    if (Array.isArray(p.slots)) base.pie.slots = Array.from({ length: 8 }, (_, i) => actions.includes(p.slots[i] as Action) && p.slots[i] !== 'pie' ? p.slots[i] : null);
+  }
   if (isLanguage(data.language)) base.language = data.language;
   base.timerText = defaultTimerText(base.language);
   if (data.activation === 'hold') base.activation = 'hold';
@@ -89,6 +99,9 @@ export function parseSettings(input: unknown): Settings {
   return base;
 }
 export type Command =
+  | { type: 'pie-close' }
+  | { type: 'pie-select'; action: Action }
+  | { type: 'pie-settings'; settings: Settings['pie'] }
   | { type: 'action'; action: Action }
   | { type: 'tool'; tool: Tool }
   | { type: 'color'; index: number }

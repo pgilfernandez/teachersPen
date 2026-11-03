@@ -48,3 +48,12 @@ test('preferences from disk are bounded, validated and retain the exit shortcut'
   assert.equal(parseSettings({ activation: 'hold' }).activation, 'hold');
   assert.equal(parseSettings({ activation: 'unknown' }).activation, 'toggle');
 });
+test('radial preferences migrate old settings and constrain untrusted slots', () => {
+  const old = parseSettings({ width: 4, shortcuts: { arrow: 'Alt+A' } });
+  assert.equal(old.shortcuts.arrow, 'Alt+A');
+  assert.equal(old.shortcuts.pie, 'Control+Shift+P');
+  assert.equal(old.pie.slots.length, 8);
+  const parsed = parseSettings({ pie: { animationMs: -10, radius: 999, hoverMs: 9999, trigger: 'invalid', slots: ['undo', 'pie', 'bogus', null, 'color1', 'line', 'clear', 'redo', 'timer'] } });
+  assert.deepEqual(parsed.pie, { animationMs: 0, radius: 220, hoverMs: 1500, trigger: 'click', slots: ['undo', null, null, null, 'color1', 'line', 'clear', 'redo'] });
+  assert.equal(parseSettings({ pie: { slots: [] } }).pie.slots.every(slot => slot === null), true);
+});
