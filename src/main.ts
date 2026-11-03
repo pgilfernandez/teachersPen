@@ -436,8 +436,7 @@ async function start() {
           break;
         case 'color':
           if (Number.isInteger(command.index) && command.index >= 0 && command.index < 5) {
-            const exit = state.drawing && state.color === command.index;
-            state.color = command.index; setDrawing(!exit);
+            state.color = command.index;
           }
           break;
         case 'width': {

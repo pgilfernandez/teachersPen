@@ -227,7 +227,7 @@ export async function startController() {
       case 'active-display': if (overlayLabels.has(source)) activeDisplay = Number(source.slice(8)); break;
       case 'action': if (actions.includes(c.action)) await perform(c.action); break;
       case 'tool': if (tools.includes(c.tool)) { const exit = state.drawing && state.tool === c.tool; state.tool = c.tool; await setDrawing(!exit); } break;
-      case 'color': if (Number.isInteger(c.index) && c.index >= 0 && c.index < 5) { const exit = state.drawing && state.color === c.index; state.color = c.index; await setDrawing(!exit); } break;
+      case 'color': if (Number.isInteger(c.index) && c.index >= 0 && c.index < 5) state.color = c.index; break;
       case 'width': await save({ ...state.settings, width: parseSettings({ width: c.width }).width }); break;
       case 'transparency': await save({ ...state.settings, transparency: parseSettings({ transparency: c.transparency }).transparency }); break;
       case 'preset-color':
