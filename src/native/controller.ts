@@ -284,7 +284,10 @@ export async function startController() {
         const height = Math.max(48, Math.min(vertical ? area.height : 180, Math.ceil(c.height)));
         let point = { x: toolbarSized ? b.x : Math.round(b.x + (b.width - width) / 2), y: b.y };
         if (anchor && state.toolbarReveal) { const opening = toolbarOpening(anchor.point, { width, height }, anchor.area, vertical); point = opening.position; state.toolbarReveal = { direction: opening.direction, start: opening.start, end: opening.end }; }
-        await move('toolbar', { ...point, width, height }); toolbarSized = true; break;
+        if (b.x !== point.x || b.y !== point.y || Math.abs(b.width - width) >= 1 || Math.abs(b.height - height) >= 1) {
+          await move('toolbar', { ...point, width, height });
+        }
+        toolbarSized = true; break;
       }
       case 'timer-control':
         if (c.action === 'reset') resetTimer(); else if (c.action === 'start') startTimer();

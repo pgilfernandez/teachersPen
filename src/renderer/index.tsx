@@ -258,15 +258,34 @@ function Toolbar({ state }: { state: State }) {
   const t = translator(state.settings.language);
   const element = useRef<HTMLElement>(null);
   useEffect(() => {
-    const observer = new ResizeObserver(() => {
-      if (element.current) {
-        const bounds = element.current.getBoundingClientRect();
-        void command({ type: 'toolbar-size', width: bounds.width + 16, height: bounds.height + 16, orientation: state.settings.toolbarOrientation });
-      }
-    });
+    let frame = 0;
+    let disposed = false;
+    let lastMeasurement = '';
+    const measure = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        if (element.current) {
+          const width = element.current.offsetWidth + 16;
+          const height = element.current.offsetHeight + 16;
+          const measurement = `${width}:${height}:${innerWidth}:${innerHeight}`;
+          if (measurement === lastMeasurement) return;
+          lastMeasurement = measurement;
+          void command({ type: 'toolbar-size', width, height, orientation: state.settings.toolbarOrientation });
+        }
+      });
+    };
+    const observer = new ResizeObserver(measure);
     observer.observe(element.current!);
-    return () => observer.disconnect();
-  }, [state.settings.toolbarOrientation]);
+    window.addEventListener('resize', measure);
+    document.addEventListener('visibilitychange', measure);
+    void document.fonts.ready.then(() => { if (!disposed) measure(); });
+    measure();
+    return () => {
+      disposed = true; observer.disconnect(); cancelAnimationFrame(frame);
+      window.removeEventListener('resize', measure);
+      document.removeEventListener('visibilitychange', measure);
+    };
+  }, [state.settings.toolbarOrientation, state.toolbarExpanded, state.settings.toolbarMode]);
   const tip = (label: string, name: Action) => `${label}\n${t('Atajo: {shortcut}', { shortcut: keyLabel(state.settings.shortcuts[name], state.settings.language) || t('Sin asignar') })}`;
   const warning = (state.holdError ? t(state.holdError) : '') || state.shortcutErrors.join('\n') || (state.wayland ? t("Compatibilidad experimental con Wayland") : '');
   const collapsed = state.settings.toolbarMode !== 'visible' && !state.toolbarExpanded;

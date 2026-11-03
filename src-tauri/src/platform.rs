@@ -189,6 +189,21 @@ pub fn work_area(m: &Monitor) -> Option<Value> {
 
 pub fn configure(w: &Window, role: &str) -> Result<()> {
     taskbar_style(w)?;
+    #[cfg(target_os = "linux")]
+    if role != "controller" {
+        let window = w.clone();
+        let handle = w.app_handle();
+        w.run_on_main_thread(move || {
+            use gtk::prelude::*;
+            if let Ok(gtk) = window.gtk_window() {
+                let resized = handle.clone();
+                gtk.connect_size_allocate(move |_, _| refresh_overlay_regions(&resized));
+                let mapped = handle.clone();
+                gtk.connect_map(move |_| refresh_overlay_regions(&mapped));
+                gtk.connect_unmap(move |_| refresh_overlay_regions(&handle));
+            }
+        }).map_err(|e| e.to_string())?;
+    }
     #[cfg(target_os = "windows")]
     {
         let window = w.clone();
@@ -412,28 +427,31 @@ pub fn refresh_overlay_regions(app: &tauri::AppHandle) {
             let controls: Vec<_> = ["toolbar", "mini", "timer-window", "preferences"]
                 .iter()
                 .filter_map(|label| handle.get_window(label))
-                .filter(|window| window.is_visible().unwrap_or(false))
-                .filter_map(|window| Some((window.outer_position().ok()?, window.outer_size().ok()?)))
+                .filter_map(|window| {
+                    let gtk = window.gtk_window().ok()?;
+                    if !gtk.is_mapped() { return None; }
+                    let gdk = gtk.window()?;
+                    let (_, x, y) = gdk.origin();
+                    // GDK client geometry is already in GTK logical units.
+                    // Tauri outer bounds may still describe a provisional
+                    // window size while WebKit/GTK finishes allocating it.
+                    let inset = if window.label() == "toolbar" { 8 } else { 0 };
+                    Some((x + inset, y + inset,
+                        (gdk.width() - 2 * inset).max(0), (gdk.height() - 2 * inset).max(0)))
+                })
                 .collect();
             for (label, window) in handle.windows() {
                 if !label.starts_with("overlay-") { continue; }
-                let (Ok(gtk), Ok(origin), Ok(scale)) =
-                    (window.gtk_window(), window.outer_position(), window.scale_factor()) else { continue; };
+                let Ok(gtk) = window.gtk_window() else { continue; };
+                let Some(gdk) = gtk.window() else { continue; };
+                let (_, origin_x, origin_y) = gdk.origin();
                 let region = gtk::cairo::Region::create_rectangle(&gtk::cairo::RectangleInt {
                     x: 0, y: 0,
-                    width: gtk.allocated_width().max(1), height: gtk.allocated_height().max(1),
+                    width: gdk.width().max(1), height: gdk.height().max(1),
                 });
-                for (position, size) in &controls {
-                    // Native bounds are physical pixels; GTK shapes use logical
-                    // coordinates relative to each overlay, including on HiDPI.
-                    let x = (position.x as f64 - origin.x as f64) / scale;
-                    let y = (position.y as f64 - origin.y as f64) / scale;
-                    let right = x + size.width as f64 / scale;
-                    let bottom = y + size.height as f64 / scale;
+                for &(x, y, width, height) in &controls {
                     let _ = region.subtract_rectangle(&gtk::cairo::RectangleInt {
-                        x: x.floor() as i32, y: y.floor() as i32,
-                        width: (right.ceil() - x.floor()) as i32,
-                        height: (bottom.ceil() - y.floor()) as i32,
+                        x: x - origin_x, y: y - origin_y, width, height,
                     });
                 }
                 gtk.shape_combine_region(Some(&region));
