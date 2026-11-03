@@ -270,7 +270,12 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
                 .get_window(text(&args, "label"))
                 .ok_or("Window not found")?;
             match text(&args, "action") {
-                "show" => w.show().map_err(err)?,
+                "show" => {
+                    w.show().map_err(err)?;
+                    if w.label().starts_with("overlay-") {
+                        platform::raise_controls(&app);
+                    }
+                }
                 "hide" => w.hide().map_err(err)?,
                 "close" => w.close().map_err(err)?,
                 "focus" => {
@@ -499,6 +504,9 @@ fn main() {
         }})
         .on_window_event(|event| {
             let w=event.window();
+            if matches!(event.event(), WindowEvent::Focused(true)) && w.label().starts_with("overlay-") {
+                platform::raise_controls(&w.app_handle());
+            }
             if let WindowEvent::ThemeChanged(theme)=event.event() {appearance::changed(w,theme);return;}
             if w.label()=="controller"{return;}
             let kind=match event.event(){

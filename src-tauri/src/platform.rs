@@ -2,6 +2,8 @@
 
 use serde_json::{json, Value};
 use tauri::{Monitor, Window};
+#[cfg(target_os = "windows")]
+use tauri::Manager;
 type Result<T> = std::result::Result<T, String>;
 
 pub fn replace_file(from: &std::path::Path, to: &std::path::Path) -> Result<()> {
@@ -186,6 +188,27 @@ pub fn work_area(m: &Monitor) -> Option<Value> {
 }
 
 pub fn configure(w: &Window, role: &str) -> Result<()> {
+    #[cfg(target_os = "windows")]
+    if role != "preferences" {
+        let window = w.clone();
+        w.run_on_main_thread(move || {
+            #[link(name = "user32")]
+            extern "system" {
+                fn GetWindowLongPtrW(w: isize, index: i32) -> isize;
+                fn SetWindowLongPtrW(w: isize, index: i32, value: isize) -> isize;
+                fn SetWindowPos(w: isize, after: isize, x: i32, y: i32, cx: i32, cy: i32, flags: u32) -> i32;
+            }
+            if let Ok(hwnd) = window.hwnd() {
+                unsafe {
+                    // Tao keeps WS_CAPTION/WS_SYSMENU even without decorations.
+                    // A shaped window can expose these native caption controls.
+                    let style = GetWindowLongPtrW(hwnd.0, -16);
+                    SetWindowLongPtrW(hwnd.0, -16, style & !(0x00C00000 | 0x00080000 | 0x00040000));
+                    SetWindowPos(hwnd.0, 0, 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0004 | 0x0010 | 0x0020);
+                }
+            }
+        }).map_err(|e| e.to_string())?;
+    }
     #[cfg(target_os = "macos")]
     {
         let window = w.clone();
@@ -288,6 +311,30 @@ pub fn configure(w: &Window, role: &str) -> Result<()> {
         .map_err(|e| e.to_string())?;
     }
     Ok(())
+}
+
+// Windows raises a focused topmost overlay above its sibling tool windows.
+// Restore their order without taking keyboard focus away from drawing.
+pub fn raise_controls(app: &tauri::AppHandle) {
+    #[cfg(target_os = "windows")]
+    for label in ["toolbar", "mini", "timer-window", "preferences"] {
+        if let Some(window) = app.get_window(label) {
+            let target = window.clone();
+            let _ = window.run_on_main_thread(move || {
+                #[link(name = "user32")]
+                extern "system" {
+                    fn SetWindowPos(w: isize, after: isize, x: i32, y: i32, cx: i32, cy: i32, flags: u32) -> i32;
+                }
+                if target.is_visible().unwrap_or(false) {
+                    if let Ok(hwnd) = target.hwnd() {
+                        unsafe { SetWindowPos(hwnd.0, -1, 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0010); }
+                    }
+                }
+            });
+        }
+    }
+    #[cfg(not(target_os = "windows"))]
+    let _ = app;
 }
 
 pub fn ignore(w: &Window, enabled: bool) -> Result<()> {
