@@ -16,6 +16,7 @@ const translator = (language: Language) => (source: string, values?: Record<stri
 
 const role = (window as Window & { __PEN_ROLE__?: string }).__PEN_ROLE__ || new URLSearchParams(location.search).get('role') || 'toolbar';
 document.body.className = role;
+document.documentElement.classList.add(`window-${role}`);
 const command = (value: Command) => window.pen.command(value);
 const action = (value: Action) => command({ type: 'action', action: value });
 const toolNames: Record<Tool, string> = { freehand: 'Lápiz', line: 'Línea', arrow: 'Flecha', rectangle: 'Rectángulo', circle: 'Círculo' };
