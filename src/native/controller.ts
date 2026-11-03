@@ -11,7 +11,7 @@ type Reply = { ok: boolean; error?: string };
 export async function startController() {
   const environment = await host<{ platform: string; wayland: boolean }>('environment');
   const state: State = {
-    canUndo: false, canRedo: false,
+    hasDrawings: false, canUndo: false, canRedo: false,
     drawing: false, tool: 'freehand', color: 1, visible: true, background: 'transparent', timerEnd: null,
     timer: { visible: false, running: false, elapsedMs: 0, startedAt: null }, settings: defaults(),
     shortcutErrors: [], platform: environment.platform, wayland: environment.wayland,
@@ -37,9 +37,10 @@ export async function startController() {
   function enqueue<T>(fn: () => Promise<T>): Promise<T> {
     const next = queue.then(fn); queue = next.catch(error => console.error('TeachersPen:', error)); return next;
   }
-  const histories = new Map<string, { canUndo: boolean; canRedo: boolean }>();
+  const histories = new Map<string, { canUndo: boolean; canRedo: boolean; hasDrawings: boolean }>();
   const broadcast = () => {
     const history = histories.get(`overlay-${activeDisplay}`);
+    state.hasDrawings = displays.some(display => histories.get(`overlay-${display.id}`)?.hasDrawings);
     state.canUndo = history?.canUndo ?? false;
     state.canRedo = history?.canRedo ?? false;
     return host('broadcast', state);
@@ -134,7 +135,7 @@ export async function startController() {
       case 'toggle': await setDrawing(!state.drawing); break;
       case 'undo': case 'redo': await sendAction(action); break;
       case 'clear': if (state.visible) await sendAction(action); break;
-      case 'visible': state.visible = !state.visible; if (!state.visible) await setDrawing(false); break;
+      case 'visible': if (!state.hasDrawings) break; state.visible = !state.visible; if (!state.visible) await setDrawing(false); break;
       case 'white': case 'black':
         state.background = state.background === action ? 'transparent' : action;
         if (state.background !== 'transparent') {
@@ -236,8 +237,8 @@ export async function startController() {
     switch (c.type) {
       case 'active-display': if (overlayLabels.has(source)) activeDisplay = Number(source.slice(8)); break;
       case 'history-state':
-        if (!overlayLabels.has(source) || typeof c.canUndo !== 'boolean' || typeof c.canRedo !== 'boolean') throw new Error(t('Ventana no autorizada'));
-        histories.set(source, { canUndo: c.canUndo, canRedo: c.canRedo }); break;
+        if (!overlayLabels.has(source) || typeof c.canUndo !== 'boolean' || typeof c.canRedo !== 'boolean' || typeof c.hasDrawings !== 'boolean') throw new Error(t('Ventana no autorizada'));
+        histories.set(source, { canUndo: c.canUndo, canRedo: c.canRedo, hasDrawings: c.hasDrawings }); break;
       case 'action': if (actions.includes(c.action)) await perform(c.action); break;
       case 'tool': if (tools.includes(c.tool)) { const exit = state.drawing && state.tool === c.tool; state.tool = c.tool; await setDrawing(!exit); } break;
       case 'color': if (Number.isInteger(c.index) && c.index >= 0 && c.index < 5) state.color = c.index; break;

@@ -98,7 +98,7 @@ function Overlay({ state }: { state: State }) {
   latest.current = state;
   const frame = useRef<number | null>(null);
   const publishHistory = () => {
-    void command({ type: 'history-state', canUndo: history.current.canUndo, canRedo: history.current.canRedo });
+    void command({ type: 'history-state', hasDrawings: history.current.strokes.length > 0, canUndo: history.current.canUndo, canRedo: history.current.canRedo });
   };
   const redraw = () => {
     if (frame.current !== null) return;
@@ -313,7 +313,7 @@ function Toolbar({ state }: { state: State }) {
       <div className="divider" />
       <button className="icon-button" aria-label={t("Deshacer")} disabled={!state.canUndo} title={tip(t("Deshacer el último cambio de dibujo"), 'undo')} onClick={() => void action('undo')}><Undo2 size={21} aria-hidden="true" /></button>
       <button className="icon-button" aria-label={t("Rehacer")} disabled={!state.canRedo} title={tip(t("Rehacer el último cambio deshecho"), 'redo')} onClick={() => void action('redo')}><Redo2 size={21} aria-hidden="true" /></button>
-      <button className={`icon-button ${!state.visible ? 'selected' : ''}`} aria-label={t("Ocultar o mostrar")} title={tip(state.visible ? t("Ocultar los dibujos sin borrarlos") : t("Volver a mostrar los dibujos"), 'visible')} onClick={() => void action('visible')}>{state.visible ? <Eye size={21} aria-hidden="true" /> : <EyeOff size={21} aria-hidden="true" />}</button>
+      <button className={`icon-button ${!state.visible ? 'selected' : ''}`} aria-label={t("Ocultar o mostrar")} disabled={!state.hasDrawings} title={tip(state.visible ? t("Ocultar los dibujos sin borrarlos") : t("Volver a mostrar los dibujos"), 'visible')} onClick={() => void action('visible')}>{state.visible ? <Eye size={21} aria-hidden="true" /> : <EyeOff size={21} aria-hidden="true" />}</button>
       <button className="icon-button" aria-label={t("Borrar todo")} disabled={!state.visible} title={tip(t("Borrar todos los dibujos de las pantallas"), 'clear')} onClick={() => void action('clear')}><Trash2 size={20} aria-hidden="true" /></button>
       <div className="divider" />
       <button className={`icon-button ${warning ? 'has-warning' : ''}`} aria-label={t("Preferencias")} title={warning ? `${t('Configurar herramientas, colores y atajos')}\n${warning}` : t("Configurar herramientas, colores y atajos")} onClick={() => void command({ type: 'preferences' })}><SettingsIcon size={20} aria-hidden="true" /></button>

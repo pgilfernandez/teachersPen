@@ -36,7 +36,7 @@ let timerTimeout: ReturnType<typeof setTimeout> | undefined;
 const nativeDirectory = app.isPackaged ? path.join(process.resourcesPath, 'app.asar.unpacked', 'dist', 'native') : path.join(__dirname, 'native');
 const holdMonitor = new NativeHoldMonitor(path.join(nativeDirectory, process.platform === 'win32' ? 'key-state.exe' : 'key-state'));
 const state: State = {
-  canUndo: false, canRedo: false,
+  hasDrawings: false, canUndo: false, canRedo: false,
   drawing: false, tool: 'freehand', color: 1, visible: true, background: 'transparent', timerEnd: null,
   timer: { visible: false, running: false, elapsedMs: 0, startedAt: null },
   settings: defaults(), shortcutErrors: [], platform: process.platform,
@@ -60,9 +60,10 @@ else {
 }
 const t = (source: string, values?: Record<string, string | number>) => translate(state.settings.language, source, values);
 function windows() { return [...overlays.values(), toolbar, mini, preferences, timerWindow].filter((win): win is BrowserWindow => !!win && !win.isDestroyed()); }
-const histories = new Map<number, { canUndo: boolean; canRedo: boolean }>();
+const histories = new Map<number, { canUndo: boolean; canRedo: boolean; hasDrawings: boolean }>();
 function broadcast() {
   const history = histories.get(activeDisplay);
+  state.hasDrawings = [...histories.values()].some(history => history.hasDrawings);
   state.canUndo = history?.canUndo ?? false;
   state.canRedo = history?.canRedo ?? false;
   for (const win of windows()) win.webContents.send('pen:state', state);
@@ -314,7 +315,7 @@ function perform(action: Action, fromShortcut = false) {
     case 'toggle': setDrawing(!state.drawing); break;
     case 'undo': case 'redo': sendDrawingAction(action); break;
     case 'clear': if (state.visible) sendDrawingAction(action); break;
-    case 'visible': state.visible = !state.visible; if (!state.visible) setDrawing(false); break;
+    case 'visible': if (!state.hasDrawings) break; state.visible = !state.visible; if (!state.visible) setDrawing(false); break;
     case 'white': case 'black':
       state.background = state.background === action ? 'transparent' : action;
       if (state.background !== 'transparent') {
@@ -438,8 +439,8 @@ async function start() {
           for (const [id, overlay] of overlays) if (overlay.webContents === event.sender) activeDisplay = id;
           break;
         case 'history-state':
-          if (typeof command.canUndo !== 'boolean' || typeof command.canRedo !== 'boolean') break;
-          for (const [id, overlay] of overlays) if (overlay.webContents === event.sender) histories.set(id, { canUndo: command.canUndo, canRedo: command.canRedo });
+          if (typeof command.canUndo !== 'boolean' || typeof command.canRedo !== 'boolean' || typeof command.hasDrawings !== 'boolean') break;
+          for (const [id, overlay] of overlays) if (overlay.webContents === event.sender) histories.set(id, { canUndo: command.canUndo, canRedo: command.canRedo, hasDrawings: command.hasDrawings });
           break;
         case 'action': if (actions.includes(command.action)) perform(command.action); break;
         case 'tool':

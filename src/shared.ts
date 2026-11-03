@@ -29,6 +29,7 @@ export interface Settings {
   timerDirection: 'down' | 'up';
 }
 export interface State {
+  hasDrawings: boolean;
   canUndo: boolean;
   canRedo: boolean;
   drawing: boolean;
@@ -112,7 +113,7 @@ export type Command =
   | { type: 'preferences' }
   | { type: 'about-link'; target: 'donate' | 'paypal' | 'github' }
   | { type: 'active-display' }
-  | { type: 'history-state'; canUndo: boolean; canRedo: boolean }
+  | { type: 'history-state'; canUndo: boolean; canRedo: boolean; hasDrawings: boolean }
   | { type: 'record-shortcut'; active: boolean }
   | { type: 'toolbar-size'; width: number; height: number; orientation: Settings['toolbarOrientation'] }
   | { type: 'quit' };
