@@ -53,12 +53,16 @@ function App() {
 function PieMenu({ state }: { state: State }) {
   const t = translator(state.settings.language);
   const settings = state.settings.pie;
+  const slots = settings[state.pie!.menu === 0 ? 'slots' : 'slots2'];
+  const [ready, setReady] = useState(() => settings.animationMs === 0 || window.matchMedia('(prefers-reduced-motion: reduce)').matches || slots.every(slot => slot === null));
+  const pendingAnimations = useRef(new Set(slots.flatMap((slot, index) => slot ? [index] : [])));
+  const menu = useRef<HTMLDivElement>(null);
   const hover = useRef<ReturnType<typeof setTimeout>>();
   const chosen = useRef(false);
   const cancelHover = () => clearTimeout(hover.current);
   const close = () => { cancelHover(); void command({ type: 'pie-close' }); };
   const choose = (name: Action) => {
-    if (chosen.current) return;
+    if (!ready || chosen.current) return;
     chosen.current = true; cancelHover();
     void command({ type: 'pie-select', action: name });
   };
@@ -67,20 +71,32 @@ function PieMenu({ state }: { state: State }) {
     document.addEventListener('keydown', escape);
     return () => { cancelHover(); document.removeEventListener('keydown', escape); };
   }, []);
+  useEffect(() => {
+    if (!ready || settings.trigger !== 'hover') return;
+    // The pointer may already be over a final position when opening finishes.
+    const button = menu.current?.querySelector<HTMLButtonElement>('.pie-item:hover');
+    const name = button?.dataset.action as Action | undefined;
+    if (name) hover.current = setTimeout(() => choose(name), settings.hoverMs);
+    return cancelHover;
+  }, [ready, settings.trigger, settings.hoverMs]);
   const margin = settings.radius + 30;
   const center = { x: Math.max(Math.min(margin, innerWidth / 2), Math.min(state.pie!.x, innerWidth - margin)), y: Math.max(Math.min(margin, innerHeight / 2), Math.min(state.pie!.y, innerHeight - margin)) };
   const iconMap: Partial<Record<Action, EditableIcon>> = { ...toolIcons, undo: Undo2, redo: Redo2, clear: Trash2, visible: Eye, timer: TimerIcon, white: Whiteboard, black: Blackboard, toggle: Power };
-  return <div className="pie-backdrop" onPointerDown={e => { if (e.target === e.currentTarget) close(); }} onContextMenu={e => { e.preventDefault(); close(); }}>
+  return <div ref={menu} className="pie-backdrop" onPointerDown={e => { if (ready && e.target === e.currentTarget) close(); }} onContextMenu={e => { e.preventDefault(); close(); }}>
     {/* The pointer starts here: closing always requires a click, even in hover mode. */}
-    <div className="pie-center" style={{ left: center.x, top: center.y }}><button aria-label={t('Cerrar')} onClick={close}><X size={16} /></button></div>
-    {settings[state.pie!.menu === 0 ? 'slots' : 'slots2'].map((name, index) => {
+    <div className="pie-center" style={{ left: center.x, top: center.y }}><button aria-label={t('Cerrar')} aria-disabled={!ready} onClick={() => { if (ready) close(); }}><X size={16} /></button></div>
+    {slots.map((name, index) => {
       if (!name) return null;
       const angle = (index * 45 - 90) * Math.PI / 180;
       const radius = settings.radius;
       const Icon = iconMap[name] || Circle;
       const color = name === 'nextColor' ? state.settings.colors[(state.color + 1) % state.settings.colors.length] : name.startsWith('color') ? state.settings.colors[Number(name.slice(-1))] : undefined;
-      return <button key={index} className="pie-item" style={{ left: center.x + Math.cos(angle) * radius, top: center.y + Math.sin(angle) * radius, animationDuration: settings.animationMs + 'ms', '--pie-origin-x': -Math.cos(angle) * radius + 'px', '--pie-origin-y': -Math.sin(angle) * radius + 'px', backgroundColor: color } as React.CSSProperties} title={t(actionLabels[name])} aria-label={t(actionLabels[name])}
-        onPointerEnter={() => { cancelHover(); if (settings.trigger === 'hover') hover.current = setTimeout(() => choose(name), settings.hoverMs); }}
+      return <button key={index} className="pie-item" data-action={name} aria-disabled={!ready} onAnimationEnd={event => {
+        if (event.target !== event.currentTarget || event.animationName !== 'pie-appear') return;
+        pendingAnimations.current.delete(index);
+        if (pendingAnimations.current.size === 0) setReady(true);
+      }} style={{ left: center.x + Math.cos(angle) * radius, top: center.y + Math.sin(angle) * radius, animationDuration: settings.animationMs + 'ms', '--pie-origin-x': -Math.cos(angle) * radius + 'px', '--pie-origin-y': -Math.sin(angle) * radius + 'px', backgroundColor: color } as React.CSSProperties} title={t(actionLabels[name])} aria-label={t(actionLabels[name])}
+        onPointerEnter={() => { cancelHover(); if (ready && settings.trigger === 'hover') hover.current = setTimeout(() => choose(name), settings.hoverMs); }}
         onPointerLeave={cancelHover} onPointerDown={e => e.stopPropagation()} onClick={() => choose(name)}>{!color && <Icon size={24} />}</button>;
     })}
   </div>;

@@ -233,12 +233,14 @@ input[type="color"] { width: 35px; height: 23px; padding: 1px; cursor: pointer; 
 
 /* A separate transparent window keeps radial controls above the drawing overlay. */
 html.window-pie, body.pie { overflow: hidden; user-select: none; color-scheme: var(--ui-scheme); }
-.pie-backdrop { position: fixed; inset: 0; color: var(--ui-icon); }
+.pie-backdrop { position: fixed; inset: 0; color: var(--ui-icon); background: transparent; }
 .pie-center, .pie-item { position: absolute; transform: translate(-50%, -50%); }
 .pie-center button, .pie-item { display: flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--ui-toolbar); border: 1px solid var(--ui-border); color: inherit; box-shadow: 0 2px 8px var(--ui-shadow); }
 .pie-center button { width: 28px; height: 28px; padding: 0; }
 .pie-item { width: 48px; height: 48px; padding: 0; animation: pie-appear ease-out both; }
-.pie-item:hover, .pie-item:focus-visible { background: var(--ui-selected); outline: 2px solid var(--ui-selected-ink); }
+.pie-center button, .pie-item { -webkit-appearance: none; appearance: none; -webkit-tap-highlight-color: transparent; }
+.pie-center button:focus, .pie-center button:focus-visible, .pie-item:focus, .pie-item:focus-visible { outline: none; }
+.pie-center button:hover, .pie-center button:focus-visible, .pie-item:hover, .pie-item:focus-visible { filter: brightness(.85); }
 @keyframes pie-appear { from { opacity: 0; transform: translate(-50%, -50%) translate(var(--pie-origin-x), var(--pie-origin-y)) scale(.4); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
 @media (prefers-reduced-motion: reduce) { .pie-item { animation-duration: 0ms !important; } }
 
