@@ -49,7 +49,7 @@
           "silent": true
         },
         "nsis": {
-          "installMode": "perMachine"
+          "installMode": "both"
         }
       },
       "deb": {
