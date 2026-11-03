@@ -747,10 +747,10 @@ async function runSmoke() {
     await clickToolButton(board); assert.equal(state.drawing, false);
     await clickToolButton(board); assert.equal(state.drawing, false); assert.equal(state.background, 'transparent');
   }
-  const compactBar = await toolbar.webContents.executeJavaScript(`({grip:!!document.querySelector('.drag-handle .lucide-grip-vertical'),logo:!!document.querySelector('.brand'),footer:!!document.querySelector('.toolbar-footer'),width:document.querySelector('.width-control input').getBoundingClientRect().width,timer:!!document.querySelector('.timer-symbol svg'),last:Array.from(document.querySelectorAll('.toolbar > button')).slice(-4).map(b=>b.getAttribute('aria-label'))})`);
+  const compactBar = await toolbar.webContents.executeJavaScript(`({grip:!!document.querySelector('.drag-handle .lucide-grip-vertical'),logo:!!document.querySelector('.brand'),footer:!!document.querySelector('.toolbar-footer'),inputs:document.querySelectorAll('.toolbar input').length,timer:!!document.querySelector('.timer-symbol svg'),last:Array.from(document.querySelectorAll('.toolbar > button')).slice(-4).map(b=>b.getAttribute('aria-label'))})`);
   assert.equal(compactBar.grip, true);
   assert.equal(compactBar.logo, false); assert.equal(compactBar.footer, false);
-  assert.ok(compactBar.width >= 68); assert.equal(compactBar.timer, true);
+  assert.equal(compactBar.inputs, 0); assert.equal(compactBar.timer, true);
   assert.deepEqual(compactBar.last, ['Preferencias', 'Contraer barra', 'Girar barra', 'Salir']);
   assert.ok(toolbar.getBounds().height <= 76, 'La ventana debe ajustarse a una sola fila');
   if (state.settings.toolbarMode === 'visible') {

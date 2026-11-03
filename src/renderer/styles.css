@@ -142,12 +142,8 @@ canvas { width: 100%; height: 100%; display: block; touch-action: none; }
 .colors { gap: 6px; padding: 0 4px; }
 .swatch { width: 21px; height: 21px; border-radius: 50%; border: 2px solid var(--ui-toolbar); box-shadow: 0 0 0 1px #00000012; }
 .swatch.active { box-shadow: 0 0 0 2px var(--ui-muted); }
-.toolbar .swatch, .toolbar .width-control input { -webkit-appearance: none; appearance: none; }
-.toolbar .swatch:active, .toolbar .swatch:focus,
-.toolbar .width-control input:active, .toolbar .width-control input:focus { outline: none; }
-.width-control { display: flex; align-items: center; margin-left: 6px; gap: 2px; }
-.width-control span { font-size: 10px; color: var(--ui-dim); }
-.width-control input { width: 47.6px; height: 30px; border: 1px solid var(--ui-input-border); background: var(--ui-number); border-radius: 5px; font-size: 12px; padding: 3px 0 3px 3px; }
+.toolbar .swatch { -webkit-appearance: none; appearance: none; }
+.toolbar .swatch:active, .toolbar .swatch:focus { outline: none; }
 .toolbar-vertical { width: 40px; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; }
 .toolbar-vertical::-webkit-scrollbar { width: 0; }
 .toolbar-vertical .toolbar { flex-direction: column; gap: 2px; padding: 8px 1px; }
@@ -158,9 +154,6 @@ canvas { width: 100%; height: 100%; display: block; touch-action: none; }
 .toolbar-vertical .icon-button { height: 28px; flex-shrink: 0; }
 .toolbar-vertical .board-button { width: 20px; height: 20px; margin: 2px 0; flex-shrink: 0; }
 .toolbar-vertical .divider { width: 28px; height: 1px; margin: 4px 0; }
-.toolbar-vertical .width-control { margin: 0; gap: 0; }
-.toolbar-vertical .width-control span { display: none; }
-.toolbar-vertical .width-control input { width: 36px; padding: 3px 0 3px 1px; font-size: 11px; }
 .preferences { background: var(--ui-panel); }
 .preferences-main { width: 100%; max-width: 440px; padding: 10px 18px; margin: auto; }
 .preferences-main section { margin-bottom: 8px; }
@@ -221,10 +214,8 @@ input[type="color"] { width: 35px; height: 23px; padding: 1px; cursor: pointer; 
 /* Original Big Sur / older WebKitGTK flex-gap fallback. */
 .legacy-flex-gap .toolbar > * + *, .legacy-flex-gap .button-group > * + * { margin-left: 3px; }
 .legacy-flex-gap .toolbar > .divider { margin-left: 9px; }
-.legacy-flex-gap .toolbar > .width-control { margin-left: 9px; }
 .legacy-flex-gap .button-group > .board-button { margin-left: 6px; }
 .legacy-flex-gap .colors > * + * { margin-left: 6px; }
-.legacy-flex-gap .width-control > * + * { margin-left: 2px; }
 .legacy-flex-gap .stroke-settings > * + *, .legacy-flex-gap .color-preset > * + * { margin-left: 10px; }
 .legacy-flex-gap .number-with-unit > * + * { margin-left: 3px; }
 .legacy-flex-gap .preferences-footer > * + *, .legacy-flex-gap .about-links > * + * { margin-left: 8px; }
@@ -236,7 +227,6 @@ input[type="color"] { width: 35px; height: 23px; padding: 1px; cursor: pointer; 
 .legacy-flex-gap .toolbar-vertical .colors > * + * { margin-left: 0; margin-top: 4px; }
 .legacy-flex-gap .toolbar-vertical .toolbar > .divider { margin-top: 6px; }
 .legacy-flex-gap .toolbar-vertical .button-group > .board-button { margin-top: 4px; }
-.legacy-flex-gap .toolbar-vertical .width-control > * + * { margin-left: 0; }
 .about-dialog + .backdrop { background: var(--ui-backdrop); }
 
 .timer-config-heading button { color: var(--ui-icon); background: var(--ui-hover); }
