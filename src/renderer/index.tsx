@@ -5,7 +5,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { actionLabels, actions, defaults, type Action, type Command, type Settings, type State, type Tool, type ToolbarMode } from '../shared';
 import { MINI_RADIUS, MINI_SIZE } from '../toolbar';
-import { Pencil, Slash, MoveUpRight, Rectangle, Circle, Undo2, Redo2, Trash2, Eye, EyeOff, Settings as SettingsIcon, Timer as TimerIcon, Whiteboard, Blackboard, GripVertical, MoveDiagonal, RotateCcw, ArrowDownUp, Play, Pause, PanelTopClose, RectangleVertical, Power, X, Info, type EditableIcon } from './icons';
+import { Pencil, Slash, MoveUpRight, Rectangle, Circle, Undo2, Redo2, Trash2, Eye, EyeOff, Settings as SettingsIcon, Timer as TimerIcon, Whiteboard, Blackboard, GripVertical, MoveDiagonal, RotateCcw, ArrowDownUp, Play, Pause, Minimize, RectangleVertical, Power, X, Info, type EditableIcon } from './icons';
 import { DrawingHistory, type Stroke } from '../model';
 import { paintStroke, strokeCursor } from './draw';
 import { appVersion, appCommit } from '../build-info';
@@ -274,7 +274,7 @@ function Toolbar({ state }: { state: State }) {
   return <main className={`toolbar-shell ${state.settings.toolbarOrientation === 'vertical' ? 'toolbar-vertical' : ''} ${collapsed ? 'toolbar-collapsed' : ''} ${reveal ? 'toolbar-revealing' : ''}`} data-reveal={reveal?.direction} style={shellStyle} ref={element}>
     <div className="toolbar">
       <div className="drag-handle" title={t("Arrastra para mover la barra")} role="img" aria-label={t("Mover barra")}><GripVertical size={18} aria-hidden="true" /></div>
-      <button className="icon-button" aria-label={t("Contraer barra")} title={state.settings.toolbarMode === 'hidden' ? t("Ocultar la barra y mantener los atajos activos") : t("Contraer la barra al icono mínimo")} onClick={() => void command({ type: 'collapse-tools' })}><PanelTopClose size={20} aria-hidden="true" /></button>
+      <button className="icon-button" aria-label={t("Contraer barra")} title={state.settings.toolbarMode === 'hidden' ? t("Ocultar la barra y mantener los atajos activos") : t("Contraer la barra al icono mínimo")} onClick={() => void command({ type: 'collapse-tools' })}><Minimize size={20} aria-hidden="true" /></button>
       <button className={`icon-button ${state.settings.toolbarOrientation === 'vertical' ? 'selected' : ''}`} aria-label={t("Girar barra")} aria-pressed={state.settings.toolbarOrientation === 'vertical'} title={state.settings.toolbarOrientation === 'horizontal' ? t("Poner la barra vertical") : t("Poner la barra horizontal")} onClick={() => void command({ type: 'toggle-toolbar-orientation' })}><RectangleVertical size={20} aria-hidden="true" /></button>
       <div className="divider" />
       <div className="button-group">
