@@ -369,7 +369,13 @@ pub fn raise_controls(app: &tauri::AppHandle) {
                     if let Ok(gtk) = window.gtk_window() {
                         // XFWM keeps transient controls above their drawing
                         // parent, even when that parent receives keyboard focus.
-                        if let Some(ref overlay) = parent {
+                        // The main toolbar must remain an independent window:
+                        // XFCE's task list can omit transient child windows.
+                        if label == "toolbar" {
+                            gtk.set_transient_for(None::<&gtk::Window>);
+                            gtk.set_skip_taskbar_hint(false);
+                            gtk.set_skip_pager_hint(false);
+                        } else if let Some(ref overlay) = parent {
                             gtk.set_transient_for(Some(overlay));
                         }
                         if gtk.is_visible() {

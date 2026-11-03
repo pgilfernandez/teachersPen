@@ -167,7 +167,7 @@ fn create_window(app: &tauri::AppHandle, v: &Value) -> Result<()> {
         .resizable(role == "preferences")
         .minimizable(!cfg!(target_os = "windows"))
         .always_on_top(role != "preferences" && role != "controller")
-        .skip_taskbar(if cfg!(target_os = "windows") { role != "toolbar" } else { role != "preferences" })
+        .skip_taskbar(if cfg!(any(target_os = "windows", target_os = "linux")) { role != "toolbar" } else { role != "preferences" })
         .disable_file_drop_handler()
         .on_navigation(|url| {
             matches!(url.scheme(), "tauri" | "asset")

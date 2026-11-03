@@ -261,6 +261,7 @@ function createWindow(role: string, options: Electron.BrowserWindowConstructorOp
   const win = new BrowserWindow({
     icon: path.join(__dirname, 'icons', 'app-256.png'), ...options, show: false,
     ...(process.platform === 'win32' ? { skipTaskbar: role !== 'toolbar', minimizable: false } : {}),
+    ...(process.platform === 'linux' ? { skipTaskbar: role !== 'toolbar' } : {}),
     webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, backgroundThrottling: false }
   });
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
