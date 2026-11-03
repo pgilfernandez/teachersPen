@@ -1,6 +1,6 @@
 import { listen } from '@tauri-apps/api/event';
 import { host } from './host';
-import { actions, actionLabels, defaults, parseSettings, tools, type Action, type Command, type Settings, type State, type ToolbarMode } from '../shared';
+import { actions, actionLabels, defaults, parseSettings, tools, type Action, type Command, type Settings, type State, type BackendStatus, type ToolbarMode } from '../shared';
 import { translate, isLanguage, defaultTimerText, isDefaultTimerText } from '../i18n';
 import { HoldActivation, isDrawingShortcut, type HoldMonitor } from '../hold';
 import { MiniDrag, MINI_SIZE, MINI_RADIUS, fitPosition, readPosition, toolbarClosing, toolbarOpening, type Area } from '../toolbar';
@@ -10,12 +10,14 @@ type Display = { id: number; bounds: Area; workArea: Area; scaleFactor: number }
 type Reply = { ok: boolean; error?: string };
 export async function startController() {
   const environment = await host<{ platform: string; wayland: boolean }>('environment');
+  const initialSettings = parseSettings(await host('read', { name: 'settings.json' }));
+  const backend = await host<BackendStatus>('backend-init', { requested: initialSettings.linuxBackend });
   const state: State = {
     hasDrawings: false, canUndo: false, canRedo: false,
     drawing: false, tool: 'freehand', color: 1, visible: true, background: 'transparent', timerEnd: null,
     timer: { visible: false, running: false, elapsedMs: 0, startedAt: null }, settings: defaults(),
-    shortcutErrors: [], platform: environment.platform, wayland: environment.wayland,
-    holding: false, holdAvailable: true, holdError: null,
+    linuxBackend: backend, shortcutErrors: [], platform: environment.platform, wayland: environment.wayland,
+    holding: false, holdAvailable: backend.active !== 'gnome' || backend.holdAvailable === true, holdError: null,
     toolbarExpanded: true, toolbarReveal: null, toolbarAvailableHeight: 0
   };
   const t = (s: string, values?: Record<string, string | number>) => translate(state.settings.language, s, values);
@@ -66,6 +68,7 @@ export async function startController() {
   }
   async function move(label: string, b: Area) { geometry.set(label, b); await win(label, 'bounds', { bounds: b }); }
   async function save(next: Settings) { await write('settings.json', next); state.settings = next; }
+  const gnomeHolds = new Set<string>();
   const watches = new Map<string, { down: () => void; up: () => void; error: (s: string) => void; timeout: ReturnType<typeof setTimeout> }>();
   let watchSerial = 0;
   const monitor: HoldMonitor = { watch(shortcut, down, up, error) {
@@ -82,7 +85,7 @@ export async function startController() {
     await setDrawing(true);
   }); }, () => { void enqueue(async () => { await host('trace', { message: 'hold release' }); await setDrawing(false); }); }, message => { state.holdError = message; void host('trace', { message: `hold error ${message}` }); void broadcast(); });
   async function setDrawing(value: boolean) {
-    if (!value) { hold.dismiss(); state.holding = false; }
+    if (!value) { gnomeHolds.clear(); hold.dismiss(); state.holding = false; }
     state.drawing = value;
     if (value) state.visible = true;
     try {
@@ -160,7 +163,7 @@ export async function startController() {
       const normalized = shortcut.toLowerCase();
       if (seen.has(normalized)) { errors.push(translate(settings.language, '{action}: atajo duplicado ({shortcut})', { action: label, shortcut })); continue; }
       seen.add(normalized);
-      if (settings.activation === 'hold' && isDrawingShortcut(action)) {
+      if (backend.active !== 'gnome' && state.holdAvailable && settings.activation === 'hold' && isDrawingShortcut(action)) {
         const error = await host<string | null>('validate', { shortcut });
         if (error) { errors.push(`${label}: ${translate(settings.language, error)}`); continue; }
       }
@@ -262,6 +265,9 @@ export async function startController() {
         if (recording) { hold.stop(); await setDrawing(false); await host('shortcuts', {}); }
         else state.shortcutErrors = await register(state.settings);
         break;
+      case 'linux-backend':
+        if (source !== 'preferences' || !['auto', 'gnome', 'x11'].includes(c.backend)) throw new Error(t('Comando no autorizado'));
+        await save({ ...state.settings, linuxBackend: c.backend }); break;
       case 'activation':
         if (!['toggle', 'hold'].includes(c.activation)) throw new Error(t('Modo de activación no válido'));
         await commitBindings({ ...state.settings, activation: c.activation }); await setDrawing(false); break;
@@ -341,11 +347,36 @@ export async function startController() {
       await host('reply', { label: source, value: { id, result } });
     });
   });
+  await listen<{type: string; action?: Action; source?: string; command?: Command; error?: string; token?: string; pressed?: boolean}>('host-gnome', ({payload: event}) => {
+    void enqueue(async () => {
+      if (event.type === 'command' && event.source && event.command) await command(event.source, event.command);
+      else if (event.type === 'shortcut' && event.action && initialized && !recording && actions.includes(event.action)) await perform(event.action, true);
+      else if (event.type === 'hold' && event.token && initialized && !recording) {
+        if (event.pressed && event.action && actions.includes(event.action) && state.settings.activation === 'hold') {
+          gnomeHolds.add(event.token); state.holding = true; state.holdError = null;
+          if (event.action !== 'toggle') await perform(event.action, true);
+          else activeDisplay = (await cursor()).display;
+          await setDrawing(true);
+        } else if (!event.pressed) {
+          gnomeHolds.delete(event.token);
+          if (!gnomeHolds.size && state.holding) await setDrawing(false);
+        }
+      }
+      else if (event.type === 'hold-error') { state.holdError = event.error || 'Cannot capture shortcut release. Try again.'; await setDrawing(false); }
+      else if (event.type === 'stop') await setDrawing(false);
+      else if (event.type === 'disconnected') {
+        state.drawing = false; state.holding = false;
+        if (state.linuxBackend) state.linuxBackend.error = event.error || 'GNOME extension disconnected.';
+        // Publish locally even though the extension is no longer reachable.
+        await host('backend-error', {state});
+      }
+    });
+  });
   await listen<Action>('host-shortcut', event => { void enqueue(async () => {
     await host('trace', { message: `shortcut received ${event.payload} initialized=${initialized} recording=${recording} activation=${state.settings.activation}` });
     if (!initialized || recording || !actions.includes(event.payload)) return;
     const action = event.payload;
-    if (state.settings.activation === 'hold' && isDrawingShortcut(action)) hold.press(action, state.settings.shortcuts[action]);
+    if (state.holdAvailable && state.settings.activation === 'hold' && isDrawingShortcut(action)) hold.press(action, state.settings.shortcuts[action]);
     else await perform(action, true);
   }); });
   await listen<{ token: string; event: string; error?: string }>('host-key', ({ payload: e }) => {
@@ -373,7 +404,7 @@ export async function startController() {
       }
     });
   });
-  state.settings = parseSettings(await read('settings.json'));
+  state.settings = initialSettings;
   state.toolbarExpanded = state.settings.toolbarMode === 'visible';
   const area = displays[0].workArea; state.toolbarAvailableHeight = area.height;
   const vertical = state.settings.toolbarOrientation === 'vertical'; const width = vertical ? 56 : 965;

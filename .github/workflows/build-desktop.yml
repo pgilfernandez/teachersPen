@@ -175,6 +175,8 @@ jobs:
           restore-keys: tauri-ubuntu2004-x64-rust191-
       - name: Install dependencies
         run: npm ci
+      - name: Build GNOME Shell extension
+        run: npm run build:gnome
       - name: Build AppImage and DEB
         run: npm run dist:linux -- --ci --verbose
       - name: Upload Linux AppImage
@@ -193,3 +195,11 @@ jobs:
           if-no-files-found: error
           retention-days: 14
           compression-level: 0
+
+      - name: Upload GNOME Shell extension
+        uses: actions/upload-artifact@v4
+        with:
+          name: TeachersPen-GNOME-extension-${{ steps.commit.outputs.sha }}
+          path: dist/gnome/*.shell-extension.zip
+          if-no-files-found: error
+          retention-days: 14

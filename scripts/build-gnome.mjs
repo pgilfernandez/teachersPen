@@ -1,0 +1,15 @@
+import {build} from 'esbuild';
+import {mkdir, copyFile, rm} from 'node:fs/promises';
+import {execFileSync} from 'node:child_process';
+import path from 'node:path';
+const uuid = 'teacherspen@pgilfernandez.github.io';
+const out = `dist/gnome/${uuid}`;
+await rm(out, {recursive: true, force: true});
+await mkdir(out, {recursive: true});
+for (const file of ['extension.js', 'drawing.js', 'metadata.json']) await copyFile(`extensions/gnome/${file}`, `${out}/${file}`);
+await build({entryPoints: ['src/model.ts'], outfile: `${out}/model.js`, bundle: true, format: 'esm', platform: 'neutral', target: 'firefox115'});
+for (const file of ['LICENSE.md', 'NOTICE.md']) await copyFile(file, `${out}/${file}`);
+const archive = path.resolve(`dist/gnome/${uuid}.shell-extension.zip`);
+await rm(archive, {force: true});
+execFileSync('zip', ['-q', archive, 'metadata.json', 'extension.js', 'drawing.js', 'model.js', 'LICENSE.md', 'NOTICE.md'], {cwd: out, stdio: 'inherit'});
+console.log(`GNOME extension: dist/gnome/${uuid}.shell-extension.zip`);

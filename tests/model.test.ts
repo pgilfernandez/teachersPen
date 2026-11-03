@@ -48,3 +48,9 @@ test('preferences from disk are bounded, validated and retain the exit shortcut'
   assert.equal(parseSettings({ activation: 'hold' }).activation, 'hold');
   assert.equal(parseSettings({ activation: 'unknown' }).activation, 'toggle');
 });
+
+test('backend preference migrates old settings and retains a deliberate choice', () => {
+    assert.equal(parseSettings({}).linuxBackend, 'auto');
+    assert.equal(parseSettings({linuxBackend: 'invalid'}).linuxBackend, 'auto');
+    for (const linuxBackend of ['auto', 'gnome', 'x11']) assert.equal(parseSettings({linuxBackend}).linuxBackend, linuxBackend);
+});

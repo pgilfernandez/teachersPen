@@ -43,7 +43,7 @@ TeachersPen targets the following desktop systems:
 | **Windows** | Windows 10 or later; 64-bit Intel/AMD | `.exe` installer |
 | **Linux** | 64-bit Intel/AMD; X11 desktop and compatible system libraries | `.AppImage` or `.deb` |
 
-Compatibility testing is still in progress across systems and devices. On Linux, Wayland support is experimental; an X11 session is recommended. Linux packages require WebKitGTK 4.0, which is not available by default on every distribution.
+Compatibility testing is still in progress across systems and devices. On Linux, the X11/XWayland backend has experimental Wayland support; a companion extension adds native drawing on GNOME 46 / Wayland (see below). Linux packages require WebKitGTK 4.0, which is not available by default on every distribution.
 
 ## Installation
 
@@ -82,3 +82,62 @@ When sharing the app or modified versions, retain the license and required notic
 ## Support
 
 Report problems or suggest improvements through [GitHub Issues](https://github.com/pgilfernandez/teachersPen/issues). If you would like to support development, you can contribute through [GitHub Sponsors](https://github.com/sponsors/pgilfernandez) or [PayPal](https://www.paypal.com/donate?hosted_button_id=6N7UZHDQW3J6A).
+
+### GNOME Wayland backend
+
+The lightweight Linux application can use the companion GNOME Shell extension
+for native desktop drawing on **GNOME 46 / Wayland**. The toolbar, preferences
+and timer remain GTK/XWayland windows; XWayland must be available. The drawing
+surface and global shortcuts run inside GNOME Shell, so the application does not
+need to capture the screen or use X11 to intercept drawing input.
+
+In Preferences → Linux integration, choose **Automatic**, **GNOME extension** or
+**X11/XWayland**, then quit and reopen TeachersPen. Automatic uses the extension
+when available and falls back to X11/XWayland otherwise. Preferences shows the
+backend in use and any connection error. An explicit GNOME selection also falls
+back with a visible diagnostic if the extension is unavailable, so Preferences
+remains accessible.
+
+Build and install the extension as the desktop user:
+
+```sh
+npm ci
+npm run install:gnome
+```
+
+Alternatively, install the release's `teacherspen@pgilfernandez.github.io.shell-extension.zip`
+with `gnome-extensions install --force <file>`. A newly installed extension may
+require logging out and back in before GNOME discovers it. Enable it with:
+
+```sh
+gnome-extensions enable teacherspen@pgilfernandez.github.io
+```
+
+Restart TeachersPen afterwards. No root privileges are needed. To return to the
+previous implementation, select X11/XWayland and restart the app. To remove the
+extension, quit TeachersPen and run `gnome-extensions uninstall teacherspen@pgilfernandez.github.io`.
+
+Current limits:
+
+- Only GNOME 46 is declared supported; other GNOME versions need validation.
+- Native GNOME drawing supports **press to toggle** and **hold to draw** with
+  extension version 2. Hold mode temporarily captures keyboard input; releasing
+  the shortcut or pressing Escape returns input to the underlying application.
+  Overlapping held shortcuts keep drawing active until the last one is released.
+  After updating an installed extension, log out and back in to load the new code.
+- Locking the session, changing monitor layout or disabling the extension clears
+  the native drawing session. Restart TeachersPen to reconnect.
+- KDE and other Wayland compositors continue to use the existing experimental
+  XWayland implementation; this extension is specific to GNOME.
+
+The extension releases its input actors when the app disconnects or misses its
+heartbeat. It hides drawings in the overview and removes them when disabled or
+when the session locks. `Escape` exits drawing mode. Drawing history lives in
+memory and is lost when switching implementation/restarting, as with the existing
+application.
+
+Validation: `npm test`, `npm run typecheck`, and `npm run test:gnome` (requires
+GNOME Shell 46, GJS and a working headless renderer). The GNOME test starts an isolated headless compositor with a virtual monitor; it
+does not enable extensions in the user's current desktop session. Its temporary
+copy enables the Shell debug evaluator for the test only; the distributed
+extension never enables it.

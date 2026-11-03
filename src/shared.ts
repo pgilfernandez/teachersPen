@@ -13,7 +13,10 @@ export const actionLabels = {
 } as const;
 export type Action = keyof typeof actionLabels;
 export const actions = Object.keys(actionLabels) as Action[];
+export type LinuxBackend = 'auto' | 'gnome' | 'x11';
+export interface BackendStatus { active: 'gnome' | 'x11'; requested: LinuxBackend; extensionAvailable: boolean; holdAvailable?: boolean; error: string }
 export interface Settings {
+  linuxBackend: LinuxBackend;
   language: Language;
   activation: 'toggle' | 'hold';
   toolbarMode: ToolbarMode;
@@ -43,6 +46,7 @@ export interface State {
   shortcutErrors: string[];
   platform: string;
   wayland: boolean;
+  linuxBackend?: BackendStatus;
   holding: boolean;
   holdAvailable: boolean;
   holdError: string | null;
@@ -53,7 +57,7 @@ export interface State {
 export function defaults(): Settings {
   const keys = ['Space', 'A', 'W', 'E', 'S', 'D', '1', '2', '3', '4', '5', 'Z', 'Y', 'X', 'C', 'T', 'V', 'B', 'Q'];
   return {
-    language: 'en', activation: 'toggle',
+    linuxBackend: 'auto', language: 'en', activation: 'toggle',
     toolbarMode: 'visible',
     toolbarOrientation: 'horizontal', drawingHints: true,
     width: 6, transparency: 0, colors: ['#ef4444', '#087bff', '#78cc00', '#e2cd00', '#bfc0c2'], timerSeconds: 300,
@@ -65,6 +69,7 @@ export function parseSettings(input: unknown): Settings {
   const base = defaults();
   if (!input || typeof input !== 'object') return base;
   const data = input as Partial<Settings>;
+  if (data.linuxBackend === 'gnome' || data.linuxBackend === 'x11') base.linuxBackend = data.linuxBackend;
   if (isLanguage(data.language)) base.language = data.language;
   base.timerText = defaultTimerText(base.language);
   if (data.activation === 'hold') base.activation = 'hold';
@@ -116,6 +121,7 @@ export type Command =
   | { type: 'history-state'; canUndo: boolean; canRedo: boolean; hasDrawings: boolean }
   | { type: 'record-shortcut'; active: boolean }
   | { type: 'toolbar-size'; width: number; height: number; orientation: Settings['toolbarOrientation'] }
+  | { type: 'linux-backend'; backend: LinuxBackend }
   | { type: 'quit' };
 export interface PenAPI {
   getState(): Promise<State>;

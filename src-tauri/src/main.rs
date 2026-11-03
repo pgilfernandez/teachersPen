@@ -1,6 +1,8 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod appearance;
+#[cfg(target_os = "linux")]
+mod gnome;
 #[cfg(target_os = "macos")]
 mod mac_hold;
 mod platform;
@@ -242,7 +244,44 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
     if window.label() != "controller" {
         return Err("Unauthorized window".into());
     }
+    if op == "backend-error" {
+        *app.state::<LiveState>().published.lock().map_err(err)? = args["state"].clone();
+        app.emit_all("pen:state", args["state"].clone()).map_err(err)?;
+        return Ok(Value::Null);
+    }
+    #[cfg(target_os = "linux")]
+    {
+        if op == "backend-init" {
+            return Ok(gnome::initialize(&app, text(&args, "requested")));
+        }
+        if gnome::active(&app) {
+            match op.as_str() {
+                "screens" | "cursor" | "shortcuts" => return gnome::call(&app, &op, &args),
+                "create" if text(&args, "role") == "overlay" => return gnome::call(&app, &op, &args),
+                "window" if text(&args, "label").starts_with("overlay-") => {
+                    // Shell consumes drawing/input state in broadcast. There is
+                    // no GTK overlay to focus or shape in this backend.
+                    if ["ignore", "focus"].contains(&text(&args, "action")) { return Ok(Value::Null); }
+                    return gnome::call(&app, &op, &args);
+                }
+                "action" if text(&args, "label").starts_with("overlay-") => return gnome::call(&app, &op, &args),
+                "reply" if text(&args, "label").starts_with("overlay-") => return Ok(Value::Null),
+                "broadcast" => {
+                    if let Err(error) = gnome::call(&app, "broadcast", &json!({"state":args,"controls":gnome::controls(&app)?})) {
+                        let mut next = args.clone(); next["drawing"] = json!(false); next["holding"] = json!(false);
+                        next["linuxBackend"]["error"] = json!(error);
+                        *app.state::<LiveState>().published.lock().map_err(err)? = next.clone();
+                        app.emit_all("pen:state", next).map_err(err)?;
+                        return Ok(Value::Null);
+                    }
+                }
+                "exit" => { let _ = gnome::call(&app, "disconnect", &json!({})); }
+                _ => {},
+            }
+        }
+    }
     match op.as_str() {
+        "backend-init" => return Ok(json!({"active":"x11","requested":text(&args,"requested"),"extensionAvailable":false,"error":""})),
         "trace" => trace(text(&args, "message")),
         "environment" => {
             return Ok(
@@ -549,7 +588,7 @@ fn main() {
     let tray = tray.with_icon_as_template(true);
     let builder = tauri::Builder::default();
     #[cfg(target_os = "linux")]
-    let builder = builder.manage(RegisteredShortcuts::default());
+    let builder = builder.manage(RegisteredShortcuts::default()).manage(gnome::Backend::default());
     #[cfg(target_os = "macos")]
     let builder = builder.manage(mac_hold::MacHold::default());
     #[cfg(not(target_os = "macos"))]

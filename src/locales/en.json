@@ -137,5 +137,22 @@
   "Abrir en el navegador": "Open in browser",
   "Donar con PayPal": "Donate with PayPal",
   "Ayuda al dibujar": "Drawing hints",
-  "Siguiente color": "Next color"
+  "Siguiente color": "Next color",
+  "Integración con Linux": "Linux integration",
+  "Implementación": "Backend",
+  "Automática": "Automatic",
+  "Extensión de GNOME": "GNOME extension",
+  "En uso": "In use",
+  "Los cambios de implementación se aplican al reiniciar TeachersPen.": "Backend changes take effect after restarting TeachersPen.",
+  "Install and enable the TeachersPen GNOME extension, then restart TeachersPen.": "Install and enable the TeachersPen GNOME extension, then restart TeachersPen.",
+  "GNOME backend requires a Wayland session.": "GNOME backend requires a Wayland session.",
+  "GNOME extension disconnected. Restart TeachersPen or select X11/XWayland.": "GNOME extension disconnected. Restart TeachersPen or select X11/XWayland.",
+  "GNOME extension disabled. Restart TeachersPen or select X11/XWayland.": "GNOME extension disabled. Restart TeachersPen or select X11/XWayland.",
+  "Screen layout changed. Restart TeachersPen.": "Screen layout changed. Restart TeachersPen.",
+  "Session locked. Restart TeachersPen after unlocking.": "Session locked. Restart TeachersPen after unlocking.",
+  "TeachersPen connection timed out. Restart TeachersPen.": "TeachersPen connection timed out. Restart TeachersPen.",
+  "Incompatible GNOME extension version.": "Incompatible GNOME extension version.",
+  "Actualiza la extensión y vuelve a iniciar sesión para utilizar mantener pulsado.": "Update the extension and log out and back in to use hold shortcuts.",
+  "Cannot monitor this shortcut. Choose a different shortcut.": "Cannot monitor this shortcut. Choose a different shortcut.",
+  "Cannot capture shortcut release. Try again.": "Cannot capture shortcut release. Try again."
 }

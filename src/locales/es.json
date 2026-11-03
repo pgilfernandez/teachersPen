@@ -137,5 +137,22 @@
   "Abrir en el navegador": "Abrir en el navegador",
   "Donar con PayPal": "Donar con PayPal",
   "Ayuda al dibujar": "Ayuda al dibujar",
-  "Siguiente color": "Siguiente color"
+  "Siguiente color": "Siguiente color",
+  "Integración con Linux": "Integración con Linux",
+  "Implementación": "Implementación",
+  "Automática": "Automática",
+  "Extensión de GNOME": "Extensión de GNOME",
+  "En uso": "En uso",
+  "Los cambios de implementación se aplican al reiniciar TeachersPen.": "Los cambios de implementación se aplican al reiniciar TeachersPen.",
+  "Install and enable the TeachersPen GNOME extension, then restart TeachersPen.": "Instala y activa la extensión de GNOME de TeachersPen y reinicia TeachersPen.",
+  "GNOME backend requires a Wayland session.": "La implementación de GNOME requiere una sesión Wayland.",
+  "GNOME extension disconnected. Restart TeachersPen or select X11/XWayland.": "Se ha desconectado la extensión de GNOME. Reinicia TeachersPen o selecciona X11/XWayland.",
+  "GNOME extension disabled. Restart TeachersPen or select X11/XWayland.": "Se ha desactivado la extensión de GNOME. Reinicia TeachersPen o selecciona X11/XWayland.",
+  "Screen layout changed. Restart TeachersPen.": "Ha cambiado la disposición de las pantallas. Reinicia TeachersPen.",
+  "Session locked. Restart TeachersPen after unlocking.": "Se ha bloqueado la sesión. Reinicia TeachersPen después de desbloquearla.",
+  "TeachersPen connection timed out. Restart TeachersPen.": "Se ha perdido la conexión con TeachersPen. Reinicia TeachersPen.",
+  "Incompatible GNOME extension version.": "La versión de la extensión de GNOME no es compatible.",
+  "Actualiza la extensión y vuelve a iniciar sesión para utilizar mantener pulsado.": "Actualiza la extensión y vuelve a iniciar sesión para utilizar mantener pulsado.",
+  "Cannot monitor this shortcut. Choose a different shortcut.": "No se puede comprobar este atajo. Elige otro atajo.",
+  "Cannot capture shortcut release. Try again.": "No se puede detectar la liberación del atajo. Inténtalo de nuevo."
 }

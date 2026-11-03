@@ -1,0 +1,10 @@
+{
+  "uuid": "teacherspen@pgilfernandez.github.io",
+  "name": "TeachersPen",
+  "description": "Native desktop drawing for TeachersPen on GNOME Wayland. Requires the TeachersPen application.",
+  "shell-version": [
+    "46"
+  ],
+  "version": 2,
+  "url": "https://github.com/pgilfernandez/teachersPen"
+}

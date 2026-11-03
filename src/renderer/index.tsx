@@ -292,7 +292,7 @@ function Toolbar({ state }: { state: State }) {
     };
   }, [state.settings.toolbarOrientation, state.toolbarExpanded, state.settings.toolbarMode]);
   const tip = (label: string, name: Action) => `${label}\n${t('Atajo: {shortcut}', { shortcut: keyLabel(state.settings.shortcuts[name], state.settings.language) || t('Sin asignar') })}`;
-  const warning = (state.holdError ? t(state.holdError) : '') || state.shortcutErrors.join('\n') || (state.wayland ? t("Compatibilidad experimental con Wayland") : '');
+  const warning = (state.holdError ? t(state.holdError) : '') || state.shortcutErrors.join('\n') || (state.wayland && state.linuxBackend?.active !== 'gnome' ? t("Compatibilidad experimental con Wayland") : '');
   const collapsed = state.settings.toolbarMode !== 'visible' && !state.toolbarExpanded;
   const reveal = !collapsed ? state.toolbarReveal : null;
   const shellStyle = {
@@ -381,7 +381,7 @@ function Preferences({ state }: { state: State }) {
           if (event.target.value !== '' && event.target.validity.valid) void saveChange({ type: 'transparency', transparency: 100 - Number(event.target.value) });
         }} onBlur={event => { if (!event.target.value || !event.target.validity.valid) setOpacityText(String(100 - state.settings.transparency)); }} /><span>%</span></label>
       </div></div>
-      <div className="setting-row"><label htmlFor="activation-mode">{t("Activación")}</label><select id="activation-mode" value={state.settings.activation} disabled={busy} onChange={e => void saveChange({ type: 'activation', activation: e.target.value as Settings['activation'] })}><option value="toggle">{t("Pulsar para alternar")}</option><option value="hold" disabled={!state.holdAvailable}>{t("Mantener pulsado")}</option></select></div>
+      <div className="setting-row"><label htmlFor="activation-mode">{t("Activación")}</label><select id="activation-mode" value={!state.holdAvailable ? 'toggle' : state.settings.activation} disabled={busy} onChange={e => void saveChange({ type: 'activation', activation: e.target.value as Settings['activation'] })}><option value="toggle">{t("Pulsar para alternar")}</option><option value="hold" disabled={!state.holdAvailable}>{t("Mantener pulsado")}</option></select></div>
       <div className="setting-row"><label htmlFor="toolbar-mode">{t("Barra de dibujo")}</label><select id="toolbar-mode" value={state.settings.toolbarMode} disabled={busy} onChange={e => void saveChange({ type: 'toolbar-mode', mode: e.target.value as ToolbarMode })}><option value="visible">{t("Visible")}</option><option value="minimal">{t("Mínima")}</option><option value="hidden">{t("Oculta")}</option></select></div>
       <div className="setting-row"><label htmlFor="drawing-hints">{t('Ayuda al dibujar')}</label><input id="drawing-hints" type="checkbox" checked={state.settings.drawingHints} disabled={busy} onChange={event => void saveChange({ type: 'drawing-hints', enabled: event.target.checked })} /></div>
     </section>
@@ -390,8 +390,15 @@ function Preferences({ state }: { state: State }) {
     </section>
     {state.shortcutErrors.length > 0 && <div className="notice" role="alert">{state.shortcutErrors.join('\n')}</div>}
     {state.holdError && <div className="notice" role="alert">{t(state.holdError)}</div>}
-    {state.wayland && <div className="notice">{t("X11/XWayland: la superposición sobre aplicaciones Wayland nativas no está garantizada.")}</div>}
+    {state.wayland && state.linuxBackend?.active !== 'gnome' && <div className="notice">{t("X11/XWayland: la superposición sobre aplicaciones Wayland nativas no está garantizada.")}</div>}
     {error && <div className="notice" role="alert">{error}</div>}
+    {state.platform === 'linux' && state.linuxBackend?.active === 'gnome' && !state.holdAvailable && <div className="notice" role="alert">{t('Actualiza la extensión y vuelve a iniciar sesión para utilizar mantener pulsado.')}</div>}
+    {state.platform === 'linux' && state.linuxBackend?.error && <div className="notice" role="alert">{t(state.linuxBackend.error)}</div>}
+    {state.platform === 'linux' && state.linuxBackend && <section><h2>{t('Integración con Linux')}</h2>
+      <div className="setting-row"><label htmlFor="linux-backend">{t('Implementación')}</label><select id="linux-backend" title={t('Los cambios de implementación se aplican al reiniciar TeachersPen.')} value={state.settings.linuxBackend} disabled={busy} onChange={event => void saveChange({ type: 'linux-backend', backend: event.target.value as Settings['linuxBackend'] })}>
+        <option value="auto">{t('Automática')} ({state.linuxBackend.active === 'gnome' ? t('Extensión de GNOME') : 'X11/XWayland'})</option><option value="gnome">{t('Extensión de GNOME')}</option><option value="x11">X11/XWayland</option>
+      </select></div>
+    </section>}
     <footer className="preferences-footer"><button className="about-button" title={t('Información')} aria-label={t('Información')} onClick={() => setAbout(true)}><Info size={18} /></button><button disabled={busy} onClick={() => void saveChange({ type: 'restore-defaults' })}>{t('Restaurar valores')}</button></footer>
     {about && <About state={state} onClose={() => setAbout(false)} />}
   </main>;
