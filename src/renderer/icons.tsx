@@ -3,7 +3,7 @@ import InfoSource from './assets/icons/info.svg';
 import PencilSource from './assets/icons/pencil.svg';
 import SlashSource from './assets/icons/slash.svg';
 import MoveUpRightSource from './assets/icons/move-up-right.svg';
-import RectangleHorizontalSource from './assets/icons/rectangle-horizontal.svg';
+import RectangleSource from './assets/icons/rectangle.svg';
 import RectangleVerticalSource from './assets/icons/rectangle-vertical.svg';
 import CircleSource from './assets/icons/circle.svg';
 import Undo2Source from './assets/icons/undo2.svg';
@@ -39,7 +39,7 @@ function icon(source: string): EditableIcon {
 export const Pencil = icon(PencilSource);
 export const Slash = icon(SlashSource);
 export const MoveUpRight = icon(MoveUpRightSource);
-export const RectangleHorizontal = icon(RectangleHorizontalSource);
+export const Rectangle = icon(RectangleSource);
 export const Circle = icon(CircleSource);
 export const Undo2 = icon(Undo2Source);
 export const Redo2 = icon(Redo2Source);
