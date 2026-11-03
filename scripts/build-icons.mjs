@@ -15,7 +15,6 @@ for (const [name, file] of [['trayTemplate', 'tray-template'], ['tray', 'tray']]
   const source = await readFile(`${sourceFolder}/${file}.svg`, 'utf8');
   await writeFile(`${folder}/${name}.png`, png(source, 16));
   await writeFile(`${folder}/${name}@2x.png`, png(source, 32));
-  if (name === 'tray') await writeFile(`${folder}/tray-256.png`, png(source, 256));
 }
 // PNG-backed ICNS entries work on Big Sur and later; no platform image tool is needed.
 const icnsParts = [[16, 'icp4'], [32, 'icp5'], [64, 'icp6'], [128, 'ic07'], [256, 'ic08'], [512, 'ic09'], [1024, 'ic10']].map(([size, type]) => {
