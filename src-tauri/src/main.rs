@@ -166,7 +166,8 @@ fn create_window(app: &tauri::AppHandle, v: &Value) -> Result<()> {
         .transparent(role != "preferences")
         .resizable(role == "preferences")
         .always_on_top(role != "preferences" && role != "controller")
-        .skip_taskbar(role != "preferences")
+        .skip_taskbar(!(role == "preferences"
+            || (cfg!(target_os = "windows") && matches!(role, "toolbar" | "mini"))))
         .disable_file_drop_handler()
         .on_navigation(|url| {
             matches!(url.scheme(), "tauri" | "asset")
@@ -180,6 +181,10 @@ fn create_window(app: &tauri::AppHandle, v: &Value) -> Result<()> {
     }
     if role == "preferences" {
         builder = builder.min_inner_size(380.0, 400.0);
+    }
+    #[cfg(target_os = "windows")]
+    {
+        builder = builder.icon(Icon::Raw(include_bytes!("../../dist/icons/tray-256.png").to_vec())).map_err(err)?;
     }
     let w = builder.build().map_err(err)?;
     platform::configure(&w, role)?;
