@@ -2,7 +2,7 @@ import { listen } from '@tauri-apps/api/event';
 import { host } from './host';
 import { actions, actionLabels, defaults, parseSettings, tools, type Action, type Command, type Settings, type State, type ToolbarMode } from '../shared';
 import { translate, isLanguage, defaultTimerText, isDefaultTimerText } from '../i18n';
-import { HoldActivation, isDrawingShortcut, type HoldMonitor } from '../hold';
+import { HoldActivation, ShortcutPress, isDrawingShortcut, type HoldMonitor } from '../hold';
 import { MiniDrag, MINI_SIZE, MINI_RADIUS, fitPosition, readPosition, toolbarClosing, toolbarOpening, type Area } from '../toolbar';
 import type { Point } from '../model';
 
@@ -75,6 +75,7 @@ export async function startController() {
     void host('watch', { token, shortcut }).catch(e => { const entry = watches.get(token); if (entry) { clearTimeout(entry.timeout); watches.delete(token); error(String(e)); } });
     return () => { clearTimeout(timeout); watches.delete(token); void host('stop-watch', { token }); };
   } };
+  const piePress = new ShortcutPress(monitor, message => { void host('trace', { message: `pie shortcut monitor: ${message}` }); });
   const hold = new HoldActivation(monitor, action => { void enqueue(async () => {
     await host('trace', { message: `hold activate ${action}` });
     state.holding = true; state.holdError = null;
@@ -168,7 +169,7 @@ export async function startController() {
     await broadcast();
   }
   async function register(settings: Settings): Promise<string[]> {
-    hold.stop(); if (state.holding) await setDrawing(false);
+    piePress.stop(); hold.stop(); if (state.holding) await setDrawing(false);
     const accepted: Partial<Record<Action, string>> = {}; const errors: string[] = []; const seen = new Set<string>();
     for (const action of actions) {
       const shortcut = settings.shortcuts[action]; if (!shortcut) continue;
@@ -371,6 +372,7 @@ export async function startController() {
     await host('trace', { message: `shortcut received ${event.payload} initialized=${initialized} recording=${recording} activation=${state.settings.activation}` });
     if (!initialized || recording || !actions.includes(event.payload)) return;
     const action = event.payload;
+    if ((action === 'pie' || action === 'pie2') && !piePress.press(action, state.settings.shortcuts[action])) return;
     if (state.settings.activation === 'hold' && isDrawingShortcut(action)) hold.press(action, state.settings.shortcuts[action]);
     else await perform(action, true);
   }); });

@@ -71,6 +71,7 @@ function PieMenu({ state }: { state: State }) {
   const center = { x: Math.max(Math.min(margin, innerWidth / 2), Math.min(state.pie!.x, innerWidth - margin)), y: Math.max(Math.min(margin, innerHeight / 2), Math.min(state.pie!.y, innerHeight - margin)) };
   const iconMap: Partial<Record<Action, EditableIcon>> = { ...toolIcons, undo: Undo2, redo: Redo2, clear: Trash2, visible: Eye, timer: TimerIcon, white: Whiteboard, black: Blackboard, toggle: Power };
   return <div className="pie-backdrop" onPointerDown={e => { if (e.target === e.currentTarget) close(); }} onContextMenu={e => { e.preventDefault(); close(); }}>
+    {/* The pointer starts here: closing always requires a click, even in hover mode. */}
     <div className="pie-center" style={{ left: center.x, top: center.y }}><button aria-label={t('Cerrar')} onClick={close}><X size={16} /></button></div>
     {settings[state.pie!.menu === 0 ? 'slots' : 'slots2'].map((name, index) => {
       if (!name) return null;
