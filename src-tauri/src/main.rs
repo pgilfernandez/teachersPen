@@ -21,6 +21,9 @@ type Result<T> = std::result::Result<T, String>;
 #[cfg(not(target_os = "macos"))]
 #[derive(Default)]
 struct Helpers(Mutex<HashMap<String, CommandChild>>);
+#[cfg(target_os = "linux")]
+#[derive(Default)]
+struct RegisteredShortcuts(Mutex<HashSet<String>>);
 #[derive(Default)]
 struct LiveState {
     down: Mutex<HashSet<String>>,
@@ -368,6 +371,20 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
         "shortcuts" => {
             #[cfg(target_os = "macos")]
             mac_hold::clear(&app);
+            #[cfg(target_os = "linux")]
+            let registrations = app.state::<RegisteredShortcuts>();
+            #[cfg(target_os = "linux")]
+            let mut registered = registrations.0.lock().map_err(err)?;
+            #[cfg(target_os = "linux")]
+            {
+                // Tao 0.16's X11 unregister_all leaves unread replies on the
+                // registration channel. unregister waits for each reply.
+                for shortcut in registered.clone() {
+                    app.global_shortcut_manager().unregister(&shortcut).map_err(err)?;
+                    registered.remove(&shortcut);
+                }
+            }
+            #[cfg(not(target_os = "linux"))]
             app.global_shortcut_manager()
                 .unregister_all()
                 .map_err(err)?;
@@ -388,9 +405,13 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
                         trace(format!("shortcut {}", id));
                         let _ = handle.emit_to("controller", "host-shortcut", id.clone());
                     }) {
+                        trace(format!("shortcut registration failed {} {}: {}", action, shortcut, e));
                         errors.push(
                             json!({"action":action,"shortcut":shortcut,"error":e.to_string()}),
                         );
+                    } else {
+                        #[cfg(target_os = "linux")]
+                        registered.insert(shortcut.to_string());
                     }
                 }
             }
@@ -520,6 +541,8 @@ fn main() {
     #[cfg(target_os = "macos")]
     let tray = tray.with_icon_as_template(true);
     let builder = tauri::Builder::default();
+    #[cfg(target_os = "linux")]
+    let builder = builder.manage(RegisteredShortcuts::default());
     #[cfg(target_os = "macos")]
     let builder = builder.manage(mac_hold::MacHold::default());
     #[cfg(not(target_os = "macos"))]

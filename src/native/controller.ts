@@ -166,7 +166,7 @@ export async function startController() {
       accepted[action] = shortcut.replace(/CommandOrControl/g, state.platform === 'darwin' ? 'Command' : 'Control');
     }
     const nativeErrors = await host<{ action: Action; shortcut: string; error: string }[]>('shortcuts', accepted);
-    for (const e of nativeErrors) errors.push(translate(settings.language, '{action}: no se puede registrar {shortcut}', { action: translate(settings.language, actionLabels[e.action]), shortcut: e.shortcut }));
+    for (const e of nativeErrors) errors.push(`${translate(settings.language, '{action}: no se puede registrar {shortcut}', { action: translate(settings.language, actionLabels[e.action]), shortcut: e.shortcut })}: ${e.error}`);
     return errors;
   }
   async function commitBindings(next: Settings) {
