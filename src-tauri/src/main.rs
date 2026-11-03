@@ -320,12 +320,15 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
                 args["holding"] = json!(false);
             }
             #[cfg(target_os = "linux")]
-            let background_changed;
+            let board_presentation_changed;
             {
                 let live = app.state::<LiveState>();
                 let mut previous = live.published.lock().map_err(err)?;
                 #[cfg(target_os = "linux")]
-                { background_changed = previous["background"] != args["background"]; }
+                {
+                    board_presentation_changed = previous["background"] != args["background"]
+                        || previous["visible"] != args["visible"];
+                }
                 *previous = args.clone();
             }
             trace(format!(
@@ -334,7 +337,7 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
             ));
             app.emit_all("pen:state", args.clone()).map_err(err)?;
             #[cfg(target_os = "linux")]
-            if background_changed {
+            if board_presentation_changed {
                 // A board can become opaque without focusing/showing its
                 // overlay. Restore the controls' stacking order in that case.
                 platform::raise_controls(&app);

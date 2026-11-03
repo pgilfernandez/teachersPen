@@ -149,7 +149,7 @@ function Overlay({ state }: { state: State }) {
     };
   }, []);
   useEffect(() => { if (!state.drawing) finish(); redraw(); }, [state.drawing, state.visible]);
-  return <div className={`overlay-surface ${state.background} ${state.drawing ? 'drawing' : ''}`}
+  return <div className={`overlay-surface ${state.visible ? state.background : 'transparent'} ${state.drawing ? 'drawing' : ''}`}
     onContextMenuCapture={event => event.preventDefault()}>
     <canvas ref={canvas} style={{ cursor: state.drawing && !tracing ? strokeCursor(state.settings.colors[state.color], state.settings.width, state.settings.transparency) : undefined }}
       onPointerDown={event => {
