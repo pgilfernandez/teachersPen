@@ -415,6 +415,43 @@ pub fn raise_controls(app: &tauri::AppHandle) {
     let _ = app;
 }
 
+// Toolbar bounds in GTK client coordinates, measured from the rendered content.
+#[derive(Default)]
+pub struct ToolbarRegion(pub std::sync::Mutex<Option<(i32, i32, i32, i32)>>);
+
+pub fn toolbar_region(w: &Window, args: &serde_json::Value) -> Result<()> {
+    #[cfg(target_os = "linux")]
+    {
+        let values: Vec<f64> = ["x", "y", "width", "height", "viewportWidth", "viewportHeight"]
+            .iter().filter_map(|key| args[*key].as_f64()).collect();
+        if values.len() != 6 || values.iter().any(|v| !v.is_finite())
+            || values[2..].iter().any(|v| *v <= 0.0) {
+            return Err("Invalid toolbar rectangle".into());
+        }
+        let window = w.clone();
+        w.with_webview(move |webview| {
+            use gtk::prelude::*;
+            let view = webview.inner();
+            let Ok(gtk) = window.gtk_window() else { return; };
+            let Some((offset_x, offset_y)) = view.translate_coordinates(&gtk, 0, 0) else { return; };
+            let sx = view.allocated_width() as f64 / values[4];
+            let sy = view.allocated_height() as f64 / values[5];
+            let x = (values[0] * sx).floor() as i32 + offset_x;
+            let y = (values[1] * sy).floor() as i32 + offset_y;
+            let right = ((values[0] + values[2]) * sx).ceil() as i32 + offset_x;
+            let bottom = ((values[1] + values[3]) * sy).ceil() as i32 + offset_y;
+            let app = window.app_handle();
+            if let Ok(mut rect) = app.state::<ToolbarRegion>().0.lock() {
+                *rect = Some((x, y, right - x, bottom - y));
+            }
+            refresh_overlay_regions(&app);
+        }).map_err(|e| e.to_string())?;
+    }
+    #[cfg(not(target_os = "linux"))]
+    let _ = (w, args);
+    Ok(())
+}
+
 // Keep holes for the controls in both the visible and mouse-input regions.
 // XFWM can raise a full-screen drawing overlay on the first pointer press,
 // even after an explicit restack. Holes remain effective regardless of Z order.
@@ -432,12 +469,15 @@ pub fn refresh_overlay_regions(app: &tauri::AppHandle) {
                     if !gtk.is_mapped() { return None; }
                     let gdk = gtk.window()?;
                     let (_, x, y) = gdk.origin();
-                    // GDK client geometry is already in GTK logical units.
-                    // Tauri outer bounds may still describe a provisional
-                    // window size while WebKit/GTK finishes allocating it.
-                    let inset = if window.label() == "toolbar" { 8 } else { 0 };
-                    Some((x + inset, y + inset,
-                        (gdk.width() - 2 * inset).max(0), (gdk.height() - 2 * inset).max(0)))
+                    if window.label() == "toolbar" {
+                        // Do not reserve the transparent remainder of GTK's
+                        // allocation (or guess before the first DOM measurement).
+                        let state = handle.state::<ToolbarRegion>();
+                        let rect = *state.0.lock().ok()?;
+                        return rect.map(|(left, top, width, height)|
+                            (x + left, y + top, width, height));
+                    }
+                    Some((x, y, gdk.width().max(0), gdk.height().max(0)))
                 })
                 .collect();
             for (label, window) in handle.windows() {

@@ -30,6 +30,36 @@ export function installBridge() {
     onAction: fn => { actions.add(fn); return () => { actions.delete(fn); }; }
   };
   window.pen = api;
+  // GTK can allocate a larger client area than the visible toolbar. Report the
+  // actual DOM rectangle, including the CSS-to-GTK scale, rather than its window.
+  if (navigator.userAgent.includes('Linux')) {
+    let frame = 0;
+    let previous = '';
+    let observed: Element | null = null;
+    const resize = new ResizeObserver(schedule);
+    function schedule() {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const toolbar = document.querySelector<HTMLElement>('.toolbar-shell');
+        if (!toolbar) return;
+        if (observed !== toolbar) {
+          resize.disconnect(); resize.observe(toolbar); observed = toolbar;
+        }
+        const rect = toolbar.getBoundingClientRect();
+        const bounds = { x: rect.x, y: rect.y, width: rect.width, height: rect.height,
+          viewportWidth: innerWidth, viewportHeight: innerHeight };
+        const measurement = JSON.stringify(bounds);
+        if (measurement === previous) return;
+        previous = measurement;
+        void host('toolbar-region', bounds).catch(() => { previous = ''; });
+      });
+    }
+    new MutationObserver(schedule).observe(document.documentElement, {
+      subtree: true, childList: true, attributes: true, attributeFilter: ['class', 'style']
+    });
+    window.addEventListener('resize', schedule);
+    schedule();
+  }
   // Reuse the existing drag handles without Electron's CSS-only drag regions.
   document.addEventListener('mousedown', event => {
     if (event.button === 0 && (event.target as Element).closest('.drag-handle, .timer-grip')) void host('drag');

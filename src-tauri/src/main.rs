@@ -226,6 +226,13 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
     if op == "theme" {
         return appearance::theme(&window).map(|theme| json!(theme));
     }
+    if op == "toolbar-region" {
+        if window.label() != "toolbar" {
+            return Err("Unauthorized window".into());
+        }
+        platform::toolbar_region(&window, &args)?;
+        return Ok(Value::Null);
+    }
     if op == "drag" {
         if ["toolbar", "timer-window"].contains(&window.label()) {
             window.start_dragging().map_err(err)?;
@@ -547,7 +554,7 @@ fn main() {
     let builder = builder.manage(mac_hold::MacHold::default());
     #[cfg(not(target_os = "macos"))]
     let builder = builder.manage(Helpers::default());
-    builder.plugin(tauri_plugin_single_instance::init(|app,_,_| { let _=app.emit_to("controller","host-menu","show"); })).manage(LiveState::default()).system_tray(tray)
+    builder.plugin(tauri_plugin_single_instance::init(|app,_,_| { let _=app.emit_to("controller","host-menu","show"); })).manage(LiveState::default()).manage(platform::ToolbarRegion::default()).system_tray(tray)
         .invoke_handler(tauri::generate_handler![host])
         .setup(|app| {
             appearance::watch(&app.handle());
