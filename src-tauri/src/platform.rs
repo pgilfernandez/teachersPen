@@ -2,7 +2,7 @@
 
 use serde_json::{json, Value};
 use tauri::{Monitor, Window};
-#[cfg(target_os = "windows")]
+#[cfg(any(target_os = "windows", target_os = "linux"))]
 use tauri::Manager;
 type Result<T> = std::result::Result<T, String>;
 
@@ -334,7 +334,7 @@ pub fn configure(w: &Window, role: &str) -> Result<()> {
     Ok(())
 }
 
-// Windows raises a focused topmost overlay above its sibling tool windows.
+// Desktop window managers can raise a focused overlay above its tool windows.
 // Restore their order without taking keyboard focus away from drawing.
 pub fn raise_controls(app: &tauri::AppHandle) {
     #[cfg(target_os = "windows")]
@@ -354,7 +354,36 @@ pub fn raise_controls(app: &tauri::AppHandle) {
             });
         }
     }
-    #[cfg(not(target_os = "windows"))]
+    #[cfg(target_os = "linux")]
+    {
+        let handle = app.clone();
+        let _ = app.run_on_main_thread(move || {
+            use gtk::prelude::*;
+            let parent = handle.windows().into_iter()
+                .filter(|(label, _)| label.starts_with("overlay-"))
+                .map(|(_, window)| window)
+                .find(|window| window.is_focused().unwrap_or(false))
+                .and_then(|window| window.gtk_window().ok());
+            for label in ["toolbar", "mini", "timer-window", "preferences"] {
+                if let Some(window) = handle.get_window(label) {
+                    if let Ok(gtk) = window.gtk_window() {
+                        // XFWM keeps transient controls above their drawing
+                        // parent, even when that parent receives keyboard focus.
+                        if let Some(ref overlay) = parent {
+                            gtk.set_transient_for(Some(overlay));
+                        }
+                        if gtk.is_visible() {
+                            gtk.set_keep_above(true);
+                            if let Some(gdk) = gtk.window() {
+                                gdk.raise();
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    #[cfg(not(any(target_os = "windows", target_os = "linux")))]
     let _ = app;
 }
 
