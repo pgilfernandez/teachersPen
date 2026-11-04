@@ -69,6 +69,14 @@ pub fn configure(window: &Window) -> Result<(), String> {
             object_setClass(ns, panel);
             let style: u64 = msg_send![ns, styleMask];
             let _: () = msg_send![ns, setStyleMask: style | (1u64 << 7)];
+            // The object was allocated as TaoWindow, so NSPanel's initializer
+            // never set the WindowServer nonactivation tag. Updating styleMask
+            // alone does not set that tag on an existing window.
+            let selector = sel!(_setPreventsActivation:);
+            let supported: BOOL = msg_send![ns, respondsToSelector: selector];
+            if supported == YES {
+                let _: () = msg_send![ns, _setPreventsActivation: YES];
+            }
             let _: () = msg_send![ns, setFloatingPanel: YES];
             let _: () = msg_send![ns, setHidesOnDeactivate: NO];
             let _: () = msg_send![ns, setBecomesKeyOnlyIfNeeded: YES];
