@@ -236,8 +236,8 @@ html.window-pie, body.pie { overflow: hidden; user-select: none; color-scheme: v
 .pie-backdrop { position: fixed; inset: 0; color: var(--ui-icon); background: transparent; }
 .pie-center, .pie-item { position: absolute; transform: translate(-50%, -50%); }
 .pie-center button, .pie-item { display: flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--ui-toolbar); border: 1px solid var(--ui-border); color: inherit; box-shadow: 0 2px 8px var(--ui-shadow); }
-.pie-center button { width: 28px; height: 28px; padding: 0; }
-.pie-item { width: 48px; height: 48px; padding: 0; animation: pie-appear ease-out both; }
+.pie-center button { width: var(--pie-center-size, 28px); height: var(--pie-center-size, 28px); padding: 0; }
+.pie-item { width: var(--pie-button-size, 48px); height: var(--pie-button-size, 48px); padding: 0; animation: pie-appear ease-out both; }
 .pie-center button, .pie-item { -webkit-appearance: none; appearance: none; -webkit-tap-highlight-color: transparent; }
 .pie-center button:focus, .pie-center button:focus-visible, .pie-item:focus, .pie-item:focus-visible { outline: none; }
 .pie-center button:hover, .pie-center button:focus-visible, .pie-item:hover, .pie-item:focus-visible { filter: brightness(.85); }

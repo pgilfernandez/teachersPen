@@ -79,12 +79,12 @@ function PieMenu({ state }: { state: State }) {
     if (name) hover.current = setTimeout(() => choose(name), settings.hoverMs);
     return cancelHover;
   }, [ready, settings.trigger, settings.hoverMs]);
-  const margin = settings.radius + 30;
+  const margin = settings.radius + settings.buttonSize / 2 + 6;
   const center = { x: Math.max(Math.min(margin, innerWidth / 2), Math.min(state.pie!.x, innerWidth - margin)), y: Math.max(Math.min(margin, innerHeight / 2), Math.min(state.pie!.y, innerHeight - margin)) };
   const iconMap: Partial<Record<Action, EditableIcon>> = { ...toolIcons, undo: Undo2, redo: Redo2, clear: Trash2, visible: Eye, timer: TimerIcon, white: Whiteboard, black: Blackboard, toggle: Power, preferences: SettingsIcon, showToolbar: RectangleHorizontal };
-  return <div ref={menu} className="pie-backdrop" onPointerDown={e => { if (ready && e.target === e.currentTarget) close(); }} onContextMenu={e => { e.preventDefault(); close(); }}>
+  return <div ref={menu} className="pie-backdrop" style={{ '--pie-button-size': settings.buttonSize + 'px', '--pie-center-size': Math.round(settings.buttonSize * 28 / 48) + 'px' } as React.CSSProperties} onPointerDown={e => { if (ready && e.target === e.currentTarget) close(); }} onContextMenu={e => { e.preventDefault(); close(); }}>
     {/* The pointer starts here: closing always requires a click, even in hover mode. */}
-    <div className="pie-center" style={{ left: center.x, top: center.y }}><button aria-label={t('Cerrar')} aria-disabled={!ready} onClick={() => { if (ready) close(); }}><X size={16} /></button></div>
+    <div className="pie-center" style={{ left: center.x, top: center.y }}><button aria-label={t('Cerrar')} aria-disabled={!ready} onClick={() => { if (ready) close(); }}><X size={Math.round(settings.buttonSize / 3)} /></button></div>
     {slots.map((name, index) => {
       if (!name) return null;
       const angle = (index * 45 - 90) * Math.PI / 180;
@@ -97,7 +97,7 @@ function PieMenu({ state }: { state: State }) {
         if (pendingAnimations.current.size === 0) setReady(true);
       }} style={{ left: center.x + Math.cos(angle) * radius, top: center.y + Math.sin(angle) * radius, animationDuration: settings.animationMs + 'ms', '--pie-origin-x': -Math.cos(angle) * radius + 'px', '--pie-origin-y': -Math.sin(angle) * radius + 'px', backgroundColor: color } as React.CSSProperties} title={t(actionLabels[name])} aria-label={t(actionLabels[name])}
         onPointerEnter={() => { cancelHover(); if (ready && settings.trigger === 'hover') hover.current = setTimeout(() => choose(name), settings.hoverMs); }}
-        onPointerLeave={cancelHover} onPointerDown={e => e.stopPropagation()} onClick={() => choose(name)}>{!color && <Icon size={24} />}</button>;
+        onPointerLeave={cancelHover} onPointerDown={e => e.stopPropagation()} onClick={() => choose(name)}>{!color && <Icon size={settings.buttonSize / 2} />}</button>;
     })}
   </div>;
 }
@@ -389,6 +389,27 @@ function Toolbar({ state }: { state: State }) {
     </div>
   </main>;
 }
+function PieNumberField({ id, label, value, min, max, unit, onCommit }: {
+  id: string; label: string; value: number; min: number; max: number; unit: string; onCommit: (value: number) => void;
+}) {
+  const [text, setText] = useState(String(value));
+  const editing = useRef(false);
+  useEffect(() => { if (!editing.current) setText(String(value)); }, [value]);
+  return <div className="setting-row"><label htmlFor={id}>{label}</label><span><input id={id} type="number" min={min} max={max} step="1" value={text}
+    onFocus={() => { editing.current = true; }}
+    onChange={event => setText(event.target.value)}
+    onBlur={event => {
+      editing.current = false;
+      const raw = event.target.value;
+      const parsed = Number(raw);
+      const next = raw.trim() && Number.isFinite(parsed) ? Math.max(min, Math.min(max, Math.round(parsed))) : value;
+      setText(String(next));
+      if (next !== value) onCommit(next);
+    }}
+    onKeyDown={event => { if (event.key === 'Enter') event.currentTarget.blur(); }}
+  /> {unit}</span></div>;
+}
+
 function Preferences({ state }: { state: State }) {
   const t = translator(state.settings.language);
   const [widthText, setWidthText] = useState(String(state.settings.width));
@@ -467,7 +488,13 @@ function Preferences({ state }: { state: State }) {
     </div>
     <div id="preferences-radial" role="tabpanel" aria-labelledby="tab-radial" hidden={tab !== 'radial'}>
       <section><h2>{t('Comportamiento general')}</h2>
-      {(['animationMs', 'radius', 'hoverMs'] as const).map(key => <div className="setting-row" key={key}><label htmlFor={'pie-' + key}>{t({ animationMs: 'Duración de animación', radius: 'Radio del menú', hoverMs: 'Retardo al pasar sobre' }[key])}</label><span><input id={'pie-' + key} type="number" min={key === 'radius' ? 80 : 0} max={key === 'radius' ? 220 : key === 'hoverMs' ? 1500 : 1000} value={state.settings.pie[key]} disabled={busy} onChange={e => { if (e.target.value && e.target.validity.valid) void saveChange({ type: 'pie-settings', settings: { ...state.settings.pie, [key]: Number(e.target.value) } }); }} /> {key === 'radius' ? 'px' : 'ms'}</span></div>)}
+      {([
+        ['animationMs', 'Duración de animación', 0, 1000, 'ms'],
+        ['radius', 'Radio del menú', 80, 220, 'px'],
+        ['buttonSize', 'Tamaño de los botones', 24, 96, 'px'],
+        ['hoverMs', 'Retardo al pasar sobre', 0, 1500, 'ms']
+      ] as const).map(([key, label, min, max, unit]) => <PieNumberField key={key} id={'pie-' + key} label={t(label)} value={state.settings.pie[key]} min={min} max={max} unit={unit}
+        onCommit={value => void saveChange({ type: 'pie-settings', settings: { ...state.settings.pie, [key]: value } })} />)}
       <div className="setting-row"><label htmlFor="pie-trigger">{t('Activar opción')}</label><select id="pie-trigger" value={state.settings.pie.trigger} disabled={busy} onChange={e => void saveChange({ type: 'pie-settings', settings: { ...state.settings.pie, trigger: e.target.value as 'click' | 'hover' } })}><option value="click">{t('Pulsar botón')}</option><option value="hover">{t('Pasar sobre')}</option></select></div>
       </section>
       {(['slots', 'slots2'] as const).map((slotsKey, menu) => <section key={slotsKey}>

@@ -15,7 +15,7 @@ export const actionLabels = {
 export type Action = keyof typeof actionLabels;
 export const actions = Object.keys(actionLabels) as Action[];
 export interface Settings {
-  pie: { animationMs: number; trigger: 'click' | 'hover'; radius: number; hoverMs: number; slots: (Action | null)[]; slots2: (Action | null)[] };
+  pie: { animationMs: number; trigger: 'click' | 'hover'; radius: number; buttonSize: number; hoverMs: number; slots: (Action | null)[]; slots2: (Action | null)[] };
   language: Language;
   activation: 'toggle' | 'hold';
   toolbarMode: ToolbarMode;
@@ -61,7 +61,7 @@ export function defaults(): Settings {
     nextColor: 'Q', pie: 'S', pie2: 'W'
   };
   return {
-    pie: { animationMs: 160, trigger: 'click', radius: 100, hoverMs: 80, slots: ['freehand', 'line', 'arrow', 'black', 'visible', 'white', 'rectangle', 'circle'], slots2: ['color0', 'color1', 'color2', 'color3', 'color4', 'color5', 'color6', 'color7'] },
+    pie: { animationMs: 160, trigger: 'click', radius: 100, buttonSize: 48, hoverMs: 80, slots: ['freehand', 'line', 'arrow', 'black', 'visible', 'white', 'rectangle', 'circle'], slots2: ['color0', 'color1', 'color2', 'color3', 'color4', 'color5', 'color6', 'color7'] },
     language: 'en', activation: 'toggle',
     toolbarMode: 'visible',
     toolbarOrientation: 'horizontal', drawingHints: true,
@@ -76,7 +76,7 @@ export function parseSettings(input: unknown): Settings {
   const data = input as Partial<Settings>;
   if (data.pie && typeof data.pie === 'object') {
     const p = data.pie;
-    for (const [key, min, max] of [['animationMs', 0, 1000], ['radius', 80, 220], ['hoverMs', 0, 1500]] as const)
+    for (const [key, min, max] of [['animationMs', 0, 1000], ['radius', 80, 220], ['buttonSize', 24, 96], ['hoverMs', 0, 1500]] as const)
       if (Number.isFinite(p[key])) base.pie[key] = Math.max(min, Math.min(max, Math.round(p[key])));
     if (p.trigger === 'hover') base.pie.trigger = 'hover';
     for (const key of ['slots', 'slots2'] as const) {

@@ -55,7 +55,7 @@ test('radial preferences migrate old settings and constrain untrusted slots', ()
   assert.equal(old.shortcuts.pie, 'Control+Shift+S');
   assert.equal(old.pie.slots.length, 8);
   const parsed = parseSettings({ pie: { animationMs: -10, radius: 999, hoverMs: 9999, trigger: 'invalid', slots: ['undo', 'pie', 'bogus', null, 'color1', 'line', 'clear', 'redo', 'timer'] } });
-  assert.deepEqual(parsed.pie, { animationMs: 0, radius: 220, hoverMs: 1500, trigger: 'click', slots: ['undo', null, null, null, 'color1', 'line', 'clear', 'redo'], slots2: defaults().pie.slots2 });
+  assert.deepEqual(parsed.pie, { animationMs: 0, radius: 220, buttonSize: 48, hoverMs: 1500, trigger: 'click', slots: ['undo', null, null, null, 'color1', 'line', 'clear', 'redo'], slots2: defaults().pie.slots2 });
   assert.equal(parseSettings({ pie: { slots: [] } }).pie.slots.every(slot => slot === null), true);
 });
 
@@ -92,4 +92,11 @@ test('default shortcuts match the supplied configuration and preserve explicit u
   assert.equal(settings.shortcuts.redo, 'Control+Alt+Shift+Z');
   assert.deepEqual(settings.pie.slots, ['freehand', 'line', 'arrow', 'black', 'visible', 'white', 'rectangle', 'circle']);
   assert.equal(parseSettings({ shortcuts: { color5: '' } }).shortcuts.color5, '');
+});
+
+test('radial button size migrates old settings and constrains saved values', () => {
+  assert.equal(parseSettings({ pie: { radius: 100 } }).pie.buttonSize, 48);
+  assert.equal(parseSettings({ pie: { buttonSize: 10 } }).pie.buttonSize, 24);
+  assert.equal(parseSettings({ pie: { buttonSize: 200 } }).pie.buttonSize, 96);
+  assert.equal(parseSettings({ pie: { buttonSize: 63.7 } }).pie.buttonSize, 64);
 });
