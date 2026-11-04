@@ -539,6 +539,9 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
 fn main() {
     #[cfg(target_os = "linux")]
     std::env::set_var("GDK_BACKEND", "x11");
+    #[cfg(target_os = "macos")]
+    let icon = include_bytes!("../../dist/icons/trayTemplate@3x.png").to_vec();
+    #[cfg(not(target_os = "macos"))]
     let icon = include_bytes!("../../dist/icons/trayTemplate.png").to_vec();
     let menu = SystemTrayMenu::new()
         .add_item(CustomMenuItem::new("show", "Show full toolbar"))

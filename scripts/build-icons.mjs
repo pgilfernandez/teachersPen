@@ -15,6 +15,9 @@ for (const [name, file] of [['trayTemplate', 'tray-template'], ['tray', 'tray']]
   const source = await readFile(`${sourceFolder}/${file}.svg`, 'utf8');
   await writeFile(`${folder}/${name}.png`, png(source, 16));
   await writeFile(`${folder}/${name}@2x.png`, png(source, 32));
+  // Tao displays macOS status icons at 18 points. Keep enough pixels for 3x
+  // screens instead of upscaling the 16 px image on Retina displays.
+  await writeFile(`${folder}/${name}@3x.png`, png(source, 54));
 }
 // Linux panels do not recolor macOS template images. Derive a white variant
 // from the same editable artwork while preserving its transparent background.
@@ -22,7 +25,7 @@ const trayLight = (await readFile(`${sourceFolder}/tray-template.svg`, 'utf8')).
 await writeFile(`${folder}/trayLight.png`, png(trayLight, 16));
 await writeFile(`${folder}/trayLight@2x.png`, png(trayLight, 32));
 // PNG-backed ICNS entries work on Big Sur and later; no platform image tool is needed.
-const icnsParts = [[16, 'icp4'], [32, 'icp5'], [64, 'icp6'], [128, 'ic07'], [256, 'ic08'], [512, 'ic09'], [1024, 'ic10']].map(([size, type]) => {
+const icnsParts = [[16, 'icp4'], [32, 'icp5'], [64, 'icp6'], [128, 'ic07'], [256, 'ic08'], [512, 'ic09'], [1024, 'ic10'], [32, 'ic11'], [64, 'ic12'], [256, 'ic13'], [512, 'ic14']].map(([size, type]) => {
   const data = images.get(size);
   const header = Buffer.alloc(8);
   header.write(type, 0, 'ascii'); header.writeUInt32BE(data.length + 8, 4);
