@@ -52,14 +52,14 @@ test('preferences from disk are bounded, validated and retain the exit shortcut'
 test('radial preferences migrate old settings and constrain untrusted slots', () => {
   const old = parseSettings({ width: 4, shortcuts: { arrow: 'Alt+A' } });
   assert.equal(old.shortcuts.arrow, 'Alt+A');
-  assert.equal(old.shortcuts.pie, 'Control+Shift+P');
+  assert.equal(old.shortcuts.pie, 'Control+Shift+S');
   assert.equal(old.pie.slots.length, 8);
   const parsed = parseSettings({ pie: { animationMs: -10, radius: 999, hoverMs: 9999, trigger: 'invalid', slots: ['undo', 'pie', 'bogus', null, 'color1', 'line', 'clear', 'redo', 'timer'] } });
   assert.deepEqual(parsed.pie, { animationMs: 0, radius: 220, hoverMs: 1500, trigger: 'click', slots: ['undo', null, null, null, 'color1', 'line', 'clear', 'redo'], slots2: defaults().pie.slots2 });
   assert.equal(parseSettings({ pie: { slots: [] } }).pie.slots.every(slot => slot === null), true);
 });
 
-test('eight colors preserve the old palette and leave new color shortcuts unassigned', () => {
+test('eight colors preserve the old palette and use the configured default shortcuts', () => {
   const palette = ['#123456', '#234567', '#345678', '#456789', '#56789a'];
   const migrated = parseSettings({ colors: palette, shortcuts: { color0: 'Alt+1', pie: 'Alt+P' }, pie: { slots: ['undo'], hoverMs: 120 } });
   assert.equal(migrated.colors.length, 8);
@@ -67,8 +67,8 @@ test('eight colors preserve the old palette and leave new color shortcuts unassi
   assert.deepEqual(migrated.colors.slice(5), defaults().colors.slice(5));
   assert.equal(migrated.shortcuts.color0, 'Alt+1');
   assert.equal(migrated.shortcuts.pie, 'Alt+P');
-  for (const action of ['color5', 'color6', 'color7'] as const) assert.equal(migrated.shortcuts[action], '');
-  assert.equal(migrated.shortcuts.pie2, 'Control+Shift+O');
+  for (const action of ['color5', 'color6', 'color7'] as const) assert.equal(migrated.shortcuts[action], 'Control+Shift+' + (Number(action.slice(-1)) + 1));
+  assert.equal(migrated.shortcuts.pie2, 'Control+Shift+W');
   assert.deepEqual(migrated.pie.slots, ['undo', null, null, null, null, null, null, null]);
   assert.deepEqual(migrated.pie.slots2, defaults().pie.slots2);
   assert.equal(migrated.pie.hoverMs, 120);
@@ -81,4 +81,15 @@ test('both radial menus validate slots independently and support all eight color
   const changed = parseSettings({ ...parsed, pie: { ...parsed.pie, slots2: ['undo'] } });
   assert.deepEqual(changed.pie.slots, parsed.pie.slots);
   assert.equal(changed.pie.slots2[0], 'undo');
+});
+
+test('default shortcuts match the supplied configuration and preserve explicit unassignments', () => {
+  const settings = defaults();
+  assert.equal(settings.shortcuts.line, 'Control+Shift+D');
+  assert.equal(settings.shortcuts.arrow, 'Control+Shift+F');
+  assert.equal(settings.shortcuts.rectangle, 'Control+G');
+  assert.equal(settings.shortcuts.circle, 'Control+Shift+H');
+  assert.equal(settings.shortcuts.redo, 'Control+Alt+Shift+Z');
+  assert.deepEqual(settings.pie.slots, ['freehand', 'line', 'arrow', 'black', 'visible', 'white', 'rectangle', 'circle']);
+  assert.equal(parseSettings({ shortcuts: { color5: '' } }).shortcuts.color5, '');
 });
