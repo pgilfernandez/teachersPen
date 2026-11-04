@@ -1,4 +1,10 @@
-import type { Action } from './shared';
+import type { Action, State } from './shared';
+
+export function isRadialActionEnabled(action: Action, state: Pick<State, 'hasDrawings' | 'visible'>): boolean {
+  if (action === 'visible') return state.hasDrawings;
+  if (action === 'clear') return state.hasDrawings && state.visible;
+  return true;
+}
 
 export function radialSlotAt(point: { x: number; y: number } | null, center: { x: number; y: number }, radius: number, buttonSize: number, slots: readonly (Action | null)[]): number | null {
   if (!point) return null;

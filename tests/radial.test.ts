@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { RadialHover, radialSlotAt } from '../src/radial';
+import { RadialHover, radialSlotAt, isRadialActionEnabled } from '../src/radial';
 import { defaults, getPieRadius } from '../src/shared';
 
 test('unfocused radial hit testing uses final circular positions and excludes center and empty slots', () => {
@@ -31,4 +31,14 @@ test('zero-delay hover still excludes the close button and outside positions', (
   const hover = new RadialHover();
   assert.equal(hover.update(null, 0, 0), null);
   assert.equal(hover.update(2, 10, 0), 2);
+});
+
+test('radial visibility and clear buttons match toolbar availability', () => {
+  for (const visible of [false, true]) {
+    assert.equal(isRadialActionEnabled('visible', { hasDrawings: false, visible }), false);
+    assert.equal(isRadialActionEnabled('clear', { hasDrawings: false, visible }), false);
+    assert.equal(isRadialActionEnabled('visible', { hasDrawings: true, visible }), true);
+    assert.equal(isRadialActionEnabled('clear', { hasDrawings: true, visible }), visible);
+  }
+  assert.equal(isRadialActionEnabled('freehand', { hasDrawings: false, visible: false }), true);
 });

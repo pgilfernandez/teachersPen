@@ -4,7 +4,7 @@ import dialogPolyfill from 'dialog-polyfill';
 import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { actionLabels, actions, defaults, getPieRadius, type Action, type Command, type Settings, type State, type Tool, type ToolbarMode } from '../shared';
-import { RadialHover, radialSlotAt } from '../radial';
+import { RadialHover, radialSlotAt, isRadialActionEnabled } from '../radial';
 import { MINI_RADIUS, MINI_SIZE } from '../toolbar';
 import { Pencil, Slash, MoveUpRight, Rectangle, Circle, Undo2, Redo2, Trash2, Eye, EyeOff, Settings as SettingsIcon, Timer as TimerIcon, Whiteboard, Blackboard, GripVertical, MoveDiagonal, RotateCcw, ArrowDownUp, Play, Pause, Minimize, RectangleVertical, RectangleHorizontal, Power, X, Info, type EditableIcon } from './icons';
 import { DrawingHistory, type Stroke } from '../model';
@@ -55,6 +55,7 @@ function PieMenu({ state }: { state: State }) {
   const t = translator(state.settings.language);
   const settings = state.settings.pie;
   const slots = settings[state.pie!.menu === 0 ? 'slots' : 'slots2'];
+  const hoverSlots = slots.map(action => action && isRadialActionEnabled(action, state) ? action : null);
   const radius = getPieRadius(settings);
   const margin = radius + settings.buttonSize / 2 + 6;
   const center = { x: Math.max(Math.min(margin, innerWidth / 2), Math.min(state.pie!.x, innerWidth - margin)), y: Math.max(Math.min(margin, innerHeight / 2), Math.min(state.pie!.y, innerHeight - margin)) };
@@ -67,7 +68,7 @@ function PieMenu({ state }: { state: State }) {
   const cancelHover = () => clearTimeout(hover.current);
   const close = () => { cancelHover(); void command({ type: 'pie-close' }); };
   const choose = (name: Action) => {
-    if (!ready || chosen.current) return;
+    if (!ready || chosen.current || !isRadialActionEnabled(name, state)) return;
     chosen.current = true; cancelHover();
     void command({ type: 'pie-select', action: name });
   };
@@ -79,11 +80,11 @@ function PieMenu({ state }: { state: State }) {
   useEffect(() => {
     if (state.platform === 'darwin' || !ready || settings.trigger !== 'hover') return;
     // The pointer may already be over a final position when opening finishes.
-    const button = menu.current?.querySelector<HTMLButtonElement>('.pie-item:hover');
+    const button = menu.current?.querySelector<HTMLButtonElement>('.pie-item:not(:disabled):hover');
     const name = button?.dataset.action as Action | undefined;
     if (name) hover.current = setTimeout(() => choose(name), settings.hoverMs);
     return cancelHover;
-  }, [ready, settings.trigger, settings.hoverMs]);
+  }, [ready, settings.trigger, settings.hoverMs, state.hasDrawings, state.visible]);
   useEffect(() => {
     if (state.platform !== 'darwin' || !ready) return;
     let stopped = false;
@@ -95,7 +96,7 @@ function PieMenu({ state }: { state: State }) {
       try {
         const point = await window.pen.getPreviewPointer();
         if (stopped) return;
-        target = radialSlotAt(point, center, radius, settings.buttonSize, slots);
+        target = radialSlotAt(point, center, radius, settings.buttonSize, hoverSlots);
       } catch {
         if (stopped) return;
       }
@@ -109,8 +110,8 @@ function PieMenu({ state }: { state: State }) {
     };
     void sample();
     return () => { stopped = true; cancelAnimationFrame(frame); };
-  }, [ready, state.platform, settings.trigger, settings.hoverMs, settings.buttonSize, radius, center.x, center.y, slots.join(',')]);
-  const iconMap: Partial<Record<Action, EditableIcon>> = { ...toolIcons, undo: Undo2, redo: Redo2, clear: Trash2, visible: Eye, timer: TimerIcon, white: Whiteboard, black: Blackboard, toggle: Power, preferences: SettingsIcon, showToolbar: RectangleHorizontal };
+  }, [ready, state.platform, settings.trigger, settings.hoverMs, settings.buttonSize, radius, center.x, center.y, hoverSlots.join(',')]);
+  const iconMap: Partial<Record<Action, EditableIcon>> = { ...toolIcons, undo: Undo2, redo: Redo2, clear: Trash2, visible: state.visible ? EyeOff : Eye, timer: TimerIcon, white: Whiteboard, black: Blackboard, toggle: Power, preferences: SettingsIcon, showToolbar: RectangleHorizontal };
   return <div ref={menu} className="pie-backdrop" style={{ '--pie-button-size': settings.buttonSize + 'px', '--pie-center-size': Math.round(settings.buttonSize * 28 / 48) + 'px' } as React.CSSProperties} onPointerDown={e => { if (ready && e.target === e.currentTarget) close(); }} onContextMenu={e => { e.preventDefault(); close(); }}>
     {/* The pointer starts here: closing always requires a click, even in hover mode. */}
     <div className="pie-center" style={{ left: center.x, top: center.y }}><button aria-label={t('Cerrar')} aria-disabled={!ready} onClick={() => { if (ready) close(); }}><X size={Math.round(settings.buttonSize / 3)} /></button></div>
@@ -118,13 +119,16 @@ function PieMenu({ state }: { state: State }) {
       if (!name) return null;
       const angle = (index * 45 - 90) * Math.PI / 180;
       const Icon = iconMap[name] || Circle;
+      const enabled = isRadialActionEnabled(name, state);
+      const label = name === 'visible' ? t(state.visible ? 'Ocultar los dibujos sin borrarlos' : 'Volver a mostrar los dibujos') : t(actionLabels[name]);
+      const tip = enabled ? label : t(!state.hasDrawings ? 'No hay dibujos' : 'Muestra los dibujos para poder borrarlos');
       const color = name === 'nextColor' ? state.settings.colors[(state.color + 1) % state.settings.colors.length] : name.startsWith('color') ? state.settings.colors[Number(name.slice(-1))] : undefined;
-      return <button key={index} className={`pie-item ${hoveredSlot === index ? 'is-hovered' : ''}`} data-action={name} aria-disabled={!ready} onAnimationEnd={event => {
+      return <button key={index} className={`pie-item ${hoveredSlot === index ? 'is-hovered' : ''}`} data-action={name} disabled={!enabled} aria-disabled={!ready || !enabled} onAnimationEnd={event => {
         if (event.target !== event.currentTarget || event.animationName !== 'pie-appear') return;
         pendingAnimations.current.delete(index);
         if (pendingAnimations.current.size === 0) setReady(true);
-      }} style={{ left: center.x + Math.cos(angle) * radius, top: center.y + Math.sin(angle) * radius, animationDuration: settings.animationMs + 'ms', '--pie-origin-x': -Math.cos(angle) * radius + 'px', '--pie-origin-y': -Math.sin(angle) * radius + 'px', backgroundColor: color } as React.CSSProperties} title={t(actionLabels[name])} aria-label={t(actionLabels[name])}
-        onPointerEnter={() => { cancelHover(); if (state.platform !== 'darwin' && ready && settings.trigger === 'hover') hover.current = setTimeout(() => choose(name), settings.hoverMs); }}
+      }} style={{ left: center.x + Math.cos(angle) * radius, top: center.y + Math.sin(angle) * radius, animationDuration: settings.animationMs + 'ms', '--pie-origin-x': -Math.cos(angle) * radius + 'px', '--pie-origin-y': -Math.sin(angle) * radius + 'px', backgroundColor: color } as React.CSSProperties} title={tip} aria-label={label}
+        onPointerEnter={() => { cancelHover(); if (enabled && state.platform !== 'darwin' && ready && settings.trigger === 'hover') hover.current = setTimeout(() => choose(name), settings.hoverMs); }}
         onPointerLeave={() => { if (state.platform !== 'darwin') cancelHover(); }} onPointerDown={e => e.stopPropagation()} onClick={() => choose(name)}>{!color && <Icon size={settings.buttonSize / 2} />}</button>;
     })}
   </div>;

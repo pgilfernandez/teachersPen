@@ -5,6 +5,7 @@ import { translate, isLanguage, resolveSystemLanguage, defaultTimerText, isDefau
 import { HoldActivation, isDrawingShortcut, type HoldMonitor } from '../hold';
 import { MiniDrag, MINI_SIZE, MINI_RADIUS, fitPosition, readPosition, toolbarClosing, toolbarOpening, type Area } from '../toolbar';
 import type { Point } from '../model';
+import { isRadialActionEnabled } from '../radial';
 
 type Display = { id: number; bounds: Area; workArea: Area; scaleFactor: number };
 type Reply = { ok: boolean; error?: string };
@@ -275,6 +276,7 @@ export async function startController() {
       case 'pie-close': await closePie(); break;
       case 'pie-select':
         if (source !== 'pie' || !state.pie || (c.action === 'pie' || c.action === 'pie2') || !state.settings.pie[state.pie.menu === 0 ? 'slots' : 'slots2'].includes(c.action)) throw new Error(t('Comando no autorizado'));
+        if (!isRadialActionEnabled(c.action, state)) break;
         await closePie(); await perform(c.action, true); break;
       case 'pie-settings':
         if (source !== 'preferences') throw new Error(t('Ventana no autorizada'));
