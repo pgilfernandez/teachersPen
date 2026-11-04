@@ -245,7 +245,7 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
         return Ok(Value::Null);
     }
     #[cfg(target_os = "macos")]
-    if op == "preview-pointer" && window.label().starts_with("overlay-") {
+    if op == "preview-pointer" && (window.label().starts_with("overlay-") || window.label() == "pie") {
         return tauri::async_runtime::spawn_blocking(move || mac_panel::preview_pointer(&window))
             .await.map_err(err)?;
     }

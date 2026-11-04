@@ -4,6 +4,7 @@ import dialogPolyfill from 'dialog-polyfill';
 import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { actionLabels, actions, defaults, getPieRadius, type Action, type Command, type Settings, type State, type Tool, type ToolbarMode } from '../shared';
+import { RadialHover, radialSlotAt } from '../radial';
 import { MINI_RADIUS, MINI_SIZE } from '../toolbar';
 import { Pencil, Slash, MoveUpRight, Rectangle, Circle, Undo2, Redo2, Trash2, Eye, EyeOff, Settings as SettingsIcon, Timer as TimerIcon, Whiteboard, Blackboard, GripVertical, MoveDiagonal, RotateCcw, ArrowDownUp, Play, Pause, Minimize, RectangleVertical, RectangleHorizontal, Power, X, Info, type EditableIcon } from './icons';
 import { DrawingHistory, type Stroke } from '../model';
@@ -54,9 +55,13 @@ function PieMenu({ state }: { state: State }) {
   const t = translator(state.settings.language);
   const settings = state.settings.pie;
   const slots = settings[state.pie!.menu === 0 ? 'slots' : 'slots2'];
+  const radius = getPieRadius(settings);
+  const margin = radius + settings.buttonSize / 2 + 6;
+  const center = { x: Math.max(Math.min(margin, innerWidth / 2), Math.min(state.pie!.x, innerWidth - margin)), y: Math.max(Math.min(margin, innerHeight / 2), Math.min(state.pie!.y, innerHeight - margin)) };
   const [ready, setReady] = useState(() => settings.animationMs === 0 || window.matchMedia('(prefers-reduced-motion: reduce)').matches || slots.every(slot => slot === null));
   const pendingAnimations = useRef(new Set(slots.flatMap((slot, index) => slot ? [index] : [])));
   const menu = useRef<HTMLDivElement>(null);
+  const [hoveredSlot, setHoveredSlot] = useState<number | null>(null);
   const hover = useRef<ReturnType<typeof setTimeout>>();
   const chosen = useRef(false);
   const cancelHover = () => clearTimeout(hover.current);
@@ -72,16 +77,39 @@ function PieMenu({ state }: { state: State }) {
     return () => { cancelHover(); document.removeEventListener('keydown', escape); };
   }, []);
   useEffect(() => {
-    if (!ready || settings.trigger !== 'hover') return;
+    if (state.platform === 'darwin' || !ready || settings.trigger !== 'hover') return;
     // The pointer may already be over a final position when opening finishes.
     const button = menu.current?.querySelector<HTMLButtonElement>('.pie-item:hover');
     const name = button?.dataset.action as Action | undefined;
     if (name) hover.current = setTimeout(() => choose(name), settings.hoverMs);
     return cancelHover;
   }, [ready, settings.trigger, settings.hoverMs]);
-  const radius = getPieRadius(settings);
-  const margin = radius + settings.buttonSize / 2 + 6;
-  const center = { x: Math.max(Math.min(margin, innerWidth / 2), Math.min(state.pie!.x, innerWidth - margin)), y: Math.max(Math.min(margin, innerHeight / 2), Math.min(state.pie!.y, innerHeight - margin)) };
+  useEffect(() => {
+    if (state.platform !== 'darwin' || !ready) return;
+    let stopped = false;
+    let frame = 0;
+    const selection = new RadialHover();
+    let previous: number | null = null;
+    const sample = async () => {
+      let target: number | null = null;
+      try {
+        const point = await window.pen.getPreviewPointer();
+        if (stopped) return;
+        target = radialSlotAt(point, center, radius, settings.buttonSize, slots);
+      } catch {
+        if (stopped) return;
+      }
+      if (target !== previous) { previous = target; setHoveredSlot(target); }
+      const selected = selection.update(target, performance.now(), settings.hoverMs);
+      if (settings.trigger === 'hover' && selected !== null && slots[selected]) {
+        choose(slots[selected]!);
+        return;
+      }
+      if (!stopped) frame = requestAnimationFrame(sample);
+    };
+    void sample();
+    return () => { stopped = true; cancelAnimationFrame(frame); };
+  }, [ready, state.platform, settings.trigger, settings.hoverMs, settings.buttonSize, radius, center.x, center.y, slots.join(',')]);
   const iconMap: Partial<Record<Action, EditableIcon>> = { ...toolIcons, undo: Undo2, redo: Redo2, clear: Trash2, visible: Eye, timer: TimerIcon, white: Whiteboard, black: Blackboard, toggle: Power, preferences: SettingsIcon, showToolbar: RectangleHorizontal };
   return <div ref={menu} className="pie-backdrop" style={{ '--pie-button-size': settings.buttonSize + 'px', '--pie-center-size': Math.round(settings.buttonSize * 28 / 48) + 'px' } as React.CSSProperties} onPointerDown={e => { if (ready && e.target === e.currentTarget) close(); }} onContextMenu={e => { e.preventDefault(); close(); }}>
     {/* The pointer starts here: closing always requires a click, even in hover mode. */}
@@ -91,13 +119,13 @@ function PieMenu({ state }: { state: State }) {
       const angle = (index * 45 - 90) * Math.PI / 180;
       const Icon = iconMap[name] || Circle;
       const color = name === 'nextColor' ? state.settings.colors[(state.color + 1) % state.settings.colors.length] : name.startsWith('color') ? state.settings.colors[Number(name.slice(-1))] : undefined;
-      return <button key={index} className="pie-item" data-action={name} aria-disabled={!ready} onAnimationEnd={event => {
+      return <button key={index} className={`pie-item ${hoveredSlot === index ? 'is-hovered' : ''}`} data-action={name} aria-disabled={!ready} onAnimationEnd={event => {
         if (event.target !== event.currentTarget || event.animationName !== 'pie-appear') return;
         pendingAnimations.current.delete(index);
         if (pendingAnimations.current.size === 0) setReady(true);
       }} style={{ left: center.x + Math.cos(angle) * radius, top: center.y + Math.sin(angle) * radius, animationDuration: settings.animationMs + 'ms', '--pie-origin-x': -Math.cos(angle) * radius + 'px', '--pie-origin-y': -Math.sin(angle) * radius + 'px', backgroundColor: color } as React.CSSProperties} title={t(actionLabels[name])} aria-label={t(actionLabels[name])}
-        onPointerEnter={() => { cancelHover(); if (ready && settings.trigger === 'hover') hover.current = setTimeout(() => choose(name), settings.hoverMs); }}
-        onPointerLeave={cancelHover} onPointerDown={e => e.stopPropagation()} onClick={() => choose(name)}>{!color && <Icon size={settings.buttonSize / 2} />}</button>;
+        onPointerEnter={() => { cancelHover(); if (state.platform !== 'darwin' && ready && settings.trigger === 'hover') hover.current = setTimeout(() => choose(name), settings.hoverMs); }}
+        onPointerLeave={() => { if (state.platform !== 'darwin') cancelHover(); }} onPointerDown={e => e.stopPropagation()} onClick={() => choose(name)}>{!color && <Icon size={settings.buttonSize / 2} />}</button>;
     })}
   </div>;
 }

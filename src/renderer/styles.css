@@ -244,7 +244,7 @@ html.window-pie, body.pie { overflow: hidden; user-select: none; color-scheme: v
 .pie-item { width: var(--pie-button-size, 48px); height: var(--pie-button-size, 48px); padding: 0; animation: pie-appear ease-out both; }
 .pie-center button, .pie-item { -webkit-appearance: none; appearance: none; -webkit-tap-highlight-color: transparent; }
 .pie-center button:focus, .pie-center button:focus-visible, .pie-item:focus, .pie-item:focus-visible { outline: none; }
-.pie-center button:hover, .pie-center button:focus-visible, .pie-item:hover, .pie-item:focus-visible { filter: brightness(.85); }
+.pie-center button:hover, .pie-center button:focus-visible, .pie-item:hover, .pie-item.is-hovered, .pie-item:focus-visible { filter: brightness(.85); }
 @keyframes pie-appear { from { opacity: 0; transform: translate(-50%, -50%) translate(var(--pie-origin-x), var(--pie-origin-y)) scale(.4); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
 @media (prefers-reduced-motion: reduce) { .pie-item { animation-duration: 0ms !important; } }
 
