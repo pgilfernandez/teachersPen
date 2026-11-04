@@ -158,5 +158,6 @@
   "Color 8": "Farbe 8",
   "Tamaño de los botones": "Schaltflächengröße",
   "Radio deseado": "Gewünschter Radius",
-  "Radio efectivo: {radius} px. Se ajusta para mantener separación entre los botones.": "Tatsächlicher Radius: {radius} px. Wird angepasst, damit die Schaltflächen Abstand halten."
+  "Radio efectivo: {radius} px. Se ajusta para mantener separación entre los botones.": "Tatsächlicher Radius: {radius} px. Wird angepasst, damit die Schaltflächen Abstand halten.",
+  "Acerca de teachersPen": "Über teachersPen"
 }

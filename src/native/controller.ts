@@ -198,7 +198,7 @@ export async function startController() {
     finally { if (recording) await host('shortcuts', {}); }
   }
   async function labels() {
-    await host('tray', { show: t('Mostrar barra completa'), preferences: t('Preferencias…'), about: 'About teachersPen', quit: t('Salir de TeachersPen') });
+    await host('tray', { show: t('Mostrar barra completa'), preferences: t('Preferencias…'), about: t('Acerca de teachersPen'), quit: t('Salir de TeachersPen') });
     if (geometry.has('preferences')) await win('preferences', 'title', { title: `${t('Preferencias')} · TeachersPen` });
     if (geometry.has('timer-window')) await win('timer-window', 'title', { title: `${t('Temporizador')} · TeachersPen` });
   }

@@ -539,7 +539,7 @@ function Preferences({ state }: { state: State }) {
     {state.holdError && <div className="notice" role="alert">{t(state.holdError)}</div>}
     {state.wayland && <div className="notice">{t("X11/XWayland: la superposición sobre aplicaciones Wayland nativas no está garantizada.")}</div>}
     {error && <div className="notice" role="alert">{error}</div>}
-    <footer className="preferences-footer"><button className="about-button" title="About teachersPen" aria-label="About teachersPen" onClick={() => setAbout(true)}><Info size={18} /></button><button disabled={busy} onClick={() => void saveChange({ type: 'restore-defaults' })}>{t('Restaurar valores')}</button></footer>
+    <footer className="preferences-footer"><button className="about-button" title={t('Acerca de teachersPen')} aria-label={t('Acerca de teachersPen')} onClick={() => setAbout(true)}><Info size={18} /></button><button disabled={busy} onClick={() => void saveChange({ type: 'restore-defaults' })}>{t('Restaurar valores')}</button></footer>
     {about && <About state={state} onClose={() => setAbout(false)} />}
   </main>;
 }
