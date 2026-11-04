@@ -7,6 +7,8 @@
   --ui-grip: #8795a1;
   --ui-toolbar: #fbfcfd;
   --ui-panel: #eeecf0;
+  --ui-tab-active: #ddd9e2;
+  --ui-tab-hover: #e5e1e9;
   --ui-field: #f7f6f8;
   --ui-number: #fff;
   --ui-control: #d9d6df;
@@ -42,6 +44,8 @@
   --ui-grip: #a6afbd;
   --ui-toolbar: #292c33;
   --ui-panel: #22242a;
+  --ui-tab-active: #343842;
+  --ui-tab-hover: #2b2e36;
   --ui-field: #30343d;
   --ui-number: #24272e;
   --ui-control: #3d424d;
@@ -246,7 +250,8 @@ html.window-pie, body.pie { overflow: hidden; user-select: none; color-scheme: v
 
 .preferences-tabs { display: flex; margin-bottom: 14px; border-bottom: 1px solid var(--ui-border); }
 .preferences-tabs button { flex: 1; padding: 7px 10px; background: transparent; color: var(--ui-muted); border-bottom: 2px solid transparent; }
-.preferences-tabs button[aria-selected="true"] { color: var(--ui-selected-ink); border-bottom-color: var(--ui-selected-ink); }
+.preferences-tabs button[aria-selected="false"]:hover { background: var(--ui-tab-hover); color: var(--ui-text); }
+.preferences-tabs button[aria-selected="true"] { background: var(--ui-tab-active); color: var(--ui-selected-ink); border-bottom-color: var(--ui-selected-ink); }
 .pie-slot-options { margin-top: 16px; margin-bottom: 14px; }
 
 .brush-preview { position: absolute; transform: translate(-50%, -50%); border-radius: 50%; pointer-events: none; visibility: hidden; }
