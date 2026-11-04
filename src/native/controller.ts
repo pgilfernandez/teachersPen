@@ -411,6 +411,9 @@ export async function startController() {
   const area = displays[0].workArea; state.toolbarAvailableHeight = area.height;
   const vertical = state.settings.toolbarOrientation === 'vertical'; const width = vertical ? 56 : 965;
   for (const d of displays) { const label = `overlay-${d.id}`; await create(label, 'overlay', d.bounds); overlayLabels.add(label); await win(label, 'show'); }
+  // Wry activates NSApplication when constructing a WebView, even if hidden.
+  // Build the reusable radial panel at startup, before the user returns to work.
+  if (state.platform === 'darwin') await create('pie', 'pie', displays[0].bounds);
   await create('toolbar', 'toolbar', { x: area.x + Math.round((area.width - width) / 2), y: vertical ? area.y : area.y + 18, width, height: vertical ? area.height : 56 });
   await create('mini', 'mini', { x: area.x + 24, y: area.y + 24, width: MINI_SIZE, height: MINI_SIZE });
   await moveMini(readPosition(await read('window-state.json')) || { x: area.x + 24, y: area.y + 24 });
