@@ -399,6 +399,7 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
             for (key, title) in [
                 ("show", text(&args, "show")),
                 ("preferences", text(&args, "preferences")),
+                ("about", text(&args, "about")),
                 ("quit", text(&args, "quit")),
             ] {
                 app.tray_handle()
@@ -577,6 +578,7 @@ fn main() {
     let menu = SystemTrayMenu::new()
         .add_item(CustomMenuItem::new("show", "Show full toolbar"))
         .add_item(CustomMenuItem::new("preferences", "Preferences…"))
+        .add_item(CustomMenuItem::new("about", "About"))
         .add_native_item(SystemTrayMenuItem::Separator)
         .add_item(CustomMenuItem::new("quit", "Quit TeachersPen"));
     let tray = SystemTray::new().with_icon(Icon::Raw(icon)).with_menu(menu);

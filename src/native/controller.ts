@@ -11,7 +11,7 @@ type Reply = { ok: boolean; error?: string };
 export async function startController() {
   const environment = await host<{ platform: string; wayland: boolean }>('environment');
   const state: State = {
-    pie: null, hasDrawings: false, canUndo: false, canRedo: false,
+    aboutRequest: 0, pie: null, hasDrawings: false, canUndo: false, canRedo: false,
     drawing: false, tool: 'freehand', color: 1, visible: true, background: 'transparent', timerEnd: null,
     timer: { visible: false, running: false, elapsedMs: 0, startedAt: null }, settings: defaults(),
     shortcutErrors: [], platform: environment.platform, wayland: environment.wayland,
@@ -198,7 +198,7 @@ export async function startController() {
     finally { if (recording) await host('shortcuts', {}); }
   }
   async function labels() {
-    await host('tray', { show: t('Mostrar barra completa'), preferences: t('Preferencias…'), quit: t('Salir de TeachersPen') });
+    await host('tray', { show: t('Mostrar barra completa'), preferences: t('Preferencias…'), about: t('Información'), quit: t('Salir de TeachersPen') });
     if (geometry.has('preferences')) await win('preferences', 'title', { title: `${t('Preferencias')} · TeachersPen` });
     if (geometry.has('timer-window')) await win('timer-window', 'title', { title: `${t('Temporizador')} · TeachersPen` });
   }
@@ -389,7 +389,9 @@ export async function startController() {
     if (event.payload === 'escape') {
       if (state.pie) { await closePie(); await broadcast(); }
       else if (state.drawing) await setDrawing(false);
-    } else if (event.payload === 'show') await showTools(); else if (event.payload === 'preferences') await preferences(); else if (event.payload === 'quit') await host('exit');
+    } else if (event.payload === 'show') await showTools(); else if (event.payload === 'preferences') await preferences();
+    else if (event.payload === 'about') { state.aboutRequest++; await preferences(); }
+    else if (event.payload === 'quit') await host('exit');
   }); });
   await listen<{ label: string; kind: string; bounds: Area | null }>('host-window', ({ payload: e }) => {
     void enqueue(async () => {

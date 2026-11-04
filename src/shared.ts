@@ -31,6 +31,7 @@ export interface Settings {
   timerDirection: 'down' | 'up';
 }
 export interface State {
+  aboutRequest: number;
   pie: { menu: 0 | 1; x: number; y: number; serial: number } | null;
   hasDrawings: boolean;
   canUndo: boolean;

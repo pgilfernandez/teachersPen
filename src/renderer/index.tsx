@@ -446,6 +446,7 @@ function Preferences({ state }: { state: State }) {
   useEffect(() => { setOpacityText(String(100 - state.settings.transparency)); }, [state.settings.transparency]);
   const [error, setError] = useState('');
   const [about, setAbout] = useState(false);
+  useEffect(() => { if (state.aboutRequest > 0) setAbout(true); }, [state.aboutRequest]);
   const [tab, setTab] = useState<'general' | 'radial'>('general');
   const [busy, setBusy] = useState(false);
   const pending = useRef(0);
