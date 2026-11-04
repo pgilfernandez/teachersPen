@@ -3,6 +3,8 @@
 mod appearance;
 #[cfg(target_os = "macos")]
 mod mac_hold;
+#[cfg(target_os = "macos")]
+mod mac_panel;
 mod platform;
 use serde_json::{json, Value};
 use std::{collections::HashSet, fs, sync::Mutex};
@@ -191,6 +193,8 @@ fn create_window(app: &tauri::AppHandle, v: &Value) -> Result<()> {
         builder = builder.icon(Icon::Raw(include_bytes!("../../dist/icons/app-256.png").to_vec())).map_err(err)?;
     }
     let w = builder.build().map_err(err)?;
+    #[cfg(target_os = "macos")]
+    if mac_panel::passive(&w) { mac_panel::configure(&w)?; }
     platform::configure(&w, role)?;
     set_bounds(&w, b)?;
     if role == "overlay" {
@@ -287,6 +291,9 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
                 .ok_or("Window not found")?;
             match text(&args, "action") {
                 "show" => {
+                    #[cfg(target_os = "macos")]
+                    if mac_panel::passive(&w) { mac_panel::show(&w)?; } else { w.show().map_err(err)?; }
+                    #[cfg(not(target_os = "macos"))]
                     w.show().map_err(err)?;
                     platform::taskbar_style(&w)?;
                     if w.label().starts_with("overlay-") {
@@ -308,6 +315,9 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
                 "close" => w.close().map_err(err)?,
                 "focus" => {
                     if args["holding"] != true || any_held(&app) {
+                        #[cfg(target_os = "macos")]
+                        if !mac_panel::passive(&w) { w.set_focus().map_err(err)?; }
+                        #[cfg(not(target_os = "macos"))]
                         w.set_focus().map_err(err)?;
                         #[cfg(target_os = "linux")]
                         platform::raise_controls(&app);
@@ -352,6 +362,22 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
                 "state drawing={} holding={} activation={}",
                 args["drawing"], args["holding"], args["settings"]["activation"]
             ));
+            #[cfg(target_os = "macos")]
+            {
+                // Escape is global only while an unfocused annotation panel is
+                // interactive. No input-monitoring permission is required.
+                let enabled = args["drawing"] == true || !args["pie"].is_null();
+                let mut manager = app.global_shortcut_manager();
+                let registered = manager.is_registered("Escape").map_err(err)?;
+                if enabled && !registered {
+                    let handle = app.clone();
+                    manager.register("Escape", move || {
+                        let _ = handle.emit_to("controller", "host-menu", "escape");
+                    }).map_err(err)?;
+                } else if !enabled && registered {
+                    manager.unregister("Escape").map_err(err)?;
+                }
+            }
             app.emit_all("pen:state", args.clone()).map_err(err)?;
             #[cfg(target_os = "linux")]
             if board_presentation_changed {

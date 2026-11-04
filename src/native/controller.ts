@@ -386,7 +386,10 @@ export async function startController() {
   });
   await listen<string>('host-menu', event => { void enqueue(async () => {
     if (!initialized) return;
-    if (event.payload === 'show') await showTools(); else if (event.payload === 'preferences') await preferences(); else if (event.payload === 'quit') await host('exit');
+    if (event.payload === 'escape') {
+      if (state.pie) { await closePie(); await broadcast(); }
+      else if (state.drawing) await setDrawing(false);
+    } else if (event.payload === 'show') await showTools(); else if (event.payload === 'preferences') await preferences(); else if (event.payload === 'quit') await host('exit');
   }); });
   await listen<{ label: string; kind: string; bounds: Area | null }>('host-window', ({ payload: e }) => {
     void enqueue(async () => {
