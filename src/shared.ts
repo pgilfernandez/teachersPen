@@ -87,6 +87,7 @@ export function parseSettings(input: unknown): Settings {
     const p = data.pie;
     for (const [key, min, max] of [['animationMs', 0, 1000], ['radius', 0, 220], ['buttonSize', 24, 96], ['hoverMs', 0, 1500]] as const)
       if (Number.isFinite(p[key])) base.pie[key] = Math.max(min, Math.min(max, Math.round(p[key])));
+    base.pie.radius = getPieRadius(base.pie);
     if (p.trigger === 'hover') base.pie.trigger = 'hover';
     for (const key of ['slots', 'slots2'] as const) {
       const slots = p[key];

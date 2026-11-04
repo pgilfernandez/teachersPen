@@ -519,12 +519,11 @@ function Preferences({ state }: { state: State }) {
       <section><h2>{t('Comportamiento general')}</h2>
       {([
         ['animationMs', 'Duración de animación', 0, 1000, 'ms'],
-        ['radius', 'Radio deseado', 0, 220, 'px'],
+        ['radius', 'Radio del menú', getPieRadius({ ...state.settings.pie, radius: 0 }), 220, 'px'],
         ['buttonSize', 'Tamaño de los botones', 24, 96, 'px'],
         ['hoverMs', 'Retardo al pasar sobre', 0, 1500, 'ms']
       ] as const).map(([key, label, min, max, unit]) => <PieNumberField key={key} id={'pie-' + key} label={t(label)} value={state.settings.pie[key]} min={min} max={max} unit={unit}
         onCommit={value => void saveChange({ type: 'pie-settings', settings: { ...state.settings.pie, [key]: value } })} />)}
-      <p className="help">{t('Radio efectivo: {radius} px. Se ajusta para mantener separación entre los botones.', { radius: getPieRadius(state.settings.pie) })}</p>
       <div className="setting-row"><label htmlFor="pie-trigger">{t('Activar opción')}</label><select id="pie-trigger" value={state.settings.pie.trigger} disabled={busy} onChange={e => void saveChange({ type: 'pie-settings', settings: { ...state.settings.pie, trigger: e.target.value as 'click' | 'hover' } })}><option value="click">{t('Pulsar botón')}</option><option value="hover">{t('Pasar sobre')}</option></select></div>
       </section>
       {(['slots', 'slots2'] as const).map((slotsKey, menu) => <section key={slotsKey}>

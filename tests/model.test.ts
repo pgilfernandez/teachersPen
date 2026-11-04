@@ -102,11 +102,11 @@ test('radial button size migrates old settings and constrains saved values', () 
   assert.equal(parseSettings({ pie: { buttonSize: 63.7 } }).pie.buttonSize, 64);
 });
 
-test('radial geometry keeps eight buttons apart while retaining the desired radius', () => {
+test('radial geometry stores a safe radius and keeps eight buttons apart', () => {
   for (const size of [24, 48, 72, 96]) {
     const settings = parseSettings({ pie: { buttonSize: size, radius: 0 } }).pie;
     const radius = getPieRadius(settings);
-    assert.equal(settings.radius, 0);
+    assert.equal(settings.radius, radius);
     for (let i = 0; i < 8; i++) {
       for (let j = i + 1; j < 8; j++) {
         const distance = Math.hypot(
@@ -132,4 +132,14 @@ test('system language resolves supported regional locales and preserves manual c
   assert.equal(parseSettings({ language: 'es' }).followSystemLanguage, false);
   assert.equal(parseSettings({ language: 'es', followSystemLanguage: true }).followSystemLanguage, true);
   assert.equal(parseSettings({ language: 'fr', followSystemLanguage: false }).language, 'fr');
+});
+
+test('radius is raised in saved settings and can only go below that minimum with smaller buttons', () => {
+  const large = parseSettings({ pie: { buttonSize: 96, radius: 40 } });
+  assert.equal(large.pie.radius, 136);
+  const invalid = parseSettings({ ...large, pie: { ...large.pie, radius: 50 } });
+  assert.equal(invalid.pie.radius, 136);
+  const smaller = parseSettings({ ...large, pie: { ...large.pie, buttonSize: 24 } });
+  assert.equal(smaller.pie.radius, 136);
+  assert.equal(parseSettings({ ...smaller, pie: { ...smaller.pie, radius: 50 } }).pie.radius, 50);
 });
