@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { DrawingHistory, type Stroke } from '../src/model';
-import { actions, defaults, parseSettings } from '../src/shared';
+import { actions, defaults, getPieRadius, parseSettings } from '../src/shared';
 
 const stroke: Stroke = { tool: 'freehand', color: '#ff0000', width: 6, points: [{ x: 4, y: 7 }, { x: 8, y: 12 }] };
 
@@ -99,4 +99,24 @@ test('radial button size migrates old settings and constrains saved values', () 
   assert.equal(parseSettings({ pie: { buttonSize: 10 } }).pie.buttonSize, 24);
   assert.equal(parseSettings({ pie: { buttonSize: 200 } }).pie.buttonSize, 96);
   assert.equal(parseSettings({ pie: { buttonSize: 63.7 } }).pie.buttonSize, 64);
+});
+
+test('radial geometry keeps eight buttons apart while retaining the desired radius', () => {
+  for (const size of [24, 48, 72, 96]) {
+    const settings = parseSettings({ pie: { buttonSize: size, radius: 0 } }).pie;
+    const radius = getPieRadius(settings);
+    assert.equal(settings.radius, 0);
+    for (let i = 0; i < 8; i++) {
+      for (let j = i + 1; j < 8; j++) {
+        const distance = Math.hypot(
+          radius * (Math.cos(i * Math.PI / 4) - Math.cos(j * Math.PI / 4)),
+          radius * (Math.sin(i * Math.PI / 4) - Math.sin(j * Math.PI / 4)));
+        assert.ok(distance >= size + 8 - 1e-9);
+      }
+    }
+    assert.equal(getPieRadius({ ...settings, radius: 220 }), 220);
+  }
+  assert.equal(getPieRadius({ buttonSize: 24, radius: 50 }), 50);
+  assert.equal(getPieRadius({ buttonSize: 96, radius: 80 }), 136);
+  assert.equal(getPieRadius(defaults().pie), 100);
 });

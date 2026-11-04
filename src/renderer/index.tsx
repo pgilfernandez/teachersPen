@@ -3,7 +3,7 @@ import './compat';
 import dialogPolyfill from 'dialog-polyfill';
 import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { actionLabels, actions, defaults, type Action, type Command, type Settings, type State, type Tool, type ToolbarMode } from '../shared';
+import { actionLabels, actions, defaults, getPieRadius, type Action, type Command, type Settings, type State, type Tool, type ToolbarMode } from '../shared';
 import { MINI_RADIUS, MINI_SIZE } from '../toolbar';
 import { Pencil, Slash, MoveUpRight, Rectangle, Circle, Undo2, Redo2, Trash2, Eye, EyeOff, Settings as SettingsIcon, Timer as TimerIcon, Whiteboard, Blackboard, GripVertical, MoveDiagonal, RotateCcw, ArrowDownUp, Play, Pause, Minimize, RectangleVertical, RectangleHorizontal, Power, X, Info, type EditableIcon } from './icons';
 import { DrawingHistory, type Stroke } from '../model';
@@ -79,7 +79,8 @@ function PieMenu({ state }: { state: State }) {
     if (name) hover.current = setTimeout(() => choose(name), settings.hoverMs);
     return cancelHover;
   }, [ready, settings.trigger, settings.hoverMs]);
-  const margin = settings.radius + settings.buttonSize / 2 + 6;
+  const radius = getPieRadius(settings);
+  const margin = radius + settings.buttonSize / 2 + 6;
   const center = { x: Math.max(Math.min(margin, innerWidth / 2), Math.min(state.pie!.x, innerWidth - margin)), y: Math.max(Math.min(margin, innerHeight / 2), Math.min(state.pie!.y, innerHeight - margin)) };
   const iconMap: Partial<Record<Action, EditableIcon>> = { ...toolIcons, undo: Undo2, redo: Redo2, clear: Trash2, visible: Eye, timer: TimerIcon, white: Whiteboard, black: Blackboard, toggle: Power, preferences: SettingsIcon, showToolbar: RectangleHorizontal };
   return <div ref={menu} className="pie-backdrop" style={{ '--pie-button-size': settings.buttonSize + 'px', '--pie-center-size': Math.round(settings.buttonSize * 28 / 48) + 'px' } as React.CSSProperties} onPointerDown={e => { if (ready && e.target === e.currentTarget) close(); }} onContextMenu={e => { e.preventDefault(); close(); }}>
@@ -88,7 +89,6 @@ function PieMenu({ state }: { state: State }) {
     {slots.map((name, index) => {
       if (!name) return null;
       const angle = (index * 45 - 90) * Math.PI / 180;
-      const radius = settings.radius;
       const Icon = iconMap[name] || Circle;
       const color = name === 'nextColor' ? state.settings.colors[(state.color + 1) % state.settings.colors.length] : name.startsWith('color') ? state.settings.colors[Number(name.slice(-1))] : undefined;
       return <button key={index} className="pie-item" data-action={name} aria-disabled={!ready} onAnimationEnd={event => {
@@ -518,11 +518,12 @@ function Preferences({ state }: { state: State }) {
       <section><h2>{t('Comportamiento general')}</h2>
       {([
         ['animationMs', 'Duración de animación', 0, 1000, 'ms'],
-        ['radius', 'Radio del menú', 80, 220, 'px'],
+        ['radius', 'Radio deseado', 0, 220, 'px'],
         ['buttonSize', 'Tamaño de los botones', 24, 96, 'px'],
         ['hoverMs', 'Retardo al pasar sobre', 0, 1500, 'ms']
       ] as const).map(([key, label, min, max, unit]) => <PieNumberField key={key} id={'pie-' + key} label={t(label)} value={state.settings.pie[key]} min={min} max={max} unit={unit}
         onCommit={value => void saveChange({ type: 'pie-settings', settings: { ...state.settings.pie, [key]: value } })} />)}
+      <p className="help">{t('Radio efectivo: {radius} px. Se ajusta para mantener separación entre los botones.', { radius: getPieRadius(state.settings.pie) })}</p>
       <div className="setting-row"><label htmlFor="pie-trigger">{t('Activar opción')}</label><select id="pie-trigger" value={state.settings.pie.trigger} disabled={busy} onChange={e => void saveChange({ type: 'pie-settings', settings: { ...state.settings.pie, trigger: e.target.value as 'click' | 'hover' } })}><option value="click">{t('Pulsar botón')}</option><option value="hover">{t('Pasar sobre')}</option></select></div>
       </section>
       {(['slots', 'slots2'] as const).map((slotsKey, menu) => <section key={slotsKey}>

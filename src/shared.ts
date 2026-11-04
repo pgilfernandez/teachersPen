@@ -53,6 +53,13 @@ export interface State {
   toolbarReveal: { direction: 'left' | 'right' | 'up' | 'down'; start: number; end: number } | null;
   toolbarAvailableHeight: number;
 }
+// Adjacent centers are separated by 2r sin(22.5 degrees). Keep an 8 px
+// gap between the edges of buttons in the eight fixed radial positions.
+export function getPieRadius(settings: Pick<Settings['pie'], 'radius' | 'buttonSize'>): number {
+  const minimum = Math.ceil((settings.buttonSize + 8) / (2 * Math.sin(Math.PI / 8)));
+  return Math.max(settings.radius, minimum);
+}
+
 export function defaults(): Settings {
   const keys: Partial<Record<Action, string>> = {
     toggle: 'Space', freehand: 'A', line: 'D', arrow: 'F', rectangle: 'G', circle: 'H',
@@ -76,7 +83,7 @@ export function parseSettings(input: unknown): Settings {
   const data = input as Partial<Settings>;
   if (data.pie && typeof data.pie === 'object') {
     const p = data.pie;
-    for (const [key, min, max] of [['animationMs', 0, 1000], ['radius', 80, 220], ['buttonSize', 24, 96], ['hoverMs', 0, 1500]] as const)
+    for (const [key, min, max] of [['animationMs', 0, 1000], ['radius', 0, 220], ['buttonSize', 24, 96], ['hoverMs', 0, 1500]] as const)
       if (Number.isFinite(p[key])) base.pie[key] = Math.max(min, Math.min(max, Math.round(p[key])));
     if (p.trigger === 'hover') base.pie.trigger = 'hover';
     for (const key of ['slots', 'slots2'] as const) {

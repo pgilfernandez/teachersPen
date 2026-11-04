@@ -156,5 +156,7 @@
   "Color 6": "Color 6",
   "Color 7": "Color 7",
   "Color 8": "Color 8",
-  "Tamaño de los botones": "Button size"
+  "Tamaño de los botones": "Button size",
+  "Radio deseado": "Desired radius",
+  "Radio efectivo: {radius} px. Se ajusta para mantener separación entre los botones.": "Effective radius: {radius} px. Adjusted to keep the buttons apart."
 }
