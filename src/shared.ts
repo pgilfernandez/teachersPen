@@ -9,6 +9,7 @@ export const actionLabels = {
   color0: 'Color 1', color1: 'Color 2', color2: 'Color 3', color3: 'Color 4', color4: 'Color 5', color5: 'Color 6', color6: 'Color 7', color7: 'Color 8',
   undo: 'Deshacer', redo: 'Rehacer', clear: 'Borrar todo', visible: 'Ocultar / mostrar trazos',
   timer: 'Temporizador', white: 'Pizarra blanca', black: 'Pizarra negra',
+  preferences: 'Preferencias', showToolbar: 'Mostrar barra completa',
   nextColor: 'Siguiente color', pie: 'Menú radial 1', pie2: 'Menú radial 2'
 } as const;
 export type Action = keyof typeof actionLabels;

@@ -81,7 +81,7 @@ function PieMenu({ state }: { state: State }) {
   }, [ready, settings.trigger, settings.hoverMs]);
   const margin = settings.radius + 30;
   const center = { x: Math.max(Math.min(margin, innerWidth / 2), Math.min(state.pie!.x, innerWidth - margin)), y: Math.max(Math.min(margin, innerHeight / 2), Math.min(state.pie!.y, innerHeight - margin)) };
-  const iconMap: Partial<Record<Action, EditableIcon>> = { ...toolIcons, undo: Undo2, redo: Redo2, clear: Trash2, visible: Eye, timer: TimerIcon, white: Whiteboard, black: Blackboard, toggle: Power };
+  const iconMap: Partial<Record<Action, EditableIcon>> = { ...toolIcons, undo: Undo2, redo: Redo2, clear: Trash2, visible: Eye, timer: TimerIcon, white: Whiteboard, black: Blackboard, toggle: Power, preferences: SettingsIcon, showToolbar: RectangleHorizontal };
   return <div ref={menu} className="pie-backdrop" onPointerDown={e => { if (ready && e.target === e.currentTarget) close(); }} onContextMenu={e => { e.preventDefault(); close(); }}>
     {/* The pointer starts here: closing always requires a click, even in hover mode. */}
     <div className="pie-center" style={{ left: center.x, top: center.y }}><button aria-label={t('Cerrar')} aria-disabled={!ready} onClick={() => { if (ready) close(); }}><X size={16} /></button></div>
@@ -462,7 +462,7 @@ function Preferences({ state }: { state: State }) {
       <div className="setting-row"><label htmlFor="drawing-hints">{t('Ayuda al dibujar')}</label><input id="drawing-hints" type="checkbox" checked={state.settings.drawingHints} disabled={busy} onChange={event => void saveChange({ type: 'drawing-hints', enabled: event.target.checked })} /></div>
     </section>
     <section><h2>{t("Colores")}</h2><div className="shortcut-list color-shortcuts">{state.settings.colors.map((color, index) => shortcutRow(`color${index}` as Action, <span className="color-preset"><span>{t("Color")} {index + 1}</span><input aria-label={t('Color {number}', { number: index + 1 })} type="color" value={color} onChange={event => void saveChange({ type: 'preset-color', index, color: event.target.value })} /></span>))}{shortcutRow('nextColor')}</div></section>
-    <section><h2>{t("Funciones")}</h2><div className="shortcut-list">{actions.filter(name => !name.startsWith('color') && name !== 'nextColor' && name !== 'pie' && name !== 'pie2').map(name => shortcutRow(name, name === 'toggle' ? t("Activar / salir") : t(actionLabels[name])))}</div>
+    <section><h2>{t("Funciones")}</h2><div className="shortcut-list">{actions.filter(name => !name.startsWith('color') && name !== 'nextColor' && name !== 'pie' && name !== 'pie2' && name !== 'preferences' && name !== 'showToolbar').map(name => shortcutRow(name, name === 'toggle' ? t("Activar / salir") : t(actionLabels[name])))}</div>
     </section>
     </div>
     <div id="preferences-radial" role="tabpanel" aria-labelledby="tab-radial" hidden={tab !== 'radial'}>

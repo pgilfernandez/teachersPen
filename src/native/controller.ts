@@ -146,6 +146,8 @@ export async function startController() {
     if (tools.includes(action as any)) { state.tool = action as State['tool']; await setDrawing(true); }
     else if (action.startsWith('color')) { state.color = Number(action.slice(-1)); if (fromShortcut) await setDrawing(true); }
     else switch (action) {
+      case 'preferences': await preferences(); break;
+      case 'showToolbar': await showTools(); break;
       case 'pie': await showPie(0); break;
       case 'pie2': await showPie(1); break;
       case 'nextColor': state.color = (state.color + 1) % state.settings.colors.length; if (fromShortcut) await setDrawing(true); break;
