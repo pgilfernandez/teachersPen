@@ -378,6 +378,8 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
                     manager.unregister("Escape").map_err(err)?;
                 }
             }
+            #[cfg(target_os = "macos")]
+            mac_panel::update_cursors(&app, &args)?;
             app.emit_all("pen:state", args.clone()).map_err(err)?;
             #[cfg(target_os = "linux")]
             if board_presentation_changed {
