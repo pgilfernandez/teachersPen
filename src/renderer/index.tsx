@@ -539,7 +539,7 @@ function Preferences({ state }: { state: State }) {
     {state.holdError && <div className="notice" role="alert">{t(state.holdError)}</div>}
     {state.wayland && <div className="notice">{t("X11/XWayland: la superposición sobre aplicaciones Wayland nativas no está garantizada.")}</div>}
     {error && <div className="notice" role="alert">{error}</div>}
-    <footer className="preferences-footer"><button className="about-button" title={t('Información')} aria-label={t('Información')} onClick={() => setAbout(true)}><Info size={18} /></button><button disabled={busy} onClick={() => void saveChange({ type: 'restore-defaults' })}>{t('Restaurar valores')}</button></footer>
+    <footer className="preferences-footer"><button className="about-button" title="About teachersPen" aria-label="About teachersPen" onClick={() => setAbout(true)}><Info size={18} /></button><button disabled={busy} onClick={() => void saveChange({ type: 'restore-defaults' })}>{t('Restaurar valores')}</button></footer>
     {about && <About state={state} onClose={() => setAbout(false)} />}
   </main>;
 }
@@ -551,6 +551,10 @@ function About({ state, onClose }: { state: State; onClose: () => void }) {
     if (!dialog.current) return;
     if (!dialog.current.showModal) dialogPolyfill.registerDialog(dialog.current);
     dialog.current.showModal();
+    // showModal focuses the first control automatically; keep the initial
+    // appearance neutral while preserving normal Tab navigation.
+    const focused = document.activeElement;
+    if (focused instanceof HTMLElement && dialog.current.contains(focused)) focused.blur();
   }, []);
   const open = async (target: 'donate' | 'paypal' | 'github') => {
     try {

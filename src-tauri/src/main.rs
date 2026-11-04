@@ -578,7 +578,7 @@ fn main() {
     let menu = SystemTrayMenu::new()
         .add_item(CustomMenuItem::new("show", "Show full toolbar"))
         .add_item(CustomMenuItem::new("preferences", "Preferences…"))
-        .add_item(CustomMenuItem::new("about", "About"))
+        .add_item(CustomMenuItem::new("about", "About teachersPen"))
         .add_native_item(SystemTrayMenuItem::Separator)
         .add_item(CustomMenuItem::new("quit", "Quit TeachersPen"));
     let tray = SystemTray::new().with_icon(Icon::Raw(icon)).with_menu(menu);
