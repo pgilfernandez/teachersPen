@@ -141,6 +141,7 @@ export type Command =
   | { type: 'toolbar-size'; width: number; height: number; orientation: Settings['toolbarOrientation'] }
   | { type: 'quit' };
 export interface PenAPI {
+  getPreviewPointer(): Promise<{ x: number; y: number } | null>;
   getState(): Promise<State>;
   command(command: Command): Promise<{ ok: boolean; error?: string }>;
   onState(callback: (state: State) => void): () => void;

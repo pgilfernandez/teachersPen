@@ -146,6 +146,7 @@ function Overlay({ state }: { state: State }) {
   const [cursorRevision, setCursorRevision] = useState(0);
   const refreshCursor = () => setCursorRevision(revision => revision + 1);
   const canvas = useRef<HTMLCanvasElement>(null);
+  const brushPreview = useRef<HTMLDivElement>(null);
   const history = useRef(new DrawingHistory());
   const current = useRef<Stroke | null>(null);
   const pointerId = useRef<number | null>(null);
@@ -216,6 +217,32 @@ function Overlay({ state }: { state: State }) {
     };
   }, []);
   useEffect(() => { if (!state.drawing) finish(); redraw(); }, [state.drawing, state.visible]);
+  useEffect(() => {
+    const element = brushPreview.current;
+    if (!element || state.platform !== 'darwin' || !state.drawing || state.pie || tracing) {
+      if (element) element.style.visibility = 'hidden';
+      return;
+    }
+    let stopped = false;
+    let animationFrame = 0;
+    const sample = async () => {
+      try {
+        const point = await window.pen.getPreviewPointer();
+        if (stopped) return;
+        if (point) {
+          element.style.left = point.x + 'px';
+          element.style.top = point.y + 'px';
+          element.style.visibility = 'visible';
+        } else element.style.visibility = 'hidden';
+      } catch {
+        if (stopped) return;
+        element.style.visibility = 'hidden';
+      }
+      if (!stopped) animationFrame = requestAnimationFrame(sample);
+    };
+    void sample();
+    return () => { stopped = true; cancelAnimationFrame(animationFrame); element.style.visibility = 'hidden'; };
+  }, [state.platform, state.drawing, !!state.pie, tracing]);
   return <div className={`overlay-surface ${state.visible ? state.background : 'transparent'} ${state.drawing ? 'drawing' : ''}`}
     onContextMenuCapture={event => event.preventDefault()}>
     <canvas ref={canvas} style={{ cursor: state.drawing && !tracing ? strokeCursor(state.settings.colors[state.color], state.settings.width, state.settings.transparency, cursorRevision) : undefined }}
@@ -259,6 +286,7 @@ function Overlay({ state }: { state: State }) {
       }}
       onPointerCancel={finish} onLostPointerCapture={finish}
     />
+    {state.platform === 'darwin' && <div ref={brushPreview} className="brush-preview" aria-hidden="true" style={{ width: state.settings.width, height: state.settings.width, backgroundColor: state.settings.colors[state.color], opacity: 1 - state.settings.transparency / 100 }} />}
     {state.drawing && state.settings.drawingHints && <div className="drawing-hint">{t(toolNames[state.tool])} · {state.holding ? t("Suelta el atajo o clic secundario para interactuar") : t("Esc o clic secundario para interactuar")}</div>}
   </div>;
 }

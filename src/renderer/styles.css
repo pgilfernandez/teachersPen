@@ -248,3 +248,5 @@ html.window-pie, body.pie { overflow: hidden; user-select: none; color-scheme: v
 .preferences-tabs button { flex: 1; padding: 7px 10px; background: transparent; color: var(--ui-muted); border-bottom: 2px solid transparent; }
 .preferences-tabs button[aria-selected="true"] { color: var(--ui-selected-ink); border-bottom-color: var(--ui-selected-ink); }
 .pie-slot-options { margin-top: 16px; margin-bottom: 14px; }
+
+.brush-preview { position: absolute; transform: translate(-50%, -50%); border-radius: 50%; pointer-events: none; visibility: hidden; }

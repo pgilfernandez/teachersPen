@@ -244,6 +244,11 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
         }
         return Ok(Value::Null);
     }
+    #[cfg(target_os = "macos")]
+    if op == "preview-pointer" && window.label().starts_with("overlay-") {
+        return tauri::async_runtime::spawn_blocking(move || mac_panel::preview_pointer(&window))
+            .await.map_err(err)?;
+    }
     if window.label() != "controller" {
         return Err("Unauthorized window".into());
     }
@@ -378,8 +383,6 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
                     manager.unregister("Escape").map_err(err)?;
                 }
             }
-            #[cfg(target_os = "macos")]
-            mac_panel::update_cursors(&app, &args)?;
             app.emit_all("pen:state", args.clone()).map_err(err)?;
             #[cfg(target_os = "linux")]
             if board_presentation_changed {
