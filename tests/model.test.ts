@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { resolveSystemLanguage } from '../src/i18n';
 import { DrawingHistory, type Stroke } from '../src/model';
 import { actions, defaults, getPieRadius, parseSettings } from '../src/shared';
 
@@ -119,4 +120,16 @@ test('radial geometry keeps eight buttons apart while retaining the desired radi
   assert.equal(getPieRadius({ buttonSize: 24, radius: 50 }), 50);
   assert.equal(getPieRadius({ buttonSize: 96, radius: 80 }), 136);
   assert.equal(getPieRadius(defaults().pie), 100);
+});
+
+test('system language resolves supported regional locales and preserves manual choices', () => {
+  assert.equal(resolveSystemLanguage(['es-ES']), 'es');
+  assert.equal(resolveSystemLanguage(['fr_CA.UTF-8']), 'fr');
+  assert.equal(resolveSystemLanguage(['pt-BR', 'de-DE']), 'de');
+  assert.equal(resolveSystemLanguage(['ja-JP']), 'en');
+  assert.equal(resolveSystemLanguage([]), 'en');
+  assert.equal(defaults().followSystemLanguage, true);
+  assert.equal(parseSettings({ language: 'es' }).followSystemLanguage, false);
+  assert.equal(parseSettings({ language: 'es', followSystemLanguage: true }).followSystemLanguage, true);
+  assert.equal(parseSettings({ language: 'fr', followSystemLanguage: false }).language, 'fr');
 });

@@ -495,7 +495,7 @@ function Preferences({ state }: { state: State }) {
       }}>{t(name === 'general' ? 'General' : 'Menús radiales')}</button>)}
     </div>
     <div id="preferences-general" role="tabpanel" aria-labelledby="tab-general" hidden={tab !== 'general'}>
-    <div className="setting-row language-row"><label htmlFor="language">{t('Idioma')}</label><select id="language" value={state.settings.language} disabled={busy} onChange={event => void saveChange({ type: 'language', language: event.target.value as Language })}>{languages.map(code => <option key={code} value={code}>{languageNames[code]}</option>)}</select></div>
+    <div className="setting-row language-row"><label htmlFor="language">{t('Idioma')}</label><select id="language" value={state.settings.followSystemLanguage ? 'system' : state.settings.language} disabled={busy} onChange={event => void saveChange({ type: 'language', language: event.target.value as Language | 'system' })}><option value="system">{t('Idioma del sistema')}</option><option disabled role="separator">──────────</option>{languages.map(code => <option key={code} value={code}>{languageNames[code]}</option>)}</select></div>
     <section><h2>{t("Dibujo")}</h2>
       <div className="setting-row"><span className="setting-label">{t("Trazo")}</span><div className="stroke-settings">
         <label className="number-with-unit" title={t("Grosor del trazo")}><input id="line-width" aria-label={t("Grosor del trazo")} type="number" min="1" max="40" value={widthText} onChange={event => {

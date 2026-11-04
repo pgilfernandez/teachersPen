@@ -256,7 +256,7 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
         "trace" => trace(text(&args, "message")),
         "environment" => {
             return Ok(
-                json!({"platform":if cfg!(target_os="macos"){"darwin"}else if cfg!(target_os="windows"){"win32"}else{"linux"},"wayland":std::env::var_os("WAYLAND_DISPLAY").is_some()}),
+                json!({"platform":if cfg!(target_os="macos"){"darwin"}else if cfg!(target_os="windows"){"win32"}else{"linux"},"wayland":std::env::var_os("WAYLAND_DISPLAY").is_some(),"languages":platform::system_languages()}),
             )
         }
         "screens" => {

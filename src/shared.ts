@@ -17,6 +17,7 @@ export const actions = Object.keys(actionLabels) as Action[];
 export interface Settings {
   pie: { animationMs: number; trigger: 'click' | 'hover'; radius: number; buttonSize: number; hoverMs: number; slots: (Action | null)[]; slots2: (Action | null)[] };
   language: Language;
+  followSystemLanguage: boolean;
   activation: 'toggle' | 'hold';
   toolbarMode: ToolbarMode;
   toolbarOrientation: 'horizontal' | 'vertical';
@@ -70,7 +71,7 @@ export function defaults(): Settings {
   };
   return {
     pie: { animationMs: 160, trigger: 'click', radius: 100, buttonSize: 48, hoverMs: 80, slots: ['freehand', 'line', 'arrow', 'black', 'visible', 'white', 'rectangle', 'circle'], slots2: ['color0', 'color1', 'color2', 'color3', 'color4', 'color5', 'color6', 'color7'] },
-    language: 'en', activation: 'toggle',
+    language: 'en', followSystemLanguage: true, activation: 'toggle',
     toolbarMode: 'visible',
     toolbarOrientation: 'horizontal', drawingHints: true,
     width: 6, transparency: 0, colors: ['#ef4444', '#087bff', '#78cc00', '#e3cd00', '#be38f3', '#000000', '#c0c0c0', '#ffffff'], timerSeconds: 300,
@@ -93,6 +94,9 @@ export function parseSettings(input: unknown): Settings {
     }
   }
   if (isLanguage(data.language)) base.language = data.language;
+  // Older settings store an explicit language, which must remain manual.
+  base.followSystemLanguage = typeof data.followSystemLanguage === 'boolean'
+    ? data.followSystemLanguage : !isLanguage(data.language);
   base.timerText = defaultTimerText(base.language);
   if (data.activation === 'hold') base.activation = 'hold';
   if (data.toolbarMode === 'minimal' || data.toolbarMode === 'hidden') base.toolbarMode = data.toolbarMode;
@@ -129,7 +133,7 @@ export type Command =
   | { type: 'restore-defaults' }
   | { type: 'preset-color'; index: number; color: string }
   | { type: 'shortcut'; action: Action; accelerator: string }
-  | { type: 'language'; language: Language }
+  | { type: 'language'; language: Language | 'system' }
   | { type: 'activation'; activation: Settings['activation'] }
   | { type: 'toolbar-mode'; mode: ToolbarMode }
   | { type: 'drawing-hints'; enabled: boolean }

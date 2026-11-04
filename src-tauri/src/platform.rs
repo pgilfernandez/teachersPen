@@ -602,3 +602,46 @@ pub fn dock(app: &tauri::AppHandle, hidden: bool) {
     #[cfg(not(target_os = "macos"))]
     let _ = (app, hidden);
 }
+
+
+pub fn system_languages() -> Vec<String> {
+    #[cfg(target_os = "macos")]
+    unsafe {
+        use cocoa::base::id;
+        use objc::{class, msg_send, sel, sel_impl};
+        let preferred: id = msg_send![class!(NSLocale), preferredLanguages];
+        let count: usize = msg_send![preferred, count];
+        return (0..count).filter_map(|i| {
+            let locale: id = msg_send![preferred, objectAtIndex: i];
+            let text: *const std::ffi::c_char = msg_send![locale, UTF8String];
+            if text.is_null() { None } else { Some(std::ffi::CStr::from_ptr(text).to_string_lossy().into_owned()) }
+        }).collect();
+    }
+    #[cfg(target_os = "windows")]
+    {
+        #[link(name = "kernel32")]
+        extern "system" {
+            fn GetUserPreferredUILanguages(flags: u32, count: *mut u32, buffer: *mut u16, size: *mut u32) -> i32;
+        }
+        let mut count = 0;
+        let mut size = 0;
+        unsafe {
+            GetUserPreferredUILanguages(8, &mut count, std::ptr::null_mut(), &mut size);
+            if size > 0 {
+                let mut buffer = vec![0u16; size as usize];
+                if GetUserPreferredUILanguages(8, &mut count, buffer.as_mut_ptr(), &mut size) != 0 {
+                    return buffer.split(|c| *c == 0).filter(|s| !s.is_empty()).map(String::from_utf16_lossy).collect();
+                }
+            }
+        }
+        Vec::new()
+    }
+    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+    {
+        let locale = ["LC_ALL", "LC_MESSAGES", "LANG"].iter().find_map(|key| std::env::var(key).ok().filter(|v| !v.is_empty()));
+        if matches!(locale.as_deref(), Some("C" | "POSIX" | "C.UTF-8")) { return vec!["en".into()]; }
+        let mut preferred: Vec<String> = std::env::var("LANGUAGE").unwrap_or_default().split(':').filter(|v| !v.is_empty()).map(str::to_owned).collect();
+        if let Some(locale) = locale { preferred.push(locale); }
+        preferred
+    }
+}

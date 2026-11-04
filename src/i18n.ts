@@ -9,6 +9,13 @@ export type Language = typeof languages[number];
 export const languageNames: Record<Language, string> = { en: 'English', es: 'Español', it: 'Italiano', fr: 'Français', de: 'Deutsch' };
 const catalogs: Record<Language, Record<string, string>> = { en, es, it, fr, de };
 export function isLanguage(value: unknown): value is Language { return languages.includes(value as Language); }
+export function resolveSystemLanguage(preferred: readonly string[]): Language {
+  for (const locale of preferred) {
+    const language = locale.trim().toLowerCase().split(/[-_.@]/)[0];
+    if (isLanguage(language)) return language;
+  }
+  return 'en';
+}
 export function translate(language: Language, source: string, values: Record<string, string | number> = {}): string {
   // Keep the underlying OS error intact while translating the app's diagnostic prefix.
   const releaseError = 'No se puede comprobar la liberación del atajo: ';

@@ -159,5 +159,6 @@
   "Tamaño de los botones": "Button size",
   "Radio deseado": "Desired radius",
   "Radio efectivo: {radius} px. Se ajusta para mantener separación entre los botones.": "Effective radius: {radius} px. Adjusted to keep the buttons apart.",
-  "Acerca de teachersPen": "About teachersPen"
+  "Acerca de teachersPen": "About teachersPen",
+  "Idioma del sistema": "System language"
 }
