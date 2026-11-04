@@ -1,7 +1,7 @@
 import { listen } from '@tauri-apps/api/event';
 import { host } from './host';
 import { actions, actionLabels, defaults, parseSettings, tools, type Action, type Command, type Settings, type State, type BackendStatus, type ToolbarMode } from '../shared';
-import { translate, isLanguage, defaultTimerText, isDefaultTimerText } from '../i18n';
+import { translate, isLanguage, resolveSystemLanguage, defaultTimerText, isDefaultTimerText } from '../i18n';
 import { HoldActivation, isDrawingShortcut, type HoldMonitor } from '../hold';
 import { MiniDrag, MINI_SIZE, MINI_RADIUS, fitPosition, readPosition, toolbarClosing, toolbarOpening, type Area } from '../toolbar';
 import type { Point } from '../model';
@@ -9,17 +9,23 @@ import type { Point } from '../model';
 type Display = { id: number; bounds: Area; workArea: Area; scaleFactor: number };
 type Reply = { ok: boolean; error?: string };
 export async function startController() {
-  const environment = await host<{ platform: string; wayland: boolean }>('environment');
+  const environment = await host<{ platform: string; wayland: boolean; languages: string[] }>('environment');
   const initialSettings = parseSettings(await host('read', { name: 'settings.json' }));
   const backend = await host<BackendStatus>('backend-init', { requested: initialSettings.linuxBackend });
   const state: State = {
-    hasDrawings: false, canUndo: false, canRedo: false,
+    aboutRequest: 0, pie: null, hasDrawings: false, canUndo: false, canRedo: false,
     drawing: false, tool: 'freehand', color: 1, visible: true, background: 'transparent', timerEnd: null,
     timer: { visible: false, running: false, elapsedMs: 0, startedAt: null }, settings: defaults(),
     linuxBackend: backend, shortcutErrors: [], platform: environment.platform, wayland: environment.wayland,
     holding: false, holdAvailable: backend.active !== 'gnome' || backend.holdAvailable === true, holdError: null,
     toolbarExpanded: true, toolbarReveal: null, toolbarAvailableHeight: 0
   };
+  let systemLanguage = resolveSystemLanguage(environment.languages);
+  function localize(settings: Settings): Settings {
+    if (!settings.followSystemLanguage) return settings;
+    return { ...settings, language: systemLanguage, timerText: isDefaultTimerText(settings.timerText) ? defaultTimerText(systemLanguage) : settings.timerText };
+  }
+  const parse = (input: unknown) => localize(parseSettings(input));
   const t = (s: string, values?: Record<string, string | number>) => translate(state.settings.language, s, values);
   const geometry = new Map<string, Area>();
   const overlayLabels = new Set<string>();
@@ -129,11 +135,30 @@ export async function startController() {
     }
     await win('timer-window', 'show');
   }
+  async function closePie() {
+    state.pie = null;
+    if (geometry.has('pie')) await win('pie', 'hide');
+  }
+  async function showPie(menu: 0 | 1) {
+    // Opening is idempotent: repeated global shortcuts must never dismiss a menu.
+    if (state.pie?.menu === menu) return;
+    const point = await cursor(); activeDisplay = point.display;
+    const display = displays.find(d => d.id === activeDisplay) || nearest(point);
+    await create('pie', 'pie', display.bounds);
+    await move('pie', display.bounds);
+    state.pie = { menu, x: point.x - display.bounds.x, y: point.y - display.bounds.y, serial: Date.now() };
+    await broadcast(); await win('pie', 'show'); await win('pie', 'focus');
+  }
   async function perform(action: Action, fromShortcut = false) {
+    if (action !== 'pie' && action !== 'pie2' && state.pie) await closePie();
     if (fromShortcut) activeDisplay = (await cursor()).display;
     if (tools.includes(action as any)) { state.tool = action as State['tool']; await setDrawing(true); }
     else if (action.startsWith('color')) { state.color = Number(action.slice(-1)); if (fromShortcut) await setDrawing(true); }
     else switch (action) {
+      case 'preferences': await preferences(); break;
+      case 'showToolbar': await showTools(); break;
+      case 'pie': await showPie(0); break;
+      case 'pie2': await showPie(1); break;
       case 'nextColor': state.color = (state.color + 1) % state.settings.colors.length; if (fromShortcut) await setDrawing(true); break;
       case 'toggle': await setDrawing(!state.drawing); break;
       case 'undo': case 'redo': await sendAction(action); break;
@@ -182,7 +207,7 @@ export async function startController() {
     finally { if (recording) await host('shortcuts', {}); }
   }
   async function labels() {
-    await host('tray', { show: t('Mostrar barra completa'), preferences: t('Preferencias…'), quit: t('Salir de TeachersPen') });
+    await host('tray', { show: t('Mostrar barra completa'), preferences: t('Preferencias…'), about: t('Acerca de teachersPen'), quit: t('Salir de TeachersPen') });
     if (geometry.has('preferences')) await win('preferences', 'title', { title: `${t('Preferencias')} · TeachersPen` });
     if (geometry.has('timer-window')) await win('timer-window', 'title', { title: `${t('Temporizador')} · TeachersPen` });
   }
@@ -244,21 +269,31 @@ export async function startController() {
   async function command(source: string, c: Command): Promise<Reply> {
     if (!c || typeof c !== 'object') throw new Error(t('Comando no autorizado'));
     switch (c.type) {
+      case 'cancel-drawing':
+        if (!overlayLabels.has(source)) throw new Error(t('Ventana no autorizada'));
+        await setDrawing(false); break;
+      case 'pie-close': await closePie(); break;
+      case 'pie-select':
+        if (source !== 'pie' || !state.pie || (c.action === 'pie' || c.action === 'pie2') || !state.settings.pie[state.pie.menu === 0 ? 'slots' : 'slots2'].includes(c.action)) throw new Error(t('Comando no autorizado'));
+        await closePie(); await perform(c.action, true); break;
+      case 'pie-settings':
+        if (source !== 'preferences') throw new Error(t('Ventana no autorizada'));
+        await save(parse({ ...state.settings, pie: c.settings })); break;
       case 'active-display': if (overlayLabels.has(source)) activeDisplay = Number(source.slice(8)); break;
       case 'history-state':
         if (!overlayLabels.has(source) || typeof c.canUndo !== 'boolean' || typeof c.canRedo !== 'boolean' || typeof c.hasDrawings !== 'boolean') throw new Error(t('Ventana no autorizada'));
         histories.set(source, { canUndo: c.canUndo, canRedo: c.canRedo, hasDrawings: c.hasDrawings }); break;
       case 'action': if (actions.includes(c.action)) await perform(c.action); break;
       case 'tool': if (tools.includes(c.tool)) { const exit = state.drawing && state.tool === c.tool; state.tool = c.tool; await setDrawing(!exit); } break;
-      case 'color': if (Number.isInteger(c.index) && c.index >= 0 && c.index < 5) state.color = c.index; break;
-      case 'width': await save({ ...state.settings, width: parseSettings({ width: c.width }).width }); break;
-      case 'transparency': await save({ ...state.settings, transparency: parseSettings({ transparency: c.transparency }).transparency }); break;
+      case 'color': if (Number.isInteger(c.index) && c.index >= 0 && c.index < state.settings.colors.length) state.color = c.index; break;
+      case 'width': await save({ ...state.settings, width: parse({ width: c.width }).width }); break;
+      case 'transparency': await save({ ...state.settings, transparency: parse({ transparency: c.transparency }).transparency }); break;
       case 'preset-color':
-        if (!Number.isInteger(c.index) || c.index < 0 || c.index >= 5 || !/^#[0-9a-f]{6}$/i.test(c.color)) throw new Error(t('No se han podido guardar.'));
+        if (!Number.isInteger(c.index) || c.index < 0 || c.index >= state.settings.colors.length || !/^#[0-9a-f]{6}$/i.test(c.color)) throw new Error(t('No se han podido guardar.'));
         await save({ ...state.settings, colors: state.settings.colors.map((color, index) => index === c.index ? c.color : color) }); break;
       case 'shortcut':
         if (!actions.includes(c.action) || typeof c.accelerator !== 'string' || c.accelerator.length >= 100 || (c.action === 'toggle' && !c.accelerator)) throw new Error(t('No se han podido guardar.'));
-        await commitBindings(parseSettings({ ...state.settings, shortcuts: { ...state.settings.shortcuts, [c.action]: c.accelerator } })); break;
+        await commitBindings(parse({ ...state.settings, shortcuts: { ...state.settings.shortcuts, [c.action]: c.accelerator } })); break;
       case 'record-shortcut':
         if (source !== 'preferences') throw new Error(t('Solo se pueden editar atajos desde Preferencias'));
         recording = c.active;
@@ -272,13 +307,17 @@ export async function startController() {
         if (!['toggle', 'hold'].includes(c.activation)) throw new Error(t('Modo de activación no válido'));
         await commitBindings({ ...state.settings, activation: c.activation }); await setDrawing(false); break;
       case 'language': {
-        if (!isLanguage(c.language)) throw new Error(t('Idioma no válido'));
-        const next = { ...state.settings, language: c.language };
+        if (c.language !== 'system' && !isLanguage(c.language)) throw new Error(t('Idioma no válido'));
+        if (c.language === 'system') {
+          const environment = await host<{ languages: string[] }>('environment');
+          systemLanguage = resolveSystemLanguage(environment.languages);
+        }
+        const next = { ...state.settings, followSystemLanguage: c.language === 'system', language: c.language === 'system' ? systemLanguage : c.language };
         if (isDefaultTimerText(next.timerText)) next.timerText = defaultTimerText(next.language);
         await save(next); state.shortcutErrors = await register(next); await labels(); break;
       }
       case 'settings': case 'restore-defaults': {
-        const next = c.type === 'restore-defaults' ? parseSettings({ ...defaults(), language: state.settings.language }) : parseSettings({ ...c.settings, language: state.settings.language, toolbarMode: state.settings.toolbarMode });
+        const next = c.type === 'restore-defaults' ? parse({ ...defaults(), language: state.settings.language, followSystemLanguage: state.settings.followSystemLanguage }) : parse({ ...c.settings, language: state.settings.language, followSystemLanguage: state.settings.followSystemLanguage, toolbarMode: state.settings.toolbarMode });
         const orientationChanged = next.toolbarOrientation !== state.settings.toolbarOrientation;
         const reset = next.timerSeconds !== state.settings.timerSeconds || next.timerDirection !== state.settings.timerDirection;
         await commitBindings(next); if (reset) resetTimer();
@@ -307,7 +346,7 @@ export async function startController() {
         else if (c.action === 'direction') { await save({ ...state.settings, timerDirection: state.settings.timerDirection === 'down' ? 'up' : 'down' }); resetTimer(); }
         break;
       case 'timer-settings': {
-        const next = parseSettings({ ...state.settings, ...Object.fromEntries(['timerText', 'timerSeconds', 'timerColor'].map(k => [k, c.settings[k as keyof typeof c.settings] ?? state.settings[k as keyof Settings]])) });
+        const next = parse({ ...state.settings, ...Object.fromEntries(['timerText', 'timerSeconds', 'timerColor'].map(k => [k, c.settings[k as keyof typeof c.settings] ?? state.settings[k as keyof Settings]])) });
         const changed = next.timerSeconds !== state.settings.timerSeconds; await save(next); if (changed) resetTimer(); break;
       }
       case 'timer-resize': {
@@ -388,13 +427,19 @@ export async function startController() {
   });
   await listen<string>('host-menu', event => { void enqueue(async () => {
     if (!initialized) return;
-    if (event.payload === 'show') await showTools(); else if (event.payload === 'preferences') await preferences(); else if (event.payload === 'quit') await host('exit');
+    if (event.payload === 'escape') {
+      if (state.pie) { await closePie(); await broadcast(); }
+      else if (state.drawing) await setDrawing(false);
+    } else if (event.payload === 'show') await showTools(); else if (event.payload === 'preferences') await preferences();
+    else if (event.payload === 'about') { state.aboutRequest++; await preferences(); }
+    else if (event.payload === 'quit') await host('exit');
   }); });
   await listen<{ label: string; kind: string; bounds: Area | null }>('host-window', ({ payload: e }) => {
     void enqueue(async () => {
       if (e.bounds) geometry.set(e.label, e.bounds);
       if (!initialized) return;
       if (e.label === 'preferences' && ['blur', 'close'].includes(e.kind) && recording) { recording = false; state.shortcutErrors = await register(state.settings); await broadcast(); }
+      if (e.label === 'pie' && e.kind === 'close') { await closePie(); await broadcast(); }
       if (e.kind === 'close') {
         if (e.label === 'toolbar') { await collapse(); await broadcast(); }
         if (e.label === 'timer-window') { stopTimer(); state.timer.visible = false; await broadcast(); }
@@ -404,11 +449,14 @@ export async function startController() {
       }
     });
   });
-  state.settings = initialSettings;
+  state.settings = parse(initialSettings);
   state.toolbarExpanded = state.settings.toolbarMode === 'visible';
   const area = displays[0].workArea; state.toolbarAvailableHeight = area.height;
   const vertical = state.settings.toolbarOrientation === 'vertical'; const width = vertical ? 56 : 965;
   for (const d of displays) { const label = `overlay-${d.id}`; await create(label, 'overlay', d.bounds); overlayLabels.add(label); await win(label, 'show'); }
+  // Wry activates NSApplication when constructing a WebView, even if hidden.
+  // Build the reusable radial panel at startup, before the user returns to work.
+  if (state.platform === 'darwin') await create('pie', 'pie', displays[0].bounds);
   await create('toolbar', 'toolbar', { x: area.x + Math.round((area.width - width) / 2), y: vertical ? area.y : area.y + 18, width, height: vertical ? area.height : 56 });
   await create('mini', 'mini', { x: area.x + 24, y: area.y + 24, width: MINI_SIZE, height: MINI_SIZE });
   await moveMini(readPosition(await read('window-state.json')) || { x: area.x + 24, y: area.y + 24 });
@@ -429,7 +477,7 @@ export async function startController() {
     void enqueue(async () => {
       const next = await host<Display[]>('screens');
       if (JSON.stringify(next) === JSON.stringify(displays)) return;
-      await setDrawing(false); displays = next; activeDisplay = Math.min(activeDisplay, next.length - 1);
+      await closePie(); await setDrawing(false); displays = next; activeDisplay = Math.min(activeDisplay, next.length - 1);
       for (const d of next) {
         const label = `overlay-${d.id}`;
         if (!overlayLabels.has(label)) { await create(label, 'overlay', d.bounds); overlayLabels.add(label); }

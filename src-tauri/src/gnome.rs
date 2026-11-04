@@ -92,7 +92,7 @@ pub fn controls(app: &tauri::AppHandle) -> Result<Value> {
     let (tx, rx) = std::sync::mpsc::channel();
     app.run_on_main_thread(move || {
         use gtk::prelude::*;
-        let controls: Vec<Value> = ["toolbar", "mini", "timer-window", "preferences"].iter()
+        let controls: Vec<Value> = ["toolbar", "mini", "timer-window", "preferences", "pie"].iter()
             .filter_map(|label| handle.get_window(label))
             .filter_map(|window| {
                 let gtk = window.gtk_window().ok()?;

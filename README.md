@@ -141,3 +141,18 @@ GNOME Shell 46, GJS and a working headless renderer). The GNOME test starts an i
 does not enable extensions in the user's current desktop session. Its temporary
 copy enables the Shell debug evaluator for the test only; the distributed
 extension never enables it.
+
+### Menú radial
+
+Pulsa **Ctrl+Mayús+S** para abrir el menú radial 1 junto al puntero o
+**Ctrl+Mayús+W** para abrir el menú radial 2 (colores por defecto). Admite ocho
+posiciones separadas por 45°, empezando arriba y siguiendo el sentido horario.
+En Preferencias → Menús radiales puedes cambiar cada atajo, asignar o vaciar
+las ocho posiciones de cada menú y ajustar
+el radio y la duración de animación compartidos, y elegir activación por clic o al pasar el
+puntero con un retardo configurable. Escape, el botón central o un clic fuera cierran el menú. El atajo sólo abre
+el menú: mantenerlo pulsado o volver a pulsarlo no lo cierra. Cerca de los bordes se desplaza el círculo
+para que todas las opciones permanezcan visibles.
+
+La paleta dispone de ocho colores editables en la pestaña General. Los colores
+1 a 8 usan Ctrl+Mayús+1 a Ctrl+Mayús+8 por defecto.

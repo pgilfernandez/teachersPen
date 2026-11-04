@@ -25,6 +25,7 @@ export function installBridge() {
     });
   }
   const api: PenAPI = {
+    getPreviewPointer: () => host('preview-pointer'),
     getState: () => request<State>({ type: 'get-state' }), command: value => request(value),
     onState: fn => { states.add(fn); return () => { states.delete(fn); }; },
     onAction: fn => { actions.add(fn); return () => { actions.delete(fn); }; }

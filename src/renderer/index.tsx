@@ -3,7 +3,8 @@ import './compat';
 import dialogPolyfill from 'dialog-polyfill';
 import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { actionLabels, actions, defaults, type Action, type Command, type Settings, type State, type Tool, type ToolbarMode } from '../shared';
+import { actionLabels, actions, defaults, getPieRadius, type Action, type Command, type Settings, type State, type Tool, type ToolbarMode } from '../shared';
+import { RadialHover, radialSlotAt } from '../radial';
 import { MINI_RADIUS, MINI_SIZE } from '../toolbar';
 import { Pencil, Slash, MoveUpRight, Rectangle, Circle, Undo2, Redo2, Trash2, Eye, EyeOff, Settings as SettingsIcon, Timer as TimerIcon, Whiteboard, Blackboard, GripVertical, MoveDiagonal, RotateCcw, ArrowDownUp, Play, Pause, Minimize, RectangleVertical, RectangleHorizontal, Power, X, Info, type EditableIcon } from './icons';
 import { DrawingHistory, type Stroke } from '../model';
@@ -35,18 +36,98 @@ function App() {
   }, []);
   useEffect(() => {
     const escape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && state?.drawing) void action('toggle');
+      if (role !== 'pie' && event.key === 'Escape' && state?.drawing) void action('toggle');
     };
     document.addEventListener('keydown', escape);
     return () => document.removeEventListener('keydown', escape);
   }, [state?.drawing]);
   useEffect(() => { if (state) document.documentElement.lang = state.settings.language; }, [state?.settings.language]);
   if (!state) return error ? <p role="alert">{error}</p> : null;
+  if (role === 'pie') return state.pie ? <PieMenu key={state.pie.serial} state={state} /> : null;
   if (role === 'overlay') return <Overlay state={state} />;
   if (role === 'preferences') return <Preferences state={state} />;
   if (role === 'mini') return <MiniLauncher state={state} />;
   if (role === 'timer-window') return state.timer.visible ? <Timer state={state} /> : null;
   return <Toolbar state={state} />;
+}
+
+function PieMenu({ state }: { state: State }) {
+  const t = translator(state.settings.language);
+  const settings = state.settings.pie;
+  const slots = settings[state.pie!.menu === 0 ? 'slots' : 'slots2'];
+  const radius = getPieRadius(settings);
+  const margin = radius + settings.buttonSize / 2 + 6;
+  const center = { x: Math.max(Math.min(margin, innerWidth / 2), Math.min(state.pie!.x, innerWidth - margin)), y: Math.max(Math.min(margin, innerHeight / 2), Math.min(state.pie!.y, innerHeight - margin)) };
+  const [ready, setReady] = useState(() => settings.animationMs === 0 || window.matchMedia('(prefers-reduced-motion: reduce)').matches || slots.every(slot => slot === null));
+  const pendingAnimations = useRef(new Set(slots.flatMap((slot, index) => slot ? [index] : [])));
+  const menu = useRef<HTMLDivElement>(null);
+  const [hoveredSlot, setHoveredSlot] = useState<number | null>(null);
+  const hover = useRef<ReturnType<typeof setTimeout>>();
+  const chosen = useRef(false);
+  const cancelHover = () => clearTimeout(hover.current);
+  const close = () => { cancelHover(); void command({ type: 'pie-close' }); };
+  const choose = (name: Action) => {
+    if (!ready || chosen.current) return;
+    chosen.current = true; cancelHover();
+    void command({ type: 'pie-select', action: name });
+  };
+  useEffect(() => {
+    const escape = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.preventDefault(); close(); } };
+    document.addEventListener('keydown', escape);
+    return () => { cancelHover(); document.removeEventListener('keydown', escape); };
+  }, []);
+  useEffect(() => {
+    if (state.platform === 'darwin' || !ready || settings.trigger !== 'hover') return;
+    // The pointer may already be over a final position when opening finishes.
+    const button = menu.current?.querySelector<HTMLButtonElement>('.pie-item:hover');
+    const name = button?.dataset.action as Action | undefined;
+    if (name) hover.current = setTimeout(() => choose(name), settings.hoverMs);
+    return cancelHover;
+  }, [ready, settings.trigger, settings.hoverMs]);
+  useEffect(() => {
+    if (state.platform !== 'darwin' || !ready) return;
+    let stopped = false;
+    let frame = 0;
+    const selection = new RadialHover();
+    let previous: number | null = null;
+    const sample = async () => {
+      let target: number | null = null;
+      try {
+        const point = await window.pen.getPreviewPointer();
+        if (stopped) return;
+        target = radialSlotAt(point, center, radius, settings.buttonSize, slots);
+      } catch {
+        if (stopped) return;
+      }
+      if (target !== previous) { previous = target; setHoveredSlot(target); }
+      const selected = selection.update(target, performance.now(), settings.hoverMs);
+      if (settings.trigger === 'hover' && selected !== null && slots[selected]) {
+        choose(slots[selected]!);
+        return;
+      }
+      if (!stopped) frame = requestAnimationFrame(sample);
+    };
+    void sample();
+    return () => { stopped = true; cancelAnimationFrame(frame); };
+  }, [ready, state.platform, settings.trigger, settings.hoverMs, settings.buttonSize, radius, center.x, center.y, slots.join(',')]);
+  const iconMap: Partial<Record<Action, EditableIcon>> = { ...toolIcons, undo: Undo2, redo: Redo2, clear: Trash2, visible: Eye, timer: TimerIcon, white: Whiteboard, black: Blackboard, toggle: Power, preferences: SettingsIcon, showToolbar: RectangleHorizontal };
+  return <div ref={menu} className="pie-backdrop" style={{ '--pie-button-size': settings.buttonSize + 'px', '--pie-center-size': Math.round(settings.buttonSize * 28 / 48) + 'px' } as React.CSSProperties} onPointerDown={e => { if (ready && e.target === e.currentTarget) close(); }} onContextMenu={e => { e.preventDefault(); close(); }}>
+    {/* The pointer starts here: closing always requires a click, even in hover mode. */}
+    <div className="pie-center" style={{ left: center.x, top: center.y }}><button aria-label={t('Cerrar')} aria-disabled={!ready} onClick={() => { if (ready) close(); }}><X size={Math.round(settings.buttonSize / 3)} /></button></div>
+    {slots.map((name, index) => {
+      if (!name) return null;
+      const angle = (index * 45 - 90) * Math.PI / 180;
+      const Icon = iconMap[name] || Circle;
+      const color = name === 'nextColor' ? state.settings.colors[(state.color + 1) % state.settings.colors.length] : name.startsWith('color') ? state.settings.colors[Number(name.slice(-1))] : undefined;
+      return <button key={index} className={`pie-item ${hoveredSlot === index ? 'is-hovered' : ''}`} data-action={name} aria-disabled={!ready} onAnimationEnd={event => {
+        if (event.target !== event.currentTarget || event.animationName !== 'pie-appear') return;
+        pendingAnimations.current.delete(index);
+        if (pendingAnimations.current.size === 0) setReady(true);
+      }} style={{ left: center.x + Math.cos(angle) * radius, top: center.y + Math.sin(angle) * radius, animationDuration: settings.animationMs + 'ms', '--pie-origin-x': -Math.cos(angle) * radius + 'px', '--pie-origin-y': -Math.sin(angle) * radius + 'px', backgroundColor: color } as React.CSSProperties} title={t(actionLabels[name])} aria-label={t(actionLabels[name])}
+        onPointerEnter={() => { cancelHover(); if (state.platform !== 'darwin' && ready && settings.trigger === 'hover') hover.current = setTimeout(() => choose(name), settings.hoverMs); }}
+        onPointerLeave={() => { if (state.platform !== 'darwin') cancelHover(); }} onPointerDown={e => e.stopPropagation()} onClick={() => choose(name)}>{!color && <Icon size={settings.buttonSize / 2} />}</button>;
+    })}
+  </div>;
 }
 
 function MiniLauncher({ state }: { state: State }) {
@@ -93,6 +174,7 @@ function Overlay({ state }: { state: State }) {
   const [cursorRevision, setCursorRevision] = useState(0);
   const refreshCursor = () => setCursorRevision(revision => revision + 1);
   const canvas = useRef<HTMLCanvasElement>(null);
+  const brushPreview = useRef<HTMLDivElement>(null);
   const history = useRef(new DrawingHistory());
   const current = useRef<Stroke | null>(null);
   const pointerId = useRef<number | null>(null);
@@ -130,6 +212,12 @@ function Overlay({ state }: { state: State }) {
     setTracing(false);
     redraw();
   };
+  const cancelDrawing = () => {
+    // Discard the unfinished stroke before releasing capture or losing focus.
+    current.current = null;
+    finish();
+    void command({ type: 'cancel-drawing' });
+  };
   useEffect(() => {
     const resize = () => {
       const element = canvas.current!;
@@ -157,6 +245,32 @@ function Overlay({ state }: { state: State }) {
     };
   }, []);
   useEffect(() => { if (!state.drawing) finish(); redraw(); }, [state.drawing, state.visible]);
+  useEffect(() => {
+    const element = brushPreview.current;
+    if (!element || state.platform !== 'darwin' || !state.drawing || state.pie || tracing) {
+      if (element) element.style.visibility = 'hidden';
+      return;
+    }
+    let stopped = false;
+    let animationFrame = 0;
+    const sample = async () => {
+      try {
+        const point = await window.pen.getPreviewPointer();
+        if (stopped) return;
+        if (point) {
+          element.style.left = point.x + 'px';
+          element.style.top = point.y + 'px';
+          element.style.visibility = 'visible';
+        } else element.style.visibility = 'hidden';
+      } catch {
+        if (stopped) return;
+        element.style.visibility = 'hidden';
+      }
+      if (!stopped) animationFrame = requestAnimationFrame(sample);
+    };
+    void sample();
+    return () => { stopped = true; cancelAnimationFrame(animationFrame); element.style.visibility = 'hidden'; };
+  }, [state.platform, state.drawing, !!state.pie, tracing]);
   return <div className={`overlay-surface ${state.visible ? state.background : 'transparent'} ${state.drawing ? 'drawing' : ''}`}
     onContextMenuCapture={event => event.preventDefault()}>
     <canvas ref={canvas} style={{ cursor: state.drawing && !tracing ? strokeCursor(state.settings.colors[state.color], state.settings.width, state.settings.transparency, cursorRevision) : undefined }}
@@ -165,6 +279,9 @@ function Overlay({ state }: { state: State }) {
         // macOS Control-click must draw while a Control shortcut is held,
         // rather than opening WebKit's Reload/Back context menu.
         const primary = event.button === 0 || (state.platform === 'darwin' && event.ctrlKey && event.button === 2);
+        if (state.drawing && event.button === 2 && !primary) {
+          event.preventDefault(); cancelDrawing(); return;
+        }
         if (!state.drawing || !primary || pointerId.current !== null) return;
         event.preventDefault();
         void command({ type: 'active-display' });
@@ -176,6 +293,9 @@ function Overlay({ state }: { state: State }) {
         redraw();
       }}
       onPointerMove={event => {
+        if (latest.current.drawing && (event.buttons & 2) !== 0 && !(state.platform === 'darwin' && event.ctrlKey)) {
+          event.preventDefault(); cancelDrawing(); return;
+        }
         if (pointerId.current !== event.pointerId || !current.current) return;
         const stroke = current.current;
         const point = { x: event.clientX, y: event.clientY };
@@ -194,7 +314,8 @@ function Overlay({ state }: { state: State }) {
       }}
       onPointerCancel={finish} onLostPointerCapture={finish}
     />
-    {state.drawing && state.settings.drawingHints && <div className="drawing-hint">{t(toolNames[state.tool])} · {state.holding ? t("Suelta el atajo para interactuar") : t("Esc para interactuar")}</div>}
+    {state.platform === 'darwin' && <div ref={brushPreview} className="brush-preview" aria-hidden="true" style={{ width: state.settings.width, height: state.settings.width, backgroundColor: state.settings.colors[state.color], opacity: 1 - state.settings.transparency / 100 }} />}
+    {state.drawing && state.settings.drawingHints && <div className="drawing-hint">{t(toolNames[state.tool])} · {state.holding ? t("Suelta el atajo o clic secundario para interactuar") : t("Esc o clic secundario para interactuar")}</div>}
   </div>;
 }
 function Timer({ state }: { state: State }) {
@@ -324,6 +445,27 @@ function Toolbar({ state }: { state: State }) {
     </div>
   </main>;
 }
+function PieNumberField({ id, label, value, min, max, unit, onCommit }: {
+  id: string; label: string; value: number; min: number; max: number; unit: string; onCommit: (value: number) => void;
+}) {
+  const [text, setText] = useState(String(value));
+  const editing = useRef(false);
+  useEffect(() => { if (!editing.current) setText(String(value)); }, [value]);
+  return <div className="setting-row"><label htmlFor={id}>{label}</label><span><input id={id} type="number" min={min} max={max} step="1" value={text}
+    onFocus={() => { editing.current = true; }}
+    onChange={event => setText(event.target.value)}
+    onBlur={event => {
+      editing.current = false;
+      const raw = event.target.value;
+      const parsed = Number(raw);
+      const next = raw.trim() && Number.isFinite(parsed) ? Math.max(min, Math.min(max, Math.round(parsed))) : value;
+      setText(String(next));
+      if (next !== value) onCommit(next);
+    }}
+    onKeyDown={event => { if (event.key === 'Enter') event.currentTarget.blur(); }}
+  /> {unit}</span></div>;
+}
+
 function Preferences({ state }: { state: State }) {
   const t = translator(state.settings.language);
   const [widthText, setWidthText] = useState(String(state.settings.width));
@@ -332,6 +474,8 @@ function Preferences({ state }: { state: State }) {
   useEffect(() => { setOpacityText(String(100 - state.settings.transparency)); }, [state.settings.transparency]);
   const [error, setError] = useState('');
   const [about, setAbout] = useState(false);
+  useEffect(() => { if (state.aboutRequest > 0) setAbout(true); }, [state.aboutRequest]);
+  const [tab, setTab] = useState<'general' | 'radial'>('general');
   const [busy, setBusy] = useState(false);
   const pending = useRef(0);
   const [recording, setRecording] = useState<Action | null>(null);
@@ -369,7 +513,17 @@ function Preferences({ state }: { state: State }) {
         event.currentTarget.blur();
       }} /><button className="remove-shortcut" disabled={name === 'toggle'} aria-label={t('Eliminar atajo de {action}', { action: t(actionLabels[name]) })} onClick={() => changeShortcut(name, '')}><X size={16} aria-hidden="true" /></button></div>;
   return <main className="preferences-main">
-    <div className="setting-row language-row"><label htmlFor="language">{t('Idioma')}</label><select id="language" value={state.settings.language} disabled={busy} onChange={event => void saveChange({ type: 'language', language: event.target.value as Language })}>{languages.map(code => <option key={code} value={code}>{languageNames[code]}</option>)}</select></div>
+    <div className="preferences-tabs" role="tablist" aria-label={t('Preferencias')}>
+      {(['general', 'radial'] as const).map(name => <button key={name} id={'tab-' + name} role="tab" aria-selected={tab === name} aria-controls={'preferences-' + name} tabIndex={tab === name ? 0 : -1} onClick={() => setTab(name)} onKeyDown={event => {
+        if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) {
+          event.preventDefault();
+          const next = event.key === 'Home' ? 'general' : event.key === 'End' ? 'radial' : tab === 'general' ? 'radial' : 'general';
+          setTab(next); document.getElementById('tab-' + next)?.focus();
+        }
+      }}>{t(name === 'general' ? 'General' : 'Menús radiales')}</button>)}
+    </div>
+    <div id="preferences-general" role="tabpanel" aria-labelledby="tab-general" hidden={tab !== 'general'}>
+    <div className="setting-row language-row"><label htmlFor="language">{t('Idioma')}</label><select id="language" value={state.settings.followSystemLanguage ? 'system' : state.settings.language} disabled={busy} onChange={event => void saveChange({ type: 'language', language: event.target.value as Language | 'system' })}><option value="system">{t('Idioma del sistema')}</option><option disabled role="separator">──────────</option>{languages.map(code => <option key={code} value={code}>{languageNames[code]}</option>)}</select></div>
     <section><h2>{t("Dibujo")}</h2>
       <div className="setting-row"><span className="setting-label">{t("Trazo")}</span><div className="stroke-settings">
         <label className="number-with-unit" title={t("Grosor del trazo")}><input id="line-width" aria-label={t("Grosor del trazo")} type="number" min="1" max="40" value={widthText} onChange={event => {
@@ -386,20 +540,41 @@ function Preferences({ state }: { state: State }) {
       <div className="setting-row"><label htmlFor="drawing-hints">{t('Ayuda al dibujar')}</label><input id="drawing-hints" type="checkbox" checked={state.settings.drawingHints} disabled={busy} onChange={event => void saveChange({ type: 'drawing-hints', enabled: event.target.checked })} /></div>
     </section>
     <section><h2>{t("Colores")}</h2><div className="shortcut-list color-shortcuts">{state.settings.colors.map((color, index) => shortcutRow(`color${index}` as Action, <span className="color-preset"><span>{t("Color")} {index + 1}</span><input aria-label={t('Color {number}', { number: index + 1 })} type="color" value={color} onChange={event => void saveChange({ type: 'preset-color', index, color: event.target.value })} /></span>))}{shortcutRow('nextColor')}</div></section>
-    <section><h2>{t("Funciones")}</h2><div className="shortcut-list">{actions.filter(name => !name.startsWith('color') && name !== 'nextColor').map(name => shortcutRow(name, name === 'toggle' ? t("Activar / salir") : t(actionLabels[name])))}</div>
+    <section><h2>{t("Funciones")}</h2><div className="shortcut-list">{actions.filter(name => !name.startsWith('color') && name !== 'nextColor' && name !== 'pie' && name !== 'pie2' && name !== 'preferences' && name !== 'showToolbar').map(name => shortcutRow(name, name === 'toggle' ? t("Activar / salir") : t(actionLabels[name])))}</div>
     </section>
+    {state.platform === 'linux' && state.linuxBackend && <section><h2>{t('Integración con Linux')}</h2>
+      <div className="setting-row"><label htmlFor="linux-backend">{t('Implementación')}</label><select id="linux-backend" title={t('Los cambios de implementación se aplican al reiniciar TeachersPen.')} value={state.settings.linuxBackend} disabled={busy} onChange={event => void saveChange({ type: 'linux-backend', backend: event.target.value as Settings['linuxBackend'] })}>
+        <option value="auto">{t('Automática')} ({state.linuxBackend.active === 'gnome' ? t('Extensión de GNOME') : 'X11/XWayland'})</option><option value="gnome">{t('Extensión de GNOME')}</option><option value="x11">X11/XWayland</option>
+      </select></div>
+    </section>}
+    </div>
+    <div id="preferences-radial" role="tabpanel" aria-labelledby="tab-radial" hidden={tab !== 'radial'}>
+      <section><h2>{t('Comportamiento general')}</h2>
+      {([
+        ['animationMs', 'Duración de animación', 0, 1000, 'ms'],
+        ['radius', 'Radio del menú', getPieRadius({ ...state.settings.pie, radius: 0 }), 220, 'px'],
+        ['buttonSize', 'Tamaño de los botones', 24, 96, 'px'],
+        ['hoverMs', 'Retardo al pasar sobre', 0, 1500, 'ms']
+      ] as const).map(([key, label, min, max, unit]) => <PieNumberField key={key} id={'pie-' + key} label={t(label)} value={state.settings.pie[key]} min={min} max={max} unit={unit}
+        onCommit={value => void saveChange({ type: 'pie-settings', settings: { ...state.settings.pie, [key]: value } })} />)}
+      <div className="setting-row"><label htmlFor="pie-trigger">{t('Activar opción')}</label><select id="pie-trigger" value={state.settings.pie.trigger} disabled={busy} onChange={e => void saveChange({ type: 'pie-settings', settings: { ...state.settings.pie, trigger: e.target.value as 'click' | 'hover' } })}><option value="click">{t('Pulsar botón')}</option><option value="hover">{t('Pasar sobre')}</option></select></div>
+      </section>
+      {(['slots', 'slots2'] as const).map((slotsKey, menu) => <section key={slotsKey}>
+        <h2>{t(menu === 0 ? 'Menú radial 1' : 'Menú radial 2')}</h2>
+        {shortcutRow(menu === 0 ? 'pie' : 'pie2', t('Atajo'))}
+        <div className="pie-slot-options">
+      {state.settings.pie[slotsKey].map((name, index) => <div className="setting-row" key={index}><label htmlFor={'pie-slot-' + slotsKey + '-' + index}>{index * 45}°</label><select id={'pie-slot-' + slotsKey + '-' + index} value={name || ''} disabled={busy} onChange={e => void saveChange({ type: 'pie-settings', settings: { ...state.settings.pie, [slotsKey]: state.settings.pie[slotsKey].map((value, i) => i === index ? (e.target.value as Action || null) : value) } })}><option value="">{t('Sin asignar')}</option>{actions.filter(a => a !== 'pie' && a !== 'pie2').map(a => <option value={a} key={a}>{t(actionLabels[a])}</option>)}</select></div>)}
+        </div>
+      </section>)}
+    </div>
     {state.shortcutErrors.length > 0 && <div className="notice" role="alert">{state.shortcutErrors.join('\n')}</div>}
     {state.holdError && <div className="notice" role="alert">{t(state.holdError)}</div>}
     {state.wayland && state.linuxBackend?.active !== 'gnome' && <div className="notice">{t("X11/XWayland: la superposición sobre aplicaciones Wayland nativas no está garantizada.")}</div>}
     {error && <div className="notice" role="alert">{error}</div>}
     {state.platform === 'linux' && state.linuxBackend?.active === 'gnome' && !state.holdAvailable && <div className="notice" role="alert">{t('Actualiza la extensión y vuelve a iniciar sesión para utilizar mantener pulsado.')}</div>}
     {state.platform === 'linux' && state.linuxBackend?.error && <div className="notice" role="alert">{t(state.linuxBackend.error)}</div>}
-    {state.platform === 'linux' && state.linuxBackend && <section><h2>{t('Integración con Linux')}</h2>
-      <div className="setting-row"><label htmlFor="linux-backend">{t('Implementación')}</label><select id="linux-backend" title={t('Los cambios de implementación se aplican al reiniciar TeachersPen.')} value={state.settings.linuxBackend} disabled={busy} onChange={event => void saveChange({ type: 'linux-backend', backend: event.target.value as Settings['linuxBackend'] })}>
-        <option value="auto">{t('Automática')} ({state.linuxBackend.active === 'gnome' ? t('Extensión de GNOME') : 'X11/XWayland'})</option><option value="gnome">{t('Extensión de GNOME')}</option><option value="x11">X11/XWayland</option>
-      </select></div>
-    </section>}
-    <footer className="preferences-footer"><button className="about-button" title={t('Información')} aria-label={t('Información')} onClick={() => setAbout(true)}><Info size={18} /></button><button disabled={busy} onClick={() => void saveChange({ type: 'restore-defaults' })}>{t('Restaurar valores')}</button></footer>
+
+    <footer className="preferences-footer"><button className="about-button" title={t('Acerca de teachersPen')} aria-label={t('Acerca de teachersPen')} onClick={() => setAbout(true)}><Info size={18} /></button><button disabled={busy} onClick={() => void saveChange({ type: 'restore-defaults' })}>{t('Restaurar valores')}</button></footer>
     {about && <About state={state} onClose={() => setAbout(false)} />}
   </main>;
 }
@@ -411,6 +586,10 @@ function About({ state, onClose }: { state: State; onClose: () => void }) {
     if (!dialog.current) return;
     if (!dialog.current.showModal) dialogPolyfill.registerDialog(dialog.current);
     dialog.current.showModal();
+    // showModal focuses the first control automatically; keep the initial
+    // appearance neutral while preserving normal Tab navigation.
+    const focused = document.activeElement;
+    if (focused instanceof HTMLElement && dialog.current.contains(focused)) focused.blur();
   }, []);
   const open = async (target: 'donate' | 'paypal' | 'github') => {
     try {
