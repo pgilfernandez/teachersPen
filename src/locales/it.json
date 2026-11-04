@@ -160,5 +160,7 @@
   "Acerca de teachersPen": "Informazioni su teachersPen",
   "Idioma del sistema": "Lingua del sistema",
   "No hay dibujos": "Nessun disegno",
-  "Muestra los dibujos para poder borrarlos": "Mostra i disegni per poterli cancellare"
+  "Muestra los dibujos para poder borrarlos": "Mostra i disegni per poterli cancellare",
+  "No hay acciones que deshacer": "Nessuna azione da annullare",
+  "No hay acciones que rehacer": "Nessuna azione da ripristinare"
 }

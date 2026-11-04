@@ -35,10 +35,24 @@ test('zero-delay hover still excludes the close button and outside positions', (
 
 test('radial visibility and clear buttons match toolbar availability', () => {
   for (const visible of [false, true]) {
-    assert.equal(isRadialActionEnabled('visible', { hasDrawings: false, visible }), false);
-    assert.equal(isRadialActionEnabled('clear', { hasDrawings: false, visible }), false);
-    assert.equal(isRadialActionEnabled('visible', { hasDrawings: true, visible }), true);
-    assert.equal(isRadialActionEnabled('clear', { hasDrawings: true, visible }), visible);
+    assert.equal(isRadialActionEnabled('visible', { canUndo: false, canRedo: false, hasDrawings: false, visible }), false);
+    assert.equal(isRadialActionEnabled('clear', { canUndo: false, canRedo: false, hasDrawings: false, visible }), false);
+    assert.equal(isRadialActionEnabled('visible', { canUndo: false, canRedo: false, hasDrawings: true, visible }), true);
+    assert.equal(isRadialActionEnabled('clear', { canUndo: false, canRedo: false, hasDrawings: true, visible }), visible);
   }
-  assert.equal(isRadialActionEnabled('freehand', { hasDrawings: false, visible: false }), true);
+  assert.equal(isRadialActionEnabled('freehand', { canUndo: false, canRedo: false, hasDrawings: false, visible: false }), true);
+});
+
+test('radial undo and redo follow history availability independently of drawing visibility', () => {
+  for (const canUndo of [false, true]) {
+    for (const canRedo of [false, true]) {
+      for (const visible of [false, true]) {
+        for (const hasDrawings of [false, true]) {
+          const state = { canUndo, canRedo, visible, hasDrawings };
+          assert.equal(isRadialActionEnabled('undo', state), canUndo);
+          assert.equal(isRadialActionEnabled('redo', state), canRedo);
+        }
+      }
+    }
+  }
 });

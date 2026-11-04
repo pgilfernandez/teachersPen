@@ -1,6 +1,8 @@
 import type { Action, State } from './shared';
 
-export function isRadialActionEnabled(action: Action, state: Pick<State, 'hasDrawings' | 'visible'>): boolean {
+export function isRadialActionEnabled(action: Action, state: Pick<State, 'hasDrawings' | 'visible' | 'canUndo' | 'canRedo'>): boolean {
+  if (action === 'undo') return state.canUndo;
+  if (action === 'redo') return state.canRedo;
   if (action === 'visible') return state.hasDrawings;
   if (action === 'clear') return state.hasDrawings && state.visible;
   return true;

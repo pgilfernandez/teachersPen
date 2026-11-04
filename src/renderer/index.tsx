@@ -84,7 +84,7 @@ function PieMenu({ state }: { state: State }) {
     const name = button?.dataset.action as Action | undefined;
     if (name) hover.current = setTimeout(() => choose(name), settings.hoverMs);
     return cancelHover;
-  }, [ready, settings.trigger, settings.hoverMs, state.hasDrawings, state.visible]);
+  }, [ready, settings.trigger, settings.hoverMs, state.hasDrawings, state.visible, state.canUndo, state.canRedo]);
   useEffect(() => {
     if (state.platform !== 'darwin' || !ready) return;
     let stopped = false;
@@ -121,7 +121,7 @@ function PieMenu({ state }: { state: State }) {
       const Icon = iconMap[name] || Circle;
       const enabled = isRadialActionEnabled(name, state);
       const label = name === 'visible' ? t(state.visible ? 'Ocultar los dibujos sin borrarlos' : 'Volver a mostrar los dibujos') : t(actionLabels[name]);
-      const tip = enabled ? label : t(!state.hasDrawings ? 'No hay dibujos' : 'Muestra los dibujos para poder borrarlos');
+      const tip = enabled ? label : t(name === 'undo' ? 'No hay acciones que deshacer' : name === 'redo' ? 'No hay acciones que rehacer' : !state.hasDrawings ? 'No hay dibujos' : 'Muestra los dibujos para poder borrarlos');
       const color = name === 'nextColor' ? state.settings.colors[(state.color + 1) % state.settings.colors.length] : name.startsWith('color') ? state.settings.colors[Number(name.slice(-1))] : undefined;
       return <button key={index} className={`pie-item ${hoveredSlot === index ? 'is-hovered' : ''}`} data-action={name} disabled={!enabled} aria-disabled={!ready || !enabled} onAnimationEnd={event => {
         if (event.target !== event.currentTarget || event.animationName !== 'pie-appear') return;

@@ -177,5 +177,7 @@
   "Acerca de teachersPen": "About teachersPen",
   "Idioma del sistema": "System language",
   "No hay dibujos": "No drawings",
-  "Muestra los dibujos para poder borrarlos": "Show the drawings before clearing them"
+  "Muestra los dibujos para poder borrarlos": "Show the drawings before clearing them",
+  "No hay acciones que deshacer": "Nothing to undo",
+  "No hay acciones que rehacer": "Nothing to redo"
 }
