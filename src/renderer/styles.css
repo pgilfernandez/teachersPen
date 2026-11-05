@@ -198,10 +198,12 @@ input[type="color"] { width: 35px; height: 23px; padding: 1px; cursor: pointer; 
 .about-content p { font-size: 12px; margin: 0 0 20px; line-height: 1.5; }
 .about-content .about-credit { margin-bottom: 4px; }
 .about-content .about-license { font-size: 11px; color: var(--ui-muted); margin-bottom: 20px; }
-.about-links { display: flex; flex-direction: column; align-items: center; gap: 8px; }
-.about-link-row { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.about-links { display: grid; gap: 8px; width: 100%; }
+.about-link-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; gap: 8px; }
+.about-donate-row { grid-template-columns: auto repeat(2, minmax(0, 1fr)); align-items: center; }
 .about-donate-row > span { font-size: 12px; }
-.about-links button { display: inline-flex; align-items: center; gap: 5px; padding: 7px 12px; font-size: 12px; border-radius: 6px; background: var(--ui-control); color: var(--ui-control-ink); }
+.about-links button { display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-width: 0; padding: 7px 8px; font-size: 12px; border-radius: 6px; background: var(--ui-control); color: var(--ui-control-ink); }
+.about-links button svg { flex-shrink: 0; }
 .about-links .donate-button { background: #256ed1; color: #fff; }
 
 .toolbar-collapsed { opacity: 0; clip-path: inset(0 100% 0 0); }
@@ -224,7 +226,7 @@ input[type="color"] { width: 35px; height: 23px; padding: 1px; cursor: pointer; 
 .legacy-flex-gap .colors > * + * { margin-left: 6px; }
 .legacy-flex-gap .stroke-settings > * + *, .legacy-flex-gap .color-preset > * + * { margin-left: 10px; }
 .legacy-flex-gap .number-with-unit > * + * { margin-left: 3px; }
-.legacy-flex-gap .preferences-footer > * + *, .legacy-flex-gap .about-links > * + * { margin-left: 8px; }
+.legacy-flex-gap .preferences-footer > * + * { margin-left: 8px; }
 .legacy-flex-gap .timer-panel > * + * { margin-left: 1vw; }
 .legacy-flex-gap .timer-content > * + * { margin-top: 2vw; }
 .legacy-flex-gap .timer-controls > * + * { margin-left: 1vw; }
