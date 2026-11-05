@@ -20,7 +20,8 @@ export function paintStroke(ctx: CanvasRenderingContext2D, stroke: Stroke) {
   ctx.lineJoin = 'round';
   ctx.beginPath();
   if (stroke.tool === 'circle') {
-    ctx.arc(first.x, first.y, Math.hypot(last.x - first.x, last.y - first.y), 0, Math.PI * 2);
+    ctx.ellipse((first.x + last.x) / 2, (first.y + last.y) / 2,
+      Math.abs(last.x - first.x) / 2, Math.abs(last.y - first.y) / 2, 0, 0, Math.PI * 2);
     ctx.stroke();
     return;
   }

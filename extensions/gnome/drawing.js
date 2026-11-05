@@ -34,7 +34,18 @@ export function paintStroke(cr, stroke) {
     cr.setSourceRGBA(...rgb, 1 - (stroke.transparency ?? 0) / 100);
     cr.setLineWidth(stroke.width);
     cr.setLineCap(1); cr.setLineJoin(1); cr.newPath();
-    if (stroke.tool === 'circle') cr.arc(first.x, first.y, Math.hypot(last.x - first.x, last.y - first.y), 0, Math.PI * 2);
+    if (stroke.tool === 'circle') {
+        const rx = Math.abs(last.x - first.x) / 2, ry = Math.abs(last.y - first.y) / 2;
+        if (rx > 0 && ry > 0) {
+            cr.save();
+            cr.translate((first.x + last.x) / 2, (first.y + last.y) / 2);
+            cr.scale(rx, ry);
+            cr.arc(0, 0, 1, 0, Math.PI * 2);
+            cr.restore();
+        } else {
+            cr.moveTo(first.x, first.y); cr.lineTo(last.x, last.y);
+        }
+    }
     else if (stroke.tool === 'rectangle') cr.rectangle(first.x, first.y, last.x - first.x, last.y - first.y);
     else if (stroke.tool === 'freehand' && stroke.points.length === 1) {
         cr.arc(first.x, first.y, stroke.width / 2, 0, Math.PI * 2); cr.fill(); return;

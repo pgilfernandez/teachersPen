@@ -20,7 +20,7 @@ document.body.className = role;
 document.documentElement.classList.add(`window-${role}`);
 const command = (value: Command) => window.pen.command(value);
 const action = (value: Action) => command({ type: 'action', action: value });
-const toolNames: Record<Tool, string> = { freehand: 'Lápiz', line: 'Línea', arrow: 'Flecha', rectangle: 'Rectángulo', circle: 'Círculo' };
+const toolNames: Record<Tool, string> = { freehand: 'Lápiz', line: 'Línea', arrow: 'Flecha', rectangle: 'Rectángulo', circle: 'Elipse' };
 const toolIcons: Record<Tool, EditableIcon> = { freehand: Pencil, line: Slash, arrow: MoveUpRight, rectangle: Rectangle, circle: Circle };
 function keyLabel(value: string, language: Language) { const t = translator(language); return value.replace(/Control/g, 'Ctrl').replace(/Shift/g, t("Mayús")).replace(/Space/g, t("Espacio")); }
 
