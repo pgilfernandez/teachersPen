@@ -172,5 +172,7 @@
   "No se ha detectado una versión compatible de GNOME.": "Nessuna versione compatibile di GNOME rilevata.",
   "Extensión instalada. Cierra sesión y vuelve a entrar; después abre TeachersPen.": "Estensione installata. Esci e accedi di nuovo alla sessione, poi apri TeachersPen.",
   "No se ha podido instalar la extensión.": "Impossibile installare l’estensione.",
-  "Espera…": "Attendi…"
+  "Espera…": "Attendi…",
+  "GNOME tiene desactivadas las extensiones de usuario. Actívalas en la aplicación Extensiones de GNOME.": "GNOME ha disattivato le estensioni utente. Attivale nell’app Estensioni di GNOME.",
+  "La extensión está activa en GNOME.": "L’estensione è attiva in GNOME."
 }

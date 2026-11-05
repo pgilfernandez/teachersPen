@@ -160,7 +160,7 @@ export type Command =
   | { type: 'toolbar-size'; width: number; height: number; orientation: Settings['toolbarOrientation'] }
   | { type: 'linux-backend'; backend: LinuxBackend }
   | { type: 'quit' };
-export interface GnomeExtensionStatus { shellVersion: string | null; supported: boolean; installedVersion: number | null; bundledVersion: number }
+export interface GnomeExtensionStatus { shellVersion: string | null; supported: boolean; installedVersion: number | null; bundledVersion: number; activation: { userExtensionsDisabled: boolean | null; state: number | null; enabled: boolean } }
 export interface PenAPI {
   getGnomeExtensionStatus(): Promise<GnomeExtensionStatus>;
   installGnomeExtension(): Promise<{ installed: boolean; enabled: boolean; needsLogout: boolean }>;

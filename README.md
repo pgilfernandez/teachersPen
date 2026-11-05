@@ -103,7 +103,10 @@ extension** (or **Install or update GNOME extension**). The Linux binary,
 including the AppImage, embeds the extension ZIP, so this works offline and
 installs only for the current user without administrator permissions. The app
 tries to enable it and explains when you need to log out and back in. Restart
-TeachersPen afterwards, with Automatic or GNOME extension selected.
+TeachersPen afterwards, with Automatic or GNOME extension selected. If GNOME
+has disabled user extensions globally, Preferences explains that this switch
+must be enabled in GNOME Extensions. The installer does not change that global
+preference or enable other extensions.
 
 Developers can also build and install the extension as the desktop user:
 

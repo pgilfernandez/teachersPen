@@ -525,7 +525,9 @@ function GnomeExtensionInstaller({ language }: { language: Settings['language'] 
     <button type="button" disabled={busy || !status?.supported} onClick={() => void install()}>{t(busy ? 'Espera…' : status?.installedVersion != null ? 'Instalar o actualizar extensión de GNOME' : 'Instalar extensión de GNOME')}</button>
     <p>{t('Se instala solo para tu usuario, sin descargas ni permisos de administrador.')}</p>
     {status && !status.supported && <p role="status">{t('No se ha detectado una versión compatible de GNOME.')}</p>}
-    {installed && <p role="status">{t('Extensión instalada. Cierra sesión y vuelve a entrar; después abre TeachersPen.')}</p>}
+    {status?.activation.userExtensionsDisabled && <p role="alert">{t('GNOME tiene desactivadas las extensiones de usuario. Actívalas en la aplicación Extensiones de GNOME.')}</p>}
+    {status?.activation.enabled && <p role="status">{t('La extensión está activa en GNOME.')}</p>}
+    {installed && !status?.activation.userExtensionsDisabled && <p role="status">{t('Extensión instalada. Cierra sesión y vuelve a entrar; después abre TeachersPen.')}</p>}
     {error && <p role="alert">{t('No se ha podido instalar la extensión.')}{' '}{error}</p>}
   </div>;
 }

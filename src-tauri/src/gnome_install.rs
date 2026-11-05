@@ -50,6 +50,26 @@ fn supported(version: &str) -> bool {
     metadata["shell-version"].as_array().unwrap().iter().any(|entry| entry.as_str() == Some(major))
 }
 
+fn shell_status() -> (Option<bool>, Option<u32>) {
+    let query = || -> Option<(Option<bool>, Option<u32>)> {
+        let connection = zbus::blocking::Connection::session().ok()?;
+        let proxy = zbus::blocking::Proxy::new(&connection, "org.gnome.Shell.Extensions",
+            "/org/gnome/Shell/Extensions", "org.gnome.Shell.Extensions").ok()?;
+        let blocked = proxy.get_property::<bool>("UserExtensionsEnabled").ok().map(|enabled| !enabled);
+        let info: Option<std::collections::HashMap<String, zbus::zvariant::OwnedValue>> = proxy.call("GetExtensionInfo", &(UUID,)).ok();
+        let state = info.as_ref().and_then(|info| info.get("state"))
+            .and_then(|value| value.downcast_ref::<f64>()).map(|state| *state as u32);
+        Some((blocked, state))
+    };
+    query().unwrap_or((None, None))
+}
+
+fn activation_status(blocked: Option<bool>, state: Option<u32>) -> Value {
+    // Shell's ACTIVE state is 1. A successful CLI invocation only records the
+    // request; the global switch, policy, or a load error can still prevent it.
+    json!({"userExtensionsDisabled":blocked,"state":state,"enabled":blocked != Some(true) && state == Some(1)})
+}
+
 pub fn status(app: &tauri::AppHandle) -> Result<Value> {
     let data = data_home(app)?;
     let version = host_command("gnome-shell", &data).arg("--version").output().ok()
@@ -59,13 +79,14 @@ pub fn status(app: &tauri::AppHandle) -> Result<Value> {
     let installed: Option<Value> = fs::read(data.join("gnome-shell/extensions").join(UUID).join("metadata.json"))
         .ok().and_then(|bytes| serde_json::from_slice(&bytes).ok());
     let bundled: Value = serde_json::from_str(METADATA).map_err(|e| e.to_string())?;
+    let (blocked, state) = shell_status();
     Ok(json!({"shellVersion":version,"supported":version.as_deref().map(supported).unwrap_or(false),
-        "installedVersion":installed.and_then(|value| value.get("version").cloned()),"bundledVersion":bundled["version"]}))
+        "installedVersion":installed.and_then(|value| value.get("version").cloned()),"bundledVersion":bundled["version"],"activation":activation_status(blocked, state)}))
 }
 
 struct CommandResult { success: bool, error: String }
 
-fn install_archive(cache: &Path, data: &Path, run: impl Fn(&[OsString], &Path) -> Result<CommandResult>) -> Result<Value> {
+fn install_archive(cache: &Path, data: &Path, run: impl Fn(&[OsString], &Path) -> Result<CommandResult>, read_shell: impl Fn() -> (Option<bool>, Option<u32>)) -> Result<Value> {
     let stamp = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_err(|e| e.to_string())?.as_nanos();
     let temporary = cache.join(format!("extension-install-{}-{stamp}", std::process::id()));
     fs::create_dir_all(&temporary).map_err(|e| e.to_string())?;
@@ -76,8 +97,11 @@ fn install_archive(cache: &Path, data: &Path, run: impl Fn(&[OsString], &Path) -
         if !installed.success { return Err(format!("gnome-extensions install: {}", installed.error)); }
         // A successful install may not be discovered until the next login. Do
         // not report it as a failed installation if enabling is deferred.
-        let enabled = run(&["enable".into(), UUID.into()], data);
-        Ok(json!({"installed":true,"enabled":enabled.as_ref().map(|result| result.success).unwrap_or(false),"needsLogout":true}))
+        let requested = run(&["enable".into(), UUID.into()], data);
+        let (blocked, state) = read_shell();
+        let activation = activation_status(blocked, state);
+        Ok(json!({"installed":true,"enabled":activation["enabled"],"activation":activation,
+            "enableRequested":requested.as_ref().map(|result| result.success).unwrap_or(false),"needsLogout":true}))
     })();
     let _ = fs::remove_dir_all(&temporary);
     result
@@ -92,13 +116,22 @@ pub fn install(app: &tauri::AppHandle) -> Result<Value> {
     install_archive(&cache, &data_home(app)?, |args, data| {
         let output = host_command("gnome-extensions", data).args(args).output().map_err(|e| format!("gnome-extensions: {e}"))?;
         Ok(CommandResult {success: output.status.success(), error: String::from_utf8_lossy(&output.stderr).trim().to_string()})
-    })
+    }, shell_status)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use std::cell::RefCell;
+    #[test]
+    fn activation_requires_an_active_shell_extension_and_no_global_block() {
+        assert_eq!(activation_status(Some(true), Some(6))["enabled"], false);
+        assert_eq!(activation_status(Some(true), Some(1))["enabled"], false);
+        assert_eq!(activation_status(Some(false), Some(6))["enabled"], false);
+        assert_eq!(activation_status(Some(false), Some(3))["enabled"], false);
+        assert_eq!(activation_status(None, None)["enabled"], false);
+        assert_eq!(activation_status(Some(false), Some(1))["enabled"], true);
+    }
     #[test]
     fn desktop_tools_do_not_load_appimage_or_snap_libraries() {
         assert_eq!(external_paths("LD_LIBRARY_PATH", "/tmp/.mount_teachers/usr/lib:/snap/core20/lib:/usr/lib", Some(Path::new("/tmp/.mount_teachers"))), "/usr/lib");
@@ -125,16 +158,22 @@ mod tests {
                 assert_eq!(args, &[OsString::from("enable"), OsString::from(UUID)]);
                 Ok(CommandResult {success:false,error:"not discovered yet".into()})
             }
-        }).unwrap();
+        }, || (Some(false), Some(6))).unwrap();
         assert_eq!(result["installed"], true); assert_eq!(result["needsLogout"], true);
         assert_eq!(result["enabled"], false); assert_eq!(calls.borrow().len(), 2);
         assert_eq!(fs::read_dir(&cache).unwrap().count(), 0);
         let failure = install_archive(&cache, Path::new("/tmp/desktop-data"), |args, _| {
             assert_eq!(args[0], "install");
             Ok(CommandResult {success:false,error:"permission denied".into()})
-        });
+        }, || panic!("failed install must not query activation"));
         assert!(failure.unwrap_err().contains("permission denied"));
         assert_eq!(fs::read_dir(&cache).unwrap().count(), 0);
+        let blocked = install_archive(&cache, Path::new("/tmp/desktop-data"), |_, _| {
+            Ok(CommandResult {success:true,error:String::new()})
+        }, || (Some(true), Some(6))).unwrap();
+        assert_eq!(blocked["enableRequested"], true);
+        assert_eq!(blocked["enabled"], false, "a successful enable command cannot override the global switch");
+        assert_eq!(blocked["activation"]["userExtensionsDisabled"], true);
         fs::remove_dir(&cache).unwrap();
     }
 }
