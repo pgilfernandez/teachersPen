@@ -526,6 +526,7 @@ function Preferences({ state }: { state: State }) {
         }
       }}>{t(name === 'general' ? 'General' : 'Menús radiales')}</button>)}
     </div>
+    <div className="preferences-scroll">
     <div id="preferences-general" role="tabpanel" aria-labelledby="tab-general" hidden={tab !== 'general'}>
     <div className="setting-row language-row"><label htmlFor="language">{t('Idioma')}</label><select id="language" value={state.settings.followSystemLanguage ? 'system' : state.settings.language} disabled={busy} onChange={event => void saveChange({ type: 'language', language: event.target.value as Language | 'system' })}><option value="system">{t('Idioma del sistema')}</option><option disabled role="separator">──────────</option>{languages.map(code => <option key={code} value={code}>{languageNames[code]}</option>)}</select></div>
     <section><h2>{t("Dibujo")}</h2>
@@ -577,6 +578,7 @@ function Preferences({ state }: { state: State }) {
     {error && <div className="notice" role="alert">{error}</div>}
     {state.platform === 'linux' && state.linuxBackend?.active === 'gnome' && !state.holdAvailable && <div className="notice" role="alert">{t('Actualiza la extensión y vuelve a iniciar sesión para utilizar mantener pulsado.')}</div>}
     {state.platform === 'linux' && state.linuxBackend?.error && <div className="notice" role="alert">{t(state.linuxBackend.error)}</div>}
+    </div>
 
     <footer className="preferences-footer"><button className="about-button" title={t('Acerca de teachersPen')} aria-label={t('Acerca de teachersPen')} onClick={() => setAbout(true)}><Info size={18} /></button><button disabled={busy} onClick={() => void saveChange({ type: 'restore-defaults' })}>{t('Restaurar valores')}</button></footer>
     {about && <About state={state} onClose={() => setAbout(false)} />}
