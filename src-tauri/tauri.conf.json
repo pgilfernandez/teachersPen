@@ -38,7 +38,9 @@
         "../LICENSE.md",
         "../NOTICE.md",
         "../src/renderer/assets/icons/LICENSE-lucide.txt",
-        "../dist-light/THIRD-PARTY-NOTICES.txt"
+        "../dist-light/THIRD-PARTY-NOTICES.txt",
+        "../dist-light/THIRD-PARTY-LICENSES.json",
+        "../dist-light/THIRD-PARTY-SOURCES.tar.gz"
       ],
       "macOS": {
         "minimumSystemVersion": "11.0"

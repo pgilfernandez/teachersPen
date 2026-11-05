@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (c) 2026 Pablo Gil Fernández
+
 // Pure geometry shared by the Shell renderer and its tests.
 export function subtract(rectangles, hole) {
     const result = [];

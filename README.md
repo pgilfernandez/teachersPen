@@ -75,9 +75,9 @@ Native window behavior, global shortcuts, held-key activation, and cursor previe
 
 TeachersPen is available under the **[PolyForm Noncommercial License 1.0.0](LICENSE.md)**.
 
-The license permits use, modification, and sharing for noncommercial purposes. It also explicitly permits use by educational institutions, regardless of their funding. Commercial uses outside the license's permitted purposes require separate permission from the author.
+The desktop application license permits use, modification, and sharing for noncommercial purposes. The GNOME extension is GPL-2.0-or-later and the shared model also offers an MIT alternative; these parts permit commercial use under their respective licenses. It also explicitly permits use by educational institutions, regardless of their funding. Commercial uses outside the license's permitted purposes require separate permission from the author.
 
-When sharing the app or modified versions, retain the license and required notices. See [LICENSE.md](LICENSE.md) for the full terms and [NOTICE.md](NOTICE.md) for attribution and third-party licenses.
+When sharing the app or modified versions, retain the license and required notices. See [LICENSE.md](LICENSE.md) for the desktop terms, [NOTICE.md](NOTICE.md) for exceptions and third-party notices, and [licensing checks](docs/licensing/README.md) for dependency and installer verification.
 
 ## Support
 

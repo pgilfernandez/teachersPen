@@ -62,8 +62,18 @@ jobs:
           restore-keys: tauri-${{ runner.os }}-${{ matrix.arch }}-rust191-
       - name: Install dependencies
         run: npm ci
+      - name: Check dependency licenses
+        run: npm run licenses:check
       - name: Build DMG for this architecture only
         run: npm run dist:mac -- --target ${{ matrix.target }} --ci
+      - name: Verify macOS packaged licenses and sources
+        run: npm run licenses:verify -- --app src-tauri/target/${{ matrix.target }}/release/bundle/macos/TeachersPen.app --report dist/license-macos-${{ matrix.arch }}.json
+      - name: Upload macOS license review
+        uses: actions/upload-artifact@v4
+        with:
+          name: licenses-macOS-${{ matrix.arch }}-${{ steps.commit.outputs.sha }}
+          path: dist/license-macos-*.json
+          if-no-files-found: error
       - name: Upload macOS installer
         uses: actions/upload-artifact@v4
         with:
@@ -105,6 +115,8 @@ jobs:
           restore-keys: tauri-${{ runner.os }}-x64-rust191-
       - name: Install dependencies
         run: npm ci
+      - name: Check dependency licenses
+        run: npm run licenses:check
       - name: Build NSIS installer with the MSVC environment
         shell: cmd
         run: |
@@ -113,6 +125,14 @@ jobs:
           call "%TEACHERSPEN_VS_PATH%\Common7\Tools\VsDevCmd.bat" -arch=x64 -host_arch=x64
           if errorlevel 1 exit /b %errorlevel%
           call npm run dist:win -- --ci
+      - name: Verify Windows installer licenses and sources
+        run: npm run licenses:verify -- --bundle-dir src-tauri/target/release/bundle/nsis --report dist/license-windows.json
+      - name: Upload Windows license review
+        uses: actions/upload-artifact@v4
+        with:
+          name: licenses-Windows-${{ steps.commit.outputs.sha }}
+          path: dist/license-windows.json
+          if-no-files-found: error
       - name: Upload Windows installer
         uses: actions/upload-artifact@v4
         with:
@@ -175,10 +195,20 @@ jobs:
           restore-keys: tauri-ubuntu2004-x64-rust191-
       - name: Install dependencies
         run: npm ci
+      - name: Check dependency licenses
+        run: npm run licenses:check
       - name: Build GNOME Shell extension
         run: npm run build:gnome
       - name: Build AppImage and DEB
         run: npm run dist:linux -- --ci --verbose
+      - name: Verify Linux installer licenses and sources
+        run: npm run licenses:verify -- --bundle-dir src-tauri/target/release/bundle --gnome dist/gnome/teacherspen@pgilfernandez.github.io.shell-extension.zip --report dist/license-linux.json
+      - name: Upload Linux license review
+        uses: actions/upload-artifact@v4
+        with:
+          name: licenses-Linux-${{ steps.commit.outputs.sha }}
+          path: dist/license-linux.json
+          if-no-files-found: error
       - name: Upload Linux AppImage
         uses: actions/upload-artifact@v4
         with:
@@ -203,3 +233,20 @@ jobs:
           path: dist/gnome/*.shell-extension.zip
           if-no-files-found: error
           retention-days: 14
+
+
+  licenses:
+    name: All-platform license policy and tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: dtolnay/rust-toolchain@1.91.1
+      - run: npm ci
+      - run: npm run check
+      - run: npm run licenses:check -- --all-targets
+      - run: npm run build:gnome
+      - run: npm run licenses:verify -- --gnome dist/gnome/teacherspen@pgilfernandez.github.io.shell-extension.zip --report dist/license-gnome.json

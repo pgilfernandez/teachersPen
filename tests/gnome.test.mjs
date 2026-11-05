@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (c) 2026 Pablo Gil Fernández
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {subtract, accelerator} from '../extensions/gnome/drawing.js';

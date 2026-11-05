@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0 OR MIT
+// Copyright (c) 2026 Pablo Gil Fernández
+// The MIT alternative is available in licenses/MIT.txt.
+
 import type { Tool } from './shared';
 export interface Point { x: number; y: number }
 export interface Stroke { tool: Tool; color: string; width: number; transparency?: number; points: Point[] }

@@ -4,6 +4,7 @@ import { mkdir, copyFile, cp, readFile, writeFile } from 'node:fs/promises';
 import './build-native.mjs';
 import './build-icons.mjs';
 import { buildNotices } from './build-notices.mjs';
+import { buildTarget } from './licensing.mjs';
 
 const out = 'dist-light';
 await mkdir(out, { recursive: true });
@@ -12,7 +13,7 @@ const metadata = JSON.parse(await readFile('package.json', 'utf8'));
 let commit = 'unknown';
 try { commit = execFileSync('git', ['rev-parse', '--short', 'HEAD'], { encoding: 'utf8' }).trim(); } catch {}
 const define = { "process.env.NODE_ENV": JSON.stringify("production"), __APP_VERSION__: JSON.stringify(metadata.version), __APP_COMMIT__: JSON.stringify(commit) };
-await build({ define, minify: true, entryPoints: ['src/native/entry.ts'], outfile: `${out}/renderer.js`, bundle: true, platform: 'browser', target: ['safari14', 'chrome90'], jsx: 'automatic', loader: { '.svg': 'text' } });
+const frontend = await build({ metafile: true, define, minify: true, entryPoints: ['src/native/entry.ts'], outfile: `${out}/renderer.js`, bundle: true, platform: 'browser', target: ['safari14', 'chrome90'], jsx: 'automatic', loader: { '.svg': 'text' } });
 const html = (await readFile('src/renderer/index.html', 'utf8')).replace(/<meta http-equiv="Content-Security-Policy"[^>]+>/, '');
 await writeFile(`${out}/index.html`, html);
 await copyFile('src/renderer/styles.css', `${out}/styles.css`);
@@ -24,4 +25,4 @@ const targets = process.platform === 'darwin' ? ['x86_64-apple-darwin', 'aarch64
 const ext = process.platform === 'win32' ? '.exe' : '';
 for (const target of targets) await copyFile(`dist/native/key-state${ext}`, `src-tauri/binaries/key-state-${target}${ext}`);
 
-await buildNotices(host);
+await buildNotices(buildTarget(), Object.keys(frontend.metafile.inputs));

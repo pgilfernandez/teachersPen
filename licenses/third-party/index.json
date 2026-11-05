@@ -1,0 +1,431 @@
+{
+  "alloc-stdlib@0.2.4": {
+    "license": "BSD-3-Clause",
+    "files": [
+      {
+        "file": "alloc-stdlib-0.2.4.txt",
+        "url": "https://raw.githubusercontent.com/dropbox/rust-alloc-no-stdlib/ae42d22078b98549e987d2f03d12df7b984fde47/LICENSE"
+      }
+    ]
+  },
+  "block@0.1.6": {
+    "license": "MIT",
+    "standardText": true,
+    "files": [
+      {
+        "file": "MIT-DECLARED.txt",
+        "url": "https://opensource.org/license/mit/"
+      }
+    ]
+  },
+  "cargo_toml@0.15.3": {
+    "license": "Apache-2.0 OR MIT",
+    "standardText": true,
+    "files": [
+      {
+        "file": "Apache-2.0.txt",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0"
+      }
+    ]
+  },
+  "convert_case@0.4.0": {
+    "license": "MIT",
+    "standardText": true,
+    "files": [
+      {
+        "file": "MIT-DECLARED.txt",
+        "url": "https://opensource.org/license/mit/"
+      }
+    ]
+  },
+  "dispatch@0.2.0": {
+    "license": "MIT",
+    "standardText": true,
+    "files": [
+      {
+        "file": "MIT-DECLARED.txt",
+        "url": "https://opensource.org/license/mit/"
+      }
+    ]
+  },
+  "fxhash@0.2.1": {
+    "license": "Apache-2.0/MIT",
+    "standardText": true,
+    "files": [
+      {
+        "file": "Apache-2.0.txt",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0"
+      }
+    ]
+  },
+  "jni-sys-macros@0.4.1": {
+    "license": "MIT OR Apache-2.0",
+    "files": [
+      {
+        "file": "jni-sys-macros-0.4.1.txt",
+        "url": "https://raw.githubusercontent.com/jni-rs/jni-sys/64d77b7a5f119d7b55b4e2c169a4668067ff59e6/LICENSE-MIT"
+      }
+    ]
+  },
+  "libappindicator-sys@0.7.3": {
+    "license": "Apache-2.0 OR MIT",
+    "files": [
+      {
+        "file": "libappindicator-sys-0.7.3.txt",
+        "url": "https://github.com/tauri-apps/libappindicator-rs/blob/261a1f6feb24afada7fad8c0ab8cf319f7df30f7/LICENSE-MIT"
+      }
+    ]
+  },
+  "mac@0.1.1": {
+    "license": "MIT/Apache-2.0",
+    "standardText": true,
+    "files": [
+      {
+        "file": "Apache-2.0.txt",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0"
+      }
+    ]
+  },
+  "malloc_buf@0.0.6": {
+    "license": "MIT",
+    "standardText": true,
+    "files": [
+      {
+        "file": "MIT-DECLARED.txt",
+        "url": "https://opensource.org/license/mit/"
+      }
+    ]
+  },
+  "ndk-context@0.1.1": {
+    "license": "MIT OR Apache-2.0",
+    "files": [
+      {
+        "file": "ndk-context-0.1.1.txt",
+        "url": "https://raw.githubusercontent.com/rust-windowing/android-ndk-rs/10f2ba388fca20f7349996ebae26ccda7a6fda5c/LICENSE-MIT"
+      }
+    ]
+  },
+  "ndk-sys@0.3.0": {
+    "license": "MIT OR Apache-2.0",
+    "files": [
+      {
+        "file": "ndk-sys-0.3.0.txt",
+        "url": "https://raw.githubusercontent.com/rust-windowing/android-ndk-rs/f4dc7265aaa3e51f355ff1cb298e18167685fc7f/LICENSE-MIT"
+      }
+    ]
+  },
+  "ndk@0.6.0": {
+    "license": "MIT OR Apache-2.0",
+    "files": [
+      {
+        "file": "ndk-0.6.0.txt",
+        "url": "https://raw.githubusercontent.com/rust-windowing/android-ndk-rs/f4dc7265aaa3e51f355ff1cb298e18167685fc7f/LICENSE-MIT"
+      }
+    ]
+  },
+  "objc_exception@0.1.2": {
+    "license": "MIT",
+    "standardText": true,
+    "files": [
+      {
+        "file": "MIT-DECLARED.txt",
+        "url": "https://opensource.org/license/mit/"
+      }
+    ]
+  },
+  "objc_id@0.1.1": {
+    "license": "MIT",
+    "standardText": true,
+    "files": [
+      {
+        "file": "MIT-DECLARED.txt",
+        "url": "https://opensource.org/license/mit/"
+      }
+    ]
+  },
+  "phf@0.10.1": {
+    "license": "MIT",
+    "files": [
+      {
+        "file": "phf-0.10.1.txt",
+        "url": "https://raw.githubusercontent.com/sfackler/rust-phf/bed01538ae576876f11189d541875d228acef9e8/LICENSE"
+      }
+    ]
+  },
+  "phf@0.8.0": {
+    "license": "MIT",
+    "files": [
+      {
+        "file": "phf-0.8.0.txt",
+        "url": "https://raw.githubusercontent.com/sfackler/rust-phf/81c7cc5b48649108428671d3b8ad151f6fbdb359/LICENSE"
+      }
+    ]
+  },
+  "phf_codegen@0.10.0": {
+    "license": "MIT",
+    "files": [
+      {
+        "file": "phf_codegen-0.10.0.txt",
+        "url": "https://raw.githubusercontent.com/sfackler/rust-phf/3ea14b2166553ad6e7b9afe7244144f5d661b6c6/LICENSE"
+      }
+    ]
+  },
+  "phf_codegen@0.8.0": {
+    "license": "MIT",
+    "files": [
+      {
+        "file": "phf_codegen-0.8.0.txt",
+        "url": "https://raw.githubusercontent.com/sfackler/rust-phf/81c7cc5b48649108428671d3b8ad151f6fbdb359/LICENSE"
+      }
+    ]
+  },
+  "phf_generator@0.10.0": {
+    "license": "MIT",
+    "files": [
+      {
+        "file": "phf_generator-0.10.0.txt",
+        "url": "https://raw.githubusercontent.com/sfackler/rust-phf/3ea14b2166553ad6e7b9afe7244144f5d661b6c6/LICENSE"
+      }
+    ]
+  },
+  "phf_generator@0.8.0": {
+    "license": "MIT",
+    "files": [
+      {
+        "file": "phf_generator-0.8.0.txt",
+        "url": "https://raw.githubusercontent.com/sfackler/rust-phf/81c7cc5b48649108428671d3b8ad151f6fbdb359/LICENSE"
+      }
+    ]
+  },
+  "phf_macros@0.8.0": {
+    "license": "MIT",
+    "files": [
+      {
+        "file": "phf_macros-0.8.0.txt",
+        "url": "https://raw.githubusercontent.com/sfackler/rust-phf/81c7cc5b48649108428671d3b8ad151f6fbdb359/LICENSE"
+      }
+    ]
+  },
+  "phf_shared@0.10.0": {
+    "license": "MIT",
+    "files": [
+      {
+        "file": "phf_shared-0.10.0.txt",
+        "url": "https://raw.githubusercontent.com/sfackler/rust-phf/3ea14b2166553ad6e7b9afe7244144f5d661b6c6/LICENSE"
+      }
+    ]
+  },
+  "phf_shared@0.8.0": {
+    "license": "MIT",
+    "files": [
+      {
+        "file": "phf_shared-0.8.0.txt",
+        "url": "https://raw.githubusercontent.com/sfackler/rust-phf/81c7cc5b48649108428671d3b8ad151f6fbdb359/LICENSE"
+      }
+    ]
+  },
+  "r-efi@6.0.0": {
+    "license": "MIT OR Apache-2.0 OR LGPL-2.1-or-later",
+    "standardText": true,
+    "files": [
+      {
+        "file": "Apache-2.0.txt",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0"
+      }
+    ]
+  },
+  "selectors@0.22.0": {
+    "license": "MPL-2.0",
+    "files": [
+      {
+        "file": "../MPL-2.0.txt",
+        "url": "https://www.mozilla.org/MPL/2.0/"
+      }
+    ]
+  },
+  "servo_arc@0.1.1": {
+    "license": "MIT/Apache-2.0",
+    "standardText": true,
+    "files": [
+      {
+        "file": "Apache-2.0.txt",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0"
+      }
+    ]
+  },
+  "sigchld@0.2.5": {
+    "license": "MIT",
+    "standardText": true,
+    "files": [
+      {
+        "file": "MIT-DECLARED.txt",
+        "url": "https://opensource.org/license/mit/"
+      }
+    ]
+  },
+  "soup2-sys@0.2.0": {
+    "license": "MIT",
+    "standardText": true,
+    "files": [
+      {
+        "file": "MIT-DECLARED.txt",
+        "url": "https://opensource.org/license/mit/"
+      }
+    ]
+  },
+  "thin-slice@0.1.1": {
+    "license": "MPL-2.0",
+    "files": [
+      {
+        "file": "../MPL-2.0.txt",
+        "url": "https://www.mozilla.org/MPL/2.0/"
+      }
+    ]
+  },
+  "valuable@0.1.1": {
+    "license": "MIT",
+    "files": [
+      {
+        "file": "valuable-0.1.1.txt",
+        "url": "https://raw.githubusercontent.com/tokio-rs/valuable/9efc29b6e58cef28f6566a47aa7e142a55fead77/LICENSE"
+      }
+    ]
+  },
+  "webview2-com-macros@0.6.0": {
+    "license": "MIT",
+    "files": [
+      {
+        "file": "webview2-com-macros-0.6.0.txt",
+        "url": "https://raw.githubusercontent.com/wravery/webview2-rs/951558600abff03a35edfe68a262e70b306a3092/LICENSE"
+      }
+    ]
+  },
+  "webview2-com-sys@0.19.0": {
+    "license": "MIT",
+    "files": [
+      {
+        "file": "webview2-com-sys-0.19.0.txt",
+        "url": "https://raw.githubusercontent.com/wravery/webview2-rs/18468d12669f41f2efcdbe4bed486903f2551b83/LICENSE"
+      }
+    ]
+  },
+  "webview2-com@0.19.1": {
+    "license": "MIT",
+    "files": [
+      {
+        "file": "webview2-com-0.19.1.txt",
+        "url": "https://raw.githubusercontent.com/wravery/webview2-rs/692fc418d08a58bb06e427e177da0c65b2d04c9a/LICENSE"
+      }
+    ]
+  },
+  "winapi-i686-pc-windows-gnu@0.4.0": {
+    "license": "MIT/Apache-2.0",
+    "standardText": true,
+    "files": [
+      {
+        "file": "Apache-2.0.txt",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0"
+      }
+    ]
+  },
+  "winapi-x86_64-pc-windows-gnu@0.4.0": {
+    "license": "MIT/Apache-2.0",
+    "standardText": true,
+    "files": [
+      {
+        "file": "Apache-2.0.txt",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0"
+      }
+    ]
+  },
+  "windows-bindgen@0.39.0": {
+    "license": "MIT OR Apache-2.0",
+    "standardText": true,
+    "files": [
+      {
+        "file": "Apache-2.0.txt",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0"
+      }
+    ]
+  },
+  "windows-implement@0.39.0": {
+    "license": "MIT OR Apache-2.0",
+    "standardText": true,
+    "files": [
+      {
+        "file": "Apache-2.0.txt",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0"
+      }
+    ]
+  },
+  "windows-metadata@0.39.0": {
+    "license": "MIT OR Apache-2.0",
+    "standardText": true,
+    "files": [
+      {
+        "file": "Apache-2.0.txt",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0"
+      }
+    ]
+  },
+  "windows-tokens@0.39.0": {
+    "license": "MIT OR Apache-2.0",
+    "standardText": true,
+    "files": [
+      {
+        "file": "Apache-2.0.txt",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0"
+      }
+    ]
+  },
+  "windows_aarch64_msvc@0.39.0": {
+    "license": "MIT OR Apache-2.0",
+    "standardText": true,
+    "files": [
+      {
+        "file": "Apache-2.0.txt",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0"
+      }
+    ]
+  },
+  "windows_i686_gnu@0.39.0": {
+    "license": "MIT OR Apache-2.0",
+    "standardText": true,
+    "files": [
+      {
+        "file": "Apache-2.0.txt",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0"
+      }
+    ]
+  },
+  "windows_i686_msvc@0.39.0": {
+    "license": "MIT OR Apache-2.0",
+    "standardText": true,
+    "files": [
+      {
+        "file": "Apache-2.0.txt",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0"
+      }
+    ]
+  },
+  "windows_x86_64_gnu@0.39.0": {
+    "license": "MIT OR Apache-2.0",
+    "standardText": true,
+    "files": [
+      {
+        "file": "Apache-2.0.txt",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0"
+      }
+    ]
+  },
+  "windows_x86_64_msvc@0.39.0": {
+    "license": "MIT OR Apache-2.0",
+    "standardText": true,
+    "files": [
+      {
+        "file": "Apache-2.0.txt",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0"
+      }
+    ]
+  }
+}

@@ -19,7 +19,9 @@
     "check": "npm run typecheck && npm test",
     "build:gnome": "node scripts/build-gnome.mjs",
     "install:gnome": "node scripts/install-gnome.mjs",
-    "test:gnome": "node scripts/test-gnome.mjs"
+    "test:gnome": "node scripts/test-gnome.mjs",
+    "licenses:check": "node scripts/check-licenses.mjs",
+    "licenses:verify": "node scripts/verify-licenses.mjs"
   },
   "dependencies": {
     "react": "18.3.1",
