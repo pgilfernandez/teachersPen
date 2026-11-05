@@ -52,7 +52,7 @@ export async function startController() {
     state.hasDrawings = displays.some(display => histories.get(`overlay-${display.id}`)?.hasDrawings);
     state.canUndo = history?.canUndo ?? false;
     state.canRedo = history?.canRedo ?? false;
-    return host('broadcast', state);
+    return host('broadcast', { ...state, drawingHint: `${t(actionLabels[state.tool])} · ${state.holding ? t('Suelta el atajo o clic secundario para interactuar') : t('Esc o clic secundario para interactuar')}` });
   };
   const write = (name: string, value: unknown) => host('write', { name, value });
   const read = async (name: string): Promise<any> => { try { return await host('read', { name }); } catch (e) { console.error(name, e); return null; } };

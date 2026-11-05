@@ -25,9 +25,17 @@ check(call('connect').version === 2, 'protocol version');
 const screens = call('screens');
 check(screens.length > 0 && screens[0].workArea.width > 0, 'logical monitors');
 call('create', {label: 'overlay-0'});
-const state = {drawing: true, visible: true, tool: 'freehand', color: 0, background: 'transparent', settings: {width: 6, transparency: 0, colors: ['#ff0000']}};
+const state = {drawing: true, visible: true, tool: 'freehand', color: 0, background: 'transparent', drawingHint: 'Elipse · Esc o clic secundario para interactuar', settings: {drawingHints: true, width: 6, transparency: 0, colors: ['#ff0000']}};
 call('broadcast', {state, controls: [{x: 100, y: 100, width: 200, height: 50}]});
-const errors = call('shortcuts', {toggle: 'Control+Shift+Space', freehand: 'Control+Shift+A'});
+check(evaluate('global._teachersPenTest._areas[0].hint.visible'), 'drawing hint is visible');
+check(evaluate('global._teachersPenTest._areas[0].hint.text') === state.drawingHint, 'hint uses localized controller text');
+check(evaluate('global._teachersPenTest._areas[0].hint.reactive') === false, 'hint does not capture mouse input');
+state.settings.drawingHints = false;
+call('broadcast', {state, controls: []});
+check(!evaluate('global._teachersPenTest._areas[0].hint.visible'), 'hint preference hides the label');
+state.settings.drawingHints = true;
+call('broadcast', {state, controls: [{x: 100, y: 100, width: 200, height: 50}]});
+const errors = call('shortcuts' , {toggle: 'Control+Shift+Space', freehand: 'Control+Shift+A'});
 check(errors.length === 0, `register shortcuts: ${JSON.stringify(errors)}`);
 for (const action of ['clear', 'undo', 'redo']) call('action', {label: 'overlay-0', action});
 check(evaluate('global._teachersPenTest._areas[0].inputs.length') === 4, 'input region leaves a hole for controls');
@@ -59,6 +67,15 @@ check(evaluate('global._teachersPenTest._areas[0].history.strokes.length') === 5
 call('ping', []);
 // Keep the session alive for a paint frame so Cairo errors reach Shell's log.
 pause();
+evaluate(`(() => {
+    const extension = global._teachersPenTest, area = extension._areas[0];
+    extension._press(area, {get_button: () => 1, get_coords: () => [40, 220]});
+    extension._press(area, {get_button: () => 3});
+    return true;
+})()`);
+check(evaluate('global._teachersPenTest._areas[0].history.strokes.length') === 5, 'right click discards the unfinished stroke');
+check(!evaluate('global._teachersPenTest._state.drawing'), 'right click exits drawing');
+check(!evaluate('global._teachersPenTest._areas[0].hint.visible'), 'right click hides the hint');
 state.drawing = false; call('broadcast', {state, controls: []});
 check(evaluate('global._teachersPenTest._areas[0].inputs.length') === 0, 'mouse input is released after drawing');
 call('disconnect');

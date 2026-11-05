@@ -5,6 +5,7 @@ import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Meta from 'gi://Meta';
+import Pango from 'gi://Pango';
 import Shell from 'gi://Shell';
 import St from 'gi://St';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
@@ -148,6 +149,10 @@ export default class TeachersPen extends Extension {
         const area = {id, actor, monitor: {x: m.x, y: m.y, width: m.width, height: m.height}, history: new DrawingHistory(), inputs: []};
         actor.connect('repaint', () => this._paint(area));
         Main.layoutManager.addChrome(actor, {affectsInputRegion: false, trackFullscreen: false});
+        area.hint = new St.Label({reactive: false, visible: false,
+            style: 'background-color: rgba(23, 37, 54, 0.91); color: white; padding: 8px 16px; border-radius: 18px; font-size: 12px;'});
+        area.hint.clutter_text.ellipsize = Pango.EllipsizeMode.END;
+        Main.layoutManager.addChrome(area.hint, {affectsInputRegion: false, trackFullscreen: false});
         this._areas.push(area);
     }
 
@@ -185,6 +190,21 @@ export default class TeachersPen extends Extension {
         } finally { cr.$dispose(); }
     }
 
+    _updateHint(area, drawing) {
+        const text = this._state?.drawingHint;
+        const visible = !!(drawing && this._state.settings.drawingHints && !this._state.pie && text);
+        area.hint.visible = visible;
+        if (!visible) return;
+        area.hint.set_text(text);
+        const work = Main.layoutManager.getWorkAreaForMonitor(area.id);
+        area.hint.set_width(-1);
+        const width = Math.min(area.hint.get_preferred_width(-1)[1], Math.max(1, work.width - 16));
+        area.hint.set_width(width);
+        const height = area.hint.get_preferred_height(width)[1];
+        area.hint.set_position(work.x + (work.width - width) / 2,
+            Math.max(work.y, work.y + work.height - 26 - height));
+    }
+
     _update() {
         const drawing = this._state?.drawing && !Main.overview.visible && !Main.sessionMode.isLocked;
         const [x, y] = global.get_pointer();
@@ -199,6 +219,7 @@ export default class TeachersPen extends Extension {
         // Separate reactive rectangles leave real holes for Tauri controls. The
         // drawing surface itself never intercepts input outside drawing mode.
         for (const area of this._areas) {
+            this._updateHint(area, drawing);
             const signature = JSON.stringify([drawing, this._controls]);
             if (area.inputSignature === signature) { area.actor.queue_repaint(); continue; }
             area.inputSignature = signature;
@@ -226,7 +247,15 @@ export default class TeachersPen extends Extension {
     }
 
     _press(area, event) {
-        if (event.get_button() !== 1 || !this._state?.drawing) return Clutter.EVENT_PROPAGATE;
+        if (!this._state?.drawing) return Clutter.EVENT_PROPAGATE;
+        if (event.get_button() === 3) {
+            // Match the WebView backend: discard an unfinished stroke and return
+            // input immediately, even while the activation shortcut is held.
+            this._stroke = null;
+            this._stopDrawing();
+            return Clutter.EVENT_STOP;
+        }
+        if (event.get_button() !== 1) return Clutter.EVENT_PROPAGATE;
         this._finish();
         const [x, y] = event.get_coords();
         const state = this._state;
@@ -384,6 +413,7 @@ export default class TeachersPen extends Extension {
         }
         for (const area of this._areas) {
             for (const actor of area.inputs) actor.destroy();
+            area.hint.destroy();
             area.actor.destroy();
         }
         this._areas = [];
