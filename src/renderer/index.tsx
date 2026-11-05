@@ -611,8 +611,8 @@ function About({ state, onClose }: { state: State; onClose: () => void }) {
       <div className="about-links">
         <div className="about-link-row about-donate-row">
           <span>{t('Invítame a un café:')}</span>
-          <button className="donate-button" title="https://github.com/sponsors/pgilfernandez" onClick={() => void open('donate')}><Coffee size={16} />{t('vía GitHub')}</button>
-          <button className="donate-button" title="https://www.paypal.com/donate?hosted_button_id=6N7UZHDQW3J6A" onClick={() => void open('paypal')}><Coffee size={16} />{t('vía PayPal')}</button>
+          <button className="donate-button" title="https://github.com/sponsors/pgilfernandez" onClick={() => void open('donate')}><Coffee size={16} />GitHub</button>
+          <button className="donate-button" title="https://www.paypal.com/donate?hosted_button_id=6N7UZHDQW3J6A" onClick={() => void open('paypal')}><Coffee size={16} />PayPal</button>
         </div>
         <div className="about-link-row">
           <button title="https://github.com/pgilfernandez/teachersPen" onClick={() => void open('github')}><ExternalLink size={16} />{t('Proyecto en GitHub')}</button>
