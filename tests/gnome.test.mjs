@@ -3,7 +3,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {subtract, accelerator, brushPreview} from '../extensions/gnome/drawing.js';
+import {subtract, accelerator, brushPreview, drawingRegions, chromeParams} from '../extensions/gnome/drawing.js';
 
 test('GNOME input regions leave holes for controls, including negative monitor coordinates', () => {
     const monitor = {x: -1920, y: -100, width: 1920, height: 1080};
@@ -38,4 +38,20 @@ test('GNOME brush preview follows the pointer with the selected color, width and
     assert.equal(brushPreview({...state, pie: {menu: 0}}, point, monitor), null);
     assert.equal(brushPreview(state, {x: 0, y: 240}, monitor), null);
     assert.equal(brushPreview(state, null, monitor), null);
+});
+
+test('opening a full-screen transparent radial keeps drawings visible while reserving input', () => {
+    const monitor = {x: -1920, y: 100, width: 1920, height: 1080};
+    const toolbar = {x: -1800, y: 120, width: 300, height: 50};
+    const pie = {...monitor, inputOnly: true};
+    assert.deepEqual(drawingRegions(monitor, [toolbar, pie]), drawingRegions(monitor, [toolbar]));
+    assert.deepEqual(drawingRegions(monitor, [toolbar, pie], true), []);
+    assert.deepEqual(drawingRegions(monitor, [toolbar], true), drawingRegions(monitor, [toolbar]));
+});
+
+test('chrome parameters retain GNOME 46 input handling and omit the removed option on 50', () => {
+    assert.deepEqual(chromeParams('46.0', true), {trackFullscreen: false, affectsInputRegion: true});
+    assert.deepEqual(chromeParams('46.0', false), {trackFullscreen: false, affectsInputRegion: false});
+    assert.deepEqual(chromeParams('50.1', true), {trackFullscreen: false});
+    assert.deepEqual(chromeParams('50.1', false), {trackFullscreen: false});
 });

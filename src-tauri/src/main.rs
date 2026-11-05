@@ -3,6 +3,8 @@
 mod appearance;
 #[cfg(target_os = "linux")]
 mod gnome;
+#[cfg(target_os = "linux")]
+mod gnome_install;
 #[cfg(target_os = "macos")]
 mod mac_hold;
 #[cfg(target_os = "macos")]
@@ -240,6 +242,15 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
         app.emit_to("controller", "host-request", payload)
             .map_err(err)?;
         return Ok(Value::Null);
+    }
+    #[cfg(target_os = "linux")]
+    if window.label() == "preferences" {
+        if op == "gnome-extension-status" {
+            return tauri::async_runtime::spawn_blocking(move || gnome_install::status(&app)).await.map_err(err)?;
+        }
+        if op == "gnome-extension-install" {
+            return tauri::async_runtime::spawn_blocking(move || gnome_install::install(&app)).await.map_err(err)?;
+        }
     }
     if op == "theme" {
         return appearance::theme(&window).map(|theme| json!(theme));

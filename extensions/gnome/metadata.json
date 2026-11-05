@@ -3,8 +3,9 @@
   "name": "TeachersPen",
   "description": "Native desktop drawing for TeachersPen on GNOME Wayland. Requires the TeachersPen application.",
   "shell-version": [
-    "46"
+    "46",
+    "50"
   ],
-  "version": 4,
+  "version": 6,
   "url": "https://github.com/pgilfernandez/teachersPen"
 }

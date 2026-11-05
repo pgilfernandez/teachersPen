@@ -60,6 +60,15 @@ for (const tool of ['freehand', 'line', 'arrow', 'rectangle', 'circle']) {
     pause();
 }
 check(evaluate('global._teachersPenTest._areas[0].history.strokes.length') === 5, 'all five tools create strokes');
+state.pie = {menu: 0};
+call('broadcast', {state, controls: [{...screens[0].bounds, inputOnly: true}]});
+pause();
+check(evaluate('global._teachersPenTest._areas[0].inputs.length') === 0, 'radial menu receives input instead of the drawing surface');
+check(evaluate('global._teachersPenTest._areas[0].actor.visible && global._teachersPenTest._state.visible'), 'drawing surface remains visible while the radial is open');
+check(evaluate('global._teachersPenTest._areas[0].history.strokes.length') === 5, 'opening a radial preserves every stroke');
+state.pie = null;
+call('broadcast', {state, controls: []});
+check(evaluate('global._teachersPenTest._areas[0].inputs.length') > 0, 'closing the radial restores drawing input');
 call('action', {label: 'overlay-0', action: 'undo'});
 check(evaluate('global._teachersPenTest._areas[0].history.strokes.length') === 4, 'undo a stroke');
 call('action', {label: 'overlay-0', action: 'redo'});
@@ -84,4 +93,4 @@ check(evaluate('global._teachersPenTest._areas.length') === 0, 'disconnect remov
 let denied = false;
 try { call('create', {label: 'overlay-0'}); } catch { denied = true; }
 check(denied, 'reject requests without a session');
-print('GNOME 46: protocol, monitors, rendering, shortcuts, history and disconnect passed');
+print('GNOME: protocol, monitors, rendering, shortcuts, history and disconnect passed');

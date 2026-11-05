@@ -106,7 +106,7 @@ pub fn controls(app: &tauri::AppHandle) -> Result<Value> {
                         return Some(json!({"x":x+left,"y":y+top,"width":width,"height":height}));
                     }
                 }
-                Some(json!({"x":x,"y":y,"width":gdk.width(),"height":gdk.height()}))
+                Some(json!({"x":x,"y":y,"width":gdk.width(),"height":gdk.height(),"inputOnly":window.label() == "pie"}))
             }).collect();
         let _ = tx.send(Value::Array(controls));
     }).map_err(|e| e.to_string())?;

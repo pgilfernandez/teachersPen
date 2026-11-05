@@ -10,7 +10,7 @@ Use Node.js 20 or later. In an extracted copy of the extension:
 
 Type-only imports in source/model.ts are erased by esbuild; no proprietary
 desktop source files are needed to rebuild model.js. The extension's runtime
-requires GNOME Shell 46, GJS and the system GI modules named in extension.js.
+requires GNOME Shell 46 or 50, GJS and the system GI modules named in extension.js.
 These are platform prerequisites, not embedded copies.
 
 The original repository and history are available at:

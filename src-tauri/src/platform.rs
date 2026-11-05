@@ -472,9 +472,9 @@ pub fn refresh_overlay_regions(app: &tauri::AppHandle) {
                         let state = handle.state::<ToolbarRegion>();
                         let rect = *state.0.lock().ok()?;
                         return rect.map(|(left, top, width, height)|
-                            (x + left, y + top, width, height));
+                            (x + left, y + top, width, height, false));
                     }
-                    Some((x, y, gdk.width().max(0), gdk.height().max(0)))
+                    Some((x, y, gdk.width().max(0), gdk.height().max(0), window.label() == "pie"))
                 })
                 .collect();
             for (label, window) in handle.webview_windows() {
@@ -482,13 +482,10 @@ pub fn refresh_overlay_regions(app: &tauri::AppHandle) {
                 let Ok(gtk) = window.gtk_window() else { continue; };
                 let Some(gdk) = gtk.window() else { continue; };
                 let (_, origin_x, origin_y) = gdk.origin();
-                let region = gtk::cairo::Region::create_rectangle(&gtk::cairo::RectangleInt::new(0, 0, gdk.width().max(1), gdk.height().max(1)));
-                for &(x, y, width, height) in &controls {
-                    let _ = region.subtract_rectangle(&gtk::cairo::RectangleInt::new(x - origin_x, y - origin_y, width, height));
-                }
-                gtk.shape_combine_region(Some(&region));
+                let (visible, input) = overlay_regions(gdk.width().max(1), gdk.height().max(1), origin_x, origin_y, &controls);
+                gtk.shape_combine_region(Some(&visible));
                 if gtk.accepts_focus() {
-                    gtk.input_shape_combine_region(Some(&region));
+                    gtk.input_shape_combine_region(Some(&input));
                 } else {
                     gtk.input_shape_combine_region(Some(&gtk::cairo::Region::create()));
                 }
@@ -657,4 +654,32 @@ pub fn viewport_bounds(window: &Window) -> Result<Value> {
         let _ = tx.send(result.unwrap_or(Value::Null));
     }).map_err(|e| e.to_string())?;
     rx.recv_timeout(std::time::Duration::from_secs(1)).map_err(|e| e.to_string())
+}
+
+#[cfg(target_os = "linux")]
+fn overlay_regions(width: i32, height: i32, origin_x: i32, origin_y: i32, controls: &[(i32, i32, i32, i32, bool)]) -> (gtk::cairo::Region, gtk::cairo::Region) {
+    let visible = gtk::cairo::Region::create_rectangle(&gtk::cairo::RectangleInt::new(0, 0, width, height));
+    let input = visible.copy();
+    for &(x, y, width, height, input_only) in controls {
+        let rect = gtk::cairo::RectangleInt::new(x - origin_x, y - origin_y, width, height);
+        let _ = input.subtract_rectangle(&rect);
+        if !input_only { let _ = visible.subtract_rectangle(&rect); }
+    }
+    (visible, input)
+}
+
+#[cfg(all(test, target_os = "linux"))]
+mod region_tests {
+    #[test]
+    fn transparent_radial_blocks_input_without_hiding_annotations() {
+        let controls = [(-1920, 100, 1920, 1080, true), (-1800, 120, 300, 50, false)];
+        let (visible, input) = super::overlay_regions(1920, 1080, -1920, 100, &controls);
+        assert!(visible.contains_point(500, 500));
+        assert!(!visible.contains_point(130, 30));
+        assert!(input.is_empty());
+        let (closed_visible, closed_input) = super::overlay_regions(1920, 1080, -1920, 100, &controls[1..]);
+        assert!(closed_visible.contains_point(500, 500));
+        assert!(closed_input.contains_point(500, 500));
+        assert!(!closed_input.contains_point(130, 30));
+    }
 }

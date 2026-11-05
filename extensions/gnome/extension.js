@@ -10,8 +10,9 @@ import Shell from 'gi://Shell';
 import St from 'gi://St';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import * as Config from 'resource:///org/gnome/shell/misc/config.js';
 import {DrawingHistory} from './model.js';
-import {subtract, accelerator, paintStroke, brushPreview} from './drawing.js';
+import {drawingRegions, accelerator, paintStroke, brushPreview, chromeParams} from './drawing.js';
 
 const IFACE = 'org.teacherspen.Gnome1';
 const PATH = '/org/teacherspen/Gnome1';
@@ -21,6 +22,13 @@ const XML = `<node><interface name="${IFACE}">
 </interface></node>`;
 
 export default class TeachersPen extends Extension {
+    _addChrome(actor, input) {
+        // The X11 input-region option was removed in Shell 50. On Wayland,
+        // actor.reactive controls picking; keep the legacy option for Shell 46.
+        const params = chromeParams(Config.PACKAGE_VERSION, input);
+        Main.layoutManager.addChrome(actor, params);
+    }
+
     enable() {
         this._owner = null;
         this._held = new Map(); this._holdGrab = null;
@@ -148,11 +156,11 @@ export default class TeachersPen extends Extension {
         const actor = new St.DrawingArea({x: m.x, y: m.y, width: m.width, height: m.height, reactive: false});
         const area = {id, actor, monitor: {x: m.x, y: m.y, width: m.width, height: m.height}, history: new DrawingHistory(), inputs: []};
         actor.connect('repaint', () => this._paint(area));
-        Main.layoutManager.addChrome(actor, {affectsInputRegion: false, trackFullscreen: false});
+        this._addChrome(actor, false);
         area.hint = new St.Label({reactive: false, visible: false,
             style: 'background-color: rgba(23, 37, 54, 0.91); color: white; padding: 8px 16px; border-radius: 18px; font-size: 12px;'});
         area.hint.clutter_text.ellipsize = Pango.EllipsizeMode.END;
-        Main.layoutManager.addChrome(area.hint, {affectsInputRegion: false, trackFullscreen: false});
+        this._addChrome(area.hint, false);
         this._areas.push(area);
     }
 
@@ -172,8 +180,7 @@ export default class TeachersPen extends Extension {
         try {
             const state = this._state;
             if (!state) return;
-            let regions = [area.monitor];
-            for (const control of this._controls) regions = subtract(regions, control);
+            const regions = drawingRegions(area.monitor, this._controls);
             for (const r of regions) cr.rectangle(r.x - area.monitor.x, r.y - area.monitor.y, r.width, r.height);
             cr.clip();
             if (state.visible && state.background !== 'transparent') {
@@ -228,8 +235,7 @@ export default class TeachersPen extends Extension {
             area.inputs = [];
             const active = this._state?.drawing && !Main.overview.visible && !Main.sessionMode.isLocked;
             if (active) {
-                let regions = [area.monitor];
-                for (const control of this._controls) regions = subtract(regions, control);
+                const regions = drawingRegions(area.monitor, this._controls, true);
                 for (const rect of regions) {
                     const actor = new St.Widget({...rect, reactive: true});
                     actor.connect('button-press-event', (_a, event) => this._press(area, event));
@@ -238,7 +244,7 @@ export default class TeachersPen extends Extension {
                         if (event.get_button() !== 1) return Clutter.EVENT_PROPAGATE;
                         this._motion(area, event); this._finish(); return Clutter.EVENT_STOP;
                     });
-                    Main.layoutManager.addChrome(actor, {affectsInputRegion: true, trackFullscreen: false});
+                    this._addChrome(actor, true);
                     area.inputs.push(actor);
                 }
             }
@@ -319,7 +325,7 @@ export default class TeachersPen extends Extension {
             // Grab the stage so its drawing actors continue receiving pointer events.
             const grab = Main.pushModal(global.stage, {actionMode: Shell.ActionMode.NORMAL});
             this._holdGrab = grab;
-            if (grab.get_seat_state() !== Clutter.GrabState.ALL) {
+            if (typeof grab.get_seat_state === 'function' && grab.get_seat_state() !== Clutter.GrabState.ALL) {
                 this._dropHoldGrab();
                 this._emit({type: 'hold-error', error: 'Cannot capture shortcut release. Try again.'}); return;
             }

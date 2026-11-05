@@ -25,6 +25,8 @@ export function installBridge() {
     });
   }
   const api: PenAPI = {
+    getGnomeExtensionStatus: () => host('gnome-extension-status'),
+    installGnomeExtension: () => host('gnome-extension-install'),
     getViewportBounds: () => host('viewport-bounds'),
     getPreviewPointer: () => host('preview-pointer'),
     getState: () => request<State>({ type: 'get-state' }), command: value => request(value),

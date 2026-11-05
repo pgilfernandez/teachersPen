@@ -164,5 +164,13 @@
   "No hay dibujos": "Aucun dessin",
   "Muestra los dibujos para poder borrarlos": "Affichez les dessins pour pouvoir les effacer",
   "No hay acciones que deshacer": "Aucune action à annuler",
-  "No hay acciones que rehacer": "Aucune action à rétablir"
+  "No hay acciones que rehacer": "Aucune action à rétablir",
+  "La extensión incluida es compatible con GNOME 46 y 50.": "L’extension incluse prend en charge GNOME 46 et 50.",
+  "Instalar o actualizar extensión de GNOME": "Installer ou mettre à jour l’extension GNOME",
+  "Instalar extensión de GNOME": "Installer l’extension GNOME",
+  "Se instala solo para tu usuario, sin descargas ni permisos de administrador.": "Installation pour votre compte uniquement, sans téléchargement ni droits administrateur.",
+  "No se ha detectado una versión compatible de GNOME.": "Aucune version compatible de GNOME détectée.",
+  "Extensión instalada. Cierra sesión y vuelve a entrar; después abre TeachersPen.": "Extension installée. Déconnectez-vous puis reconnectez-vous, puis ouvrez TeachersPen.",
+  "No se ha podido instalar la extensión.": "Impossible d’installer l’extension.",
+  "Espera…": "Veuillez patienter…"
 }
