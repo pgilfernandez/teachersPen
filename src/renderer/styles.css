@@ -12,6 +12,8 @@
   --ui-field: #f7f6f8;
   --ui-number: #fff;
   --ui-control: #d9d6df;
+  --ui-control-hover: #c9c4d2;
+  --ui-donate-hover: #1c59ad;
   --ui-control-text: #4e4a57;
   --ui-control-ink: #33414d;
   --ui-border: #c3c1c7;
@@ -49,6 +51,8 @@
   --ui-field: #30343d;
   --ui-number: #24272e;
   --ui-control: #3d424d;
+  --ui-control-hover: #505867;
+  --ui-donate-hover: #347fe5;
   --ui-control-text: #e2e6ee;
   --ui-control-ink: #e1e6ef;
   --ui-border: #535964;
@@ -205,6 +209,10 @@ input[type="color"] { width: 35px; height: 23px; padding: 1px; cursor: pointer; 
 .about-links button { display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-width: 0; padding: 7px 8px; font-size: 12px; border-radius: 6px; background: var(--ui-control); color: var(--ui-control-ink); }
 .about-links button svg { flex-shrink: 0; }
 .about-links .donate-button { background: #256ed1; color: #fff; }
+.preferences-footer button:not(:disabled):hover,
+.about-links button:not(:disabled):hover,
+.about-close:hover { background: var(--ui-control-hover); }
+.about-links .donate-button:not(:disabled):hover { background: var(--ui-donate-hover); }
 
 .toolbar-collapsed { opacity: 0; clip-path: inset(0 100% 0 0); }
 .toolbar-revealing[data-reveal="left"], .toolbar-revealing[data-reveal="right"] { animation: toolbar-reveal-horizontal 240ms cubic-bezier(.2, .7, .2, 1) both; }
