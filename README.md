@@ -4,7 +4,7 @@ TeachersPen lets you draw and write over your desktop while the applications und
 
 Designed for teachers and educators, it is also useful for demonstrations, tutorials, and screen sharing.
 
-![TeachersPen annotations over the Blender website, showing freehand marks, an arrow, a rectangle, and a circle](docs/images/example_blender.png)
+![TeachersPen annotations over the Blender website, showing freehand marks, an arrow, a rectangle, and a circle](docs/images/example_blender2.png)
 
 ## What you can do
 
