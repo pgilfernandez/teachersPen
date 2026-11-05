@@ -10,7 +10,7 @@ import St from 'gi://St';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {DrawingHistory} from './model.js';
-import {subtract, accelerator, paintStroke} from './drawing.js';
+import {subtract, accelerator, paintStroke, brushPreview} from './drawing.js';
 
 const IFACE = 'org.teacherspen.Gnome1';
 const PATH = '/org/teacherspen/Gnome1';
@@ -33,7 +33,10 @@ export default class TeachersPen extends Extension {
             if (action && !Main.overview.visible && !Main.sessionMode.isLocked)
                 this._activateShortcut(id, action);
         });
-        this._keyCapture = global.stage.connect('captured-event', (_stage, event) => this._captureKey(event));
+        this._keyCapture = global.stage.connect('captured-event', (_stage, event) => {
+            if (event.type() === Clutter.EventType.MOTION) this._movePreview(...event.get_coords());
+            return this._captureKey(event);
+        });
         this._monitors = Main.layoutManager.connect('monitors-changed', () => {
             // Monitor IDs and logical coordinates must be renegotiated by the app.
             this._reset(); this._emit({type: 'disconnected', error: 'Screen layout changed. Restart TeachersPen.'});
@@ -148,6 +151,17 @@ export default class TeachersPen extends Extension {
         this._areas.push(area);
     }
 
+    _movePreview(x, y) {
+        if (!this._state?.drawing) return;
+        const previous = this._pointer;
+        this._pointer = {x, y};
+        for (const area of this._areas) {
+            const contains = p => p && p.x >= area.monitor.x && p.y >= area.monitor.y
+                && p.x < area.monitor.x + area.monitor.width && p.y < area.monitor.y + area.monitor.height;
+            if (contains(previous) || contains(this._pointer)) area.actor.queue_repaint();
+        }
+    }
+
     _paint(area) {
         const cr = area.actor.get_context();
         try {
@@ -165,11 +179,16 @@ export default class TeachersPen extends Extension {
                 for (const stroke of area.history.strokes) paintStroke(cr, stroke);
                 if (this._stroke?.area === area) paintStroke(cr, this._stroke.stroke);
             }
+            const preview = brushPreview(state, this._pointer, area.monitor, this._controls,
+                !!this._stroke || Main.overview.visible || Main.sessionMode.isLocked);
+            if (preview) paintStroke(cr, preview);
         } finally { cr.$dispose(); }
     }
 
     _update() {
         const drawing = this._state?.drawing && !Main.overview.visible && !Main.sessionMode.isLocked;
+        const [x, y] = global.get_pointer();
+        this._pointer = {x, y};
         if (drawing && !this._escape) {
             this._escape = global.display.grab_accelerator('Escape', Meta.KeyBindingFlags.IGNORE_AUTOREPEAT);
             if (this._escape) Main.wm.allowKeybinding(Meta.external_binding_name_for_action(this._escape), Shell.ActionMode.NORMAL);
@@ -357,7 +376,7 @@ export default class TeachersPen extends Extension {
     }
 
     _reset() {
-        this._stroke = null; this._state = null; this._controls = [];
+        this._stroke = null; this._pointer = null; this._state = null; this._controls = [];
         this._clearBindings();
         if (this._escape) {
             Main.wm.allowKeybinding(Meta.external_binding_name_for_action(this._escape), Shell.ActionMode.NONE);

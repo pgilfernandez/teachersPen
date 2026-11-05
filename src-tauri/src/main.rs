@@ -11,15 +11,19 @@ mod platform;
 use serde_json::{json, Value};
 use std::{collections::HashSet, fs, sync::Mutex};
 use tauri::{
-    api::process::Command, CustomMenuItem, GlobalShortcutManager, Icon, Manager, PhysicalPosition,
-    PhysicalSize, SystemTray, SystemTrayEvent, SystemTrayMenu, SystemTrayMenuItem, Window,
-    WindowBuilder, WindowEvent, WindowUrl,
+    Emitter, Manager, PhysicalPosition, PhysicalSize, WebviewWindow as Window,
+    WebviewWindowBuilder as WindowBuilder, WindowEvent, WebviewUrl as WindowUrl,
+    image::Image, menu::{Menu, MenuItem, PredefinedMenuItem}, tray::TrayIconBuilder,
 };
+use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
+use tauri_plugin_shell::ShellExt;
 
 #[cfg(not(target_os = "macos"))]
 use std::collections::HashMap;
 #[cfg(not(target_os = "macos"))]
-use tauri::api::process::{CommandChild, CommandEvent};
+use tauri_plugin_shell::process::{CommandChild, CommandEvent};
+
+struct TrayItems([MenuItem<tauri::Wry>; 4]);
 
 type Result<T> = std::result::Result<T, String>;
 #[cfg(not(target_os = "macos"))]
@@ -32,6 +36,14 @@ struct RegisteredShortcuts(Mutex<HashSet<String>>);
 struct LiveState {
     down: Mutex<HashSet<String>>,
     published: Mutex<Value>,
+}
+fn kill_helpers(app: &tauri::AppHandle) {
+    #[cfg(not(target_os = "macos"))]
+    if let Ok(mut children) = app.state::<Helpers>().0.lock() {
+        for child in children.drain().map(|(_, child)| child) { let _ = child.kill(); }
+    }
+    #[cfg(target_os = "macos")]
+    let _ = app;
 }
 fn any_held(app: &tauri::AppHandle) -> bool {
     app.state::<LiveState>()
@@ -60,12 +72,12 @@ fn release_native(app: &tauri::AppHandle, token: &str) {
         state.clone()
     };
     // Return input immediately; a hidden WebView may defer its JS event queue.
-    for (label, window) in app.windows() {
+    for (label, window) in app.webview_windows() {
         if label.starts_with("overlay-") {
             let _ = platform::ignore(&window, true);
         }
     }
-    let _ = app.emit_all("pen:state", next);
+    let _ = app.emit("pen:state", next);
     trace("native hold release");
 }
 fn err(e: impl std::fmt::Display) -> String {
@@ -156,7 +168,7 @@ fn create_window(app: &tauri::AppHandle, v: &Value) -> Result<()> {
     {
         return Err("Invalid window".into());
     }
-    if app.get_window(label).is_some() {
+    if app.get_webview_window(label).is_some() {
         return Ok(());
     }
     let init = format!(
@@ -176,10 +188,10 @@ fn create_window(app: &tauri::AppHandle, v: &Value) -> Result<()> {
         .minimizable(!cfg!(target_os = "windows"))
         .always_on_top(role != "preferences" && role != "controller")
         .skip_taskbar(if cfg!(any(target_os = "windows", target_os = "linux")) { role != "toolbar" } else { role != "preferences" })
-        .disable_file_drop_handler()
+        .disable_drag_drop_handler()
         .on_navigation(|url| {
             matches!(url.scheme(), "tauri" | "asset")
-                // Tauri 1.8 uses HTTPS for the local WebView2 origin on Windows.
+                // Accept the local WebView2 origin on Windows.
                 || (matches!(url.scheme(), "http" | "https")
                     && url.host_str() == Some("tauri.localhost"))
         })
@@ -192,7 +204,7 @@ fn create_window(app: &tauri::AppHandle, v: &Value) -> Result<()> {
     }
     #[cfg(any(target_os = "windows", target_os = "linux"))]
     {
-        builder = builder.icon(Icon::Raw(include_bytes!("../../dist/icons/app-256.png").to_vec())).map_err(err)?;
+        builder = builder.icon(Image::from_bytes(include_bytes!("../../dist/icons/app-256.png")).map_err(err)?).map_err(err)?;
     }
     let w = builder.build().map_err(err)?;
     #[cfg(target_os = "macos")]
@@ -204,12 +216,11 @@ fn create_window(app: &tauri::AppHandle, v: &Value) -> Result<()> {
     }
     Ok(())
 }
-fn storage_file(name: &str) -> Result<std::path::PathBuf> {
+fn storage_file(app: &tauri::AppHandle, name: &str) -> Result<std::path::PathBuf> {
     if !["settings.json", "window-state.json", "timer-window.json"].contains(&name) {
         return Err("Invalid settings file".into());
     }
-    let dir = tauri::api::path::config_dir()
-        .ok_or("Missing configuration directory")?
+    let dir = app.path().config_dir().map_err(err)?
         .join("TeachersPen");
     fs::create_dir_all(&dir).map_err(err)?;
     Ok(dir.join(name))
@@ -246,6 +257,10 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
         }
         return Ok(Value::Null);
     }
+    #[cfg(target_os = "linux")]
+    if op == "viewport-bounds" && window.label() == "pie" {
+        return platform::viewport_bounds(&window);
+    }
     #[cfg(target_os = "macos")]
     if op == "preview-pointer" && (window.label().starts_with("overlay-") || window.label() == "pie") {
         return tauri::async_runtime::spawn_blocking(move || mac_panel::preview_pointer(&window))
@@ -256,7 +271,7 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
     }
     if op == "backend-error" {
         *app.state::<LiveState>().published.lock().map_err(err)? = args["state"].clone();
-        app.emit_all("pen:state", args["state"].clone()).map_err(err)?;
+        app.emit("pen:state", args["state"].clone()).map_err(err)?;
         return Ok(Value::Null);
     }
     #[cfg(target_os = "linux")]
@@ -281,7 +296,7 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
                         let mut next = args.clone(); next["drawing"] = json!(false); next["holding"] = json!(false);
                         next["linuxBackend"]["error"] = json!(error);
                         *app.state::<LiveState>().published.lock().map_err(err)? = next.clone();
-                        app.emit_all("pen:state", next).map_err(err)?;
+                        app.emit("pen:state", next).map_err(err)?;
                         return Ok(Value::Null);
                     }
                 }
@@ -311,7 +326,7 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
         }
         "cursor" => return platform::cursor(&window),
         "read" => {
-            let p = storage_file(text(&args, "name"))?;
+            let p = storage_file(&app, text(&args, "name"))?;
             return match fs::read_to_string(p) {
                 Ok(s) => serde_json::from_str(&s).map_err(err),
                 Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(Value::Null),
@@ -319,7 +334,7 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
             };
         }
         "write" => {
-            let p = storage_file(text(&args, "name"))?;
+            let p = storage_file(&app, text(&args, "name"))?;
             let tmp = p.with_extension("json.tmp");
             fs::write(
                 &tmp,
@@ -331,7 +346,7 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
         "create" => create_window(&app, &args)?,
         "window" => {
             let w = app
-                .get_window(text(&args, "label"))
+                .get_webview_window(text(&args, "label"))
                 .ok_or("Window not found")?;
             match text(&args, "action") {
                 "show" => {
@@ -411,18 +426,19 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
                 // Escape is global only while an unfocused annotation panel is
                 // interactive. No input-monitoring permission is required.
                 let enabled = args["drawing"] == true || !args["pie"].is_null();
-                let mut manager = app.global_shortcut_manager();
-                let registered = manager.is_registered("Escape").map_err(err)?;
+                let manager = app.global_shortcut();
+                let registered = manager.is_registered("Escape");
                 if enabled && !registered {
                     let handle = app.clone();
-                    manager.register("Escape", move || {
+                    manager.on_shortcut("Escape", move |_, _, event| {
+                        if event.state != ShortcutState::Pressed { return; }
                         let _ = handle.emit_to("controller", "host-menu", "escape");
                     }).map_err(err)?;
                 } else if !enabled && registered {
                     manager.unregister("Escape").map_err(err)?;
                 }
             }
-            app.emit_all("pen:state", args.clone()).map_err(err)?;
+            app.emit("pen:state", args.clone()).map_err(err)?;
             #[cfg(target_os = "linux")]
             if board_presentation_changed {
                 // A board can become opaque without focusing/showing its
@@ -441,10 +457,9 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
                 ("about", text(&args, "about")),
                 ("quit", text(&args, "quit")),
             ] {
-                app.tray_handle()
-                    .get_item(key)
-                    .set_title(title)
-                    .map_err(err)?;
+                if let Some(item) = app.state::<TrayItems>().0.iter().find(|item| item.id().as_ref() == key) {
+                    item.set_text(title).map_err(err)?;
+                }
             }
         }
         "shortcuts" => {
@@ -456,15 +471,14 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
             let mut registered = registrations.0.lock().map_err(err)?;
             #[cfg(target_os = "linux")]
             {
-                // Tao 0.16's X11 unregister_all leaves unread replies on the
-                // registration channel. unregister waits for each reply.
+                // Track only this app's successfully registered X11 shortcuts.
                 for shortcut in registered.clone() {
-                    app.global_shortcut_manager().unregister(&shortcut).map_err(err)?;
+                    app.global_shortcut().unregister(shortcut.as_str()).map_err(err)?;
                     registered.remove(&shortcut);
                 }
             }
             #[cfg(not(target_os = "linux"))]
-            app.global_shortcut_manager()
+            app.global_shortcut()
                 .unregister_all()
                 .map_err(err)?;
             let mut errors = Vec::new();
@@ -478,7 +492,8 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
                     let id = action.clone();
                     #[cfg(target_os = "macos")]
                     let chord = shortcut.to_string();
-                    if let Err(e) = app.global_shortcut_manager().register(shortcut, move || {
+                    if let Err(e) = app.global_shortcut().on_shortcut(shortcut, move |_, _, event| {
+                        if event.state != ShortcutState::Pressed { return; }
                         #[cfg(target_os = "macos")]
                         mac_hold::press(&handle, &chord);
                         trace(format!("shortcut {}", id));
@@ -497,15 +512,15 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
             return Ok(Value::Array(errors));
         }
         "validate" => {
-            let out = Command::new_sidecar("key-state")
+            let out = app.shell().sidecar("key-state")
                 .map_err(err)?
                 .args(["--validate", text(&args, "shortcut")])
                 .output()
-                .map_err(err)?;
+                .await.map_err(err)?;
             return Ok(if out.status.success() {
                 Value::Null
             } else {
-                json!(out.stderr.trim())
+                json!(String::from_utf8_lossy(&out.stderr).trim())
             });
         }
         "watch" => {
@@ -515,7 +530,7 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
             mac_hold::watch(&app, token, text(&args, "shortcut"))?;
             #[cfg(not(target_os = "macos"))]
             {
-                let (mut rx, child) = Command::new_sidecar("key-state")
+                let (mut rx, child) = app.shell().sidecar("key-state")
                     .map_err(err)?
                     .args([
                         "--watch",
@@ -535,7 +550,8 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
                     let mut error = String::new();
                     while let Some(event) = rx.recv().await {
                         match event {
-                            CommandEvent::Stdout(s) => {
+                            CommandEvent::Stdout(bytes) => {
+                                let s = String::from_utf8_lossy(&bytes);
                                 trace(format!("key {} {}", token, s.trim()));
                                 if s.trim() == "down" {
                                     if let Ok(mut keys) = handle.state::<LiveState>().down.lock() {
@@ -552,7 +568,12 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
                                     json!({"token":token,"event":s.trim()}),
                                 );
                             }
-                            CommandEvent::Stderr(s) | CommandEvent::Error(s) => {
+                            CommandEvent::Stderr(bytes) => {
+                                let s = String::from_utf8_lossy(&bytes).into_owned();
+                                trace(format!("key error {} {}", token, s));
+                                error = s;
+                            }
+                            CommandEvent::Error(s) => {
                                 trace(format!("key error {} {}", token, s));
                                 error = s;
                             }
@@ -598,10 +619,10 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
                 "issues" => "https://github.com/pgilfernandez/teachersPen/issues",
                 _ => return Err("Unknown project link".into()),
             };
-            tauri::api::shell::open(&app.shell_scope(), url, None).map_err(err)?;
+            app.shell().open(url, None).map_err(err)?;
         }
         "exit" => {
-            tauri::api::process::kill_children();
+            kill_helpers(&app);
             app.exit(0);
         }
         _ => return Err("Unknown host operation".into()),
@@ -615,15 +636,6 @@ fn main() {
     let icon = include_bytes!("../../dist/icons/trayTemplate@3x.png").to_vec();
     #[cfg(not(target_os = "macos"))]
     let icon = include_bytes!("../../dist/icons/trayTemplate.png").to_vec();
-    let menu = SystemTrayMenu::new()
-        .add_item(CustomMenuItem::new("show", "Show full toolbar"))
-        .add_item(CustomMenuItem::new("preferences", "Preferences…"))
-        .add_item(CustomMenuItem::new("about", "About teachersPen"))
-        .add_native_item(SystemTrayMenuItem::Separator)
-        .add_item(CustomMenuItem::new("quit", "Quit TeachersPen"));
-    let tray = SystemTray::new().with_icon(Icon::Raw(icon)).with_menu(menu);
-    #[cfg(target_os = "macos")]
-    let tray = tray.with_icon_as_template(true);
     let builder = tauri::Builder::default();
     #[cfg(target_os = "linux")]
     let builder = builder.manage(RegisteredShortcuts::default()).manage(gnome::Backend::default());
@@ -631,34 +643,51 @@ fn main() {
     let builder = builder.manage(mac_hold::MacHold::default());
     #[cfg(not(target_os = "macos"))]
     let builder = builder.manage(Helpers::default());
-    builder.plugin(tauri_plugin_single_instance::init(|app,_,_| { let _=app.emit_to("controller","host-menu","show"); })).manage(LiveState::default()).manage(platform::ToolbarRegion::default()).system_tray(tray)
+    builder.plugin(tauri_plugin_single_instance::init(|app,_,_| { let _=app.emit_to("controller","host-menu","show"); })).manage(LiveState::default()).manage(platform::ToolbarRegion::default())
+        .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .invoke_handler(tauri::generate_handler![host])
-        .setup(|app| {
+        .setup(move |app| {
+            let items = [
+                MenuItem::with_id(app, "show", "Show full toolbar", true, None::<&str>)?,
+                MenuItem::with_id(app, "preferences", "Preferences…", true, None::<&str>)?,
+                MenuItem::with_id(app, "about", "About teachersPen", true, None::<&str>)?,
+                MenuItem::with_id(app, "quit", "Quit TeachersPen", true, None::<&str>)?,
+            ];
+            let separator = PredefinedMenuItem::separator(app)?;
+            let menu = Menu::with_items(app, &[&items[0], &items[1], &items[2], &separator, &items[3]])?;
+            app.manage(TrayItems(items));
+            TrayIconBuilder::with_id("main")
+                .icon(Image::from_bytes(&icon)?)
+                .icon_as_template(cfg!(target_os = "macos"))
+                .menu(&menu)
+                .on_menu_event(|app, event| {
+                    let id = event.id.as_ref();
+                    if id == "quit" { kill_helpers(&app); app.exit(0); }
+                    let _ = app.emit_to("controller", "host-menu", id);
+                })
+                .on_tray_icon_event(|tray, event| {
+                    #[cfg(target_os = "windows")]
+                    if matches!(event, tauri::tray::TrayIconEvent::Click { button: tauri::tray::MouseButton::Left, button_state: tauri::tray::MouseButtonState::Up, .. }) {
+                        let _ = tray.app_handle().emit_to("controller", "host-menu", "show");
+                    }
+                    #[cfg(not(target_os = "windows"))]
+                    let _ = (tray, event);
+                })
+                .build(app)?;
             appearance::watch(&app.handle());
             #[cfg(target_os = "macos")]
             mac_hold::install(&app.handle())?;
             create_window(&app.handle(),&json!({"label":"controller","role":"controller","title":"TeachersPen","bounds":{"width":1,"height":1}}))?; Ok(()) })
-        .on_system_tray_event(|app,event| {
-            match event {
-                SystemTrayEvent::MenuItemClick{id,..} => {
-                    if id=="quit" {tauri::api::process::kill_children();app.exit(0);}
-                    let _=app.emit_to("controller","host-menu",id);
-                }
-                #[cfg(target_os = "windows")]
-                SystemTrayEvent::LeftClick{..} => {
-                    let _=app.emit_to("controller","host-menu","show");
-                }
-                _ => ()
-            }
-        })
-        .on_window_event(|event| {
-            let w=event.window();
-            if matches!(event.event(), WindowEvent::Focused(true)) && w.label().starts_with("overlay-") {
+        .on_window_event(|native_window,event| {
+            let Some(w) = native_window.app_handle().get_webview_window(native_window.label()) else { return; };
+            let w = &w;
+            if matches!(event, WindowEvent::Focused(true)) && w.label().starts_with("overlay-") {
                 platform::raise_controls(&w.app_handle());
             }
-            if let WindowEvent::ThemeChanged(theme)=event.event() {appearance::changed(w,theme);return;}
+            if let WindowEvent::ThemeChanged(theme)=event {appearance::changed(w,theme);return;}
             if w.label()=="controller"{return;}
-            let kind=match event.event(){
+            let kind=match event{
                 WindowEvent::CloseRequested{api,..}=>{api.prevent_close();let _=w.hide();"close"},
                 WindowEvent::Moved(_)=>"move",
                 WindowEvent::Resized(_)=>"resize",
@@ -672,5 +701,5 @@ fn main() {
             }
         })
         .build(tauri::generate_context!()).expect("Could not start TeachersPen")
-        .run(|_app,event| {if let tauri::RunEvent::ExitRequested{..}=event {tauri::api::process::kill_children();}});
+        .run(|app,event| {if let tauri::RunEvent::ExitRequested{..}=event {kill_helpers(&app);}});
 }

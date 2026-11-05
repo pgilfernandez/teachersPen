@@ -3,7 +3,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {subtract, accelerator} from '../extensions/gnome/drawing.js';
+import {subtract, accelerator, brushPreview} from '../extensions/gnome/drawing.js';
 
 test('GNOME input regions leave holes for controls, including negative monitor coordinates', () => {
     const monitor = {x: -1920, y: -100, width: 1920, height: 1080};
@@ -23,4 +23,19 @@ test('GNOME accelerator conversion preserves the configured key and rejects unkn
     assert.equal(accelerator('CommandOrControl+Alt+A'), '<Control><Alt>A');
     assert.throws(() => accelerator('Unknown+A'));
     assert.throws(() => accelerator('Control+'));
+});
+
+test('GNOME brush preview follows the pointer with the selected color, width and transparency', () => {
+    const monitor = {x: -1920, y: 100, width: 1920, height: 1080};
+    const state = {drawing: true, pie: null, color: 1, settings: {colors: ['#ff0000', '#087bff'], width: 18, transparency: 25}};
+    const point = {x: -1800, y: 240};
+    assert.deepEqual(brushPreview(state, point, monitor), {
+        tool: 'freehand', color: '#087bff', width: 18, transparency: 25, points: [{x: 120, y: 140}],
+    });
+    assert.equal(brushPreview(state, point, monitor, [{x: -1810, y: 230, width: 20, height: 20}]), null);
+    assert.equal(brushPreview(state, point, monitor, [], true), null);
+    assert.equal(brushPreview({...state, drawing: false}, point, monitor), null);
+    assert.equal(brushPreview({...state, pie: {menu: 0}}, point, monitor), null);
+    assert.equal(brushPreview(state, {x: 0, y: 240}, monitor), null);
+    assert.equal(brushPreview(state, null, monitor), null);
 });

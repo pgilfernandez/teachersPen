@@ -11,7 +11,7 @@ use objc::{
     sel, sel_impl,
 };
 use std::sync::OnceLock;
-use tauri::Window;
+use tauri::WebviewWindow as Window;
 
 pub fn passive(window: &Window) -> bool {
     window.label().starts_with("overlay-") || window.label() == "pie"

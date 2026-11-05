@@ -6,6 +6,6 @@ const cli = path.join(path.dirname(require.resolve('@tauri-apps/cli/package.json
 const args = process.argv.slice(2);
 const targetAt = args.findIndex(arg => arg === '--target' || arg === '-t');
 const target = targetAt >= 0 ? args[targetAt + 1] : args.find(arg => arg.startsWith('--target='))?.slice(9);
-const child = spawn(process.execPath, [cli, 'build', '--bundles', process.platform === 'darwin' ? 'app' : 'none', ...args], { env: { ...process.env, ...(target ? { TEACHERSPEN_BUILD_TARGET: target } : {}) }, stdio: 'inherit' });
+const child = spawn(process.execPath, [cli, 'build', ...(process.platform === 'darwin' ? ['--bundles', 'app'] : ['--no-bundle']), ...args], { env: { ...process.env, ...(target ? { TEACHERSPEN_BUILD_TARGET: target } : {}) }, stdio: 'inherit' });
 child.on('error', error => { console.error(error.message); process.exitCode = 1; });
 child.on('exit', code => { process.exitCode = code ?? 1; });

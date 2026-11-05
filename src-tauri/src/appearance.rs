@@ -1,7 +1,9 @@
 use crate::{err, Result};
 #[cfg(target_os = "linux")]
 use tauri::Manager;
-use tauri::{Theme, Window};
+#[cfg(not(target_os = "linux"))]
+use tauri::Emitter;
+use tauri::{Theme, WebviewWindow as Window};
 
 #[cfg(not(target_os = "linux"))]
 pub fn name(theme: &Theme) -> &'static str {
@@ -22,7 +24,7 @@ pub fn theme(window: &Window) -> Result<String> {
     #[cfg(target_os = "linux")]
     {
         let (tx, rx) = std::sync::mpsc::channel();
-        let app = window.app_handle();
+        let app = window.app_handle().clone();
         window
             .run_on_main_thread(move || {
                 let _ = tx.send(linux::current(&app));
@@ -51,9 +53,9 @@ pub fn changed(window: &Window, theme: &Theme) {
 
 #[cfg(target_os = "linux")]
 mod linux {
-    use gtk::traits::SettingsExt;
+    use gtk::traits::GtkSettingsExt;
     use std::sync::Mutex;
-    use tauri::{AppHandle, Manager};
+    use tauri::{AppHandle, Manager, Emitter};
     use zbus::{
         blocking::{Connection, Proxy},
         zvariant::OwnedValue,
@@ -90,8 +92,10 @@ mod linux {
             } else {
                 include_bytes!("../../dist/icons/trayTemplate.png").as_slice()
             };
-            let _ = handle.tray_handle().set_icon(tauri::Icon::Raw(icon.to_vec()));
-            let _ = handle.emit_all("pen:theme", theme);
+            if let Some(tray) = handle.tray_by_id("main") {
+                if let Ok(image) = tauri::image::Image::from_bytes(icon) { let _ = tray.set_icon(Some(image)); }
+            }
+            let _ = handle.emit("pen:theme", theme);
         });
     }
     fn update(app: &AppHandle, value: Option<&OwnedValue>) {

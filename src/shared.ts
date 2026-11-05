@@ -36,7 +36,7 @@ export interface Settings {
 }
 export interface State {
   aboutRequest: number;
-  pie: { menu: 0 | 1; x: number; y: number; serial: number } | null;
+  pie: { menu: 0 | 1; x: number; y: number; serial: number; screenPoint?: { x: number; y: number } } | null;
   hasDrawings: boolean;
   canUndo: boolean;
   canRedo: boolean;
@@ -161,6 +161,7 @@ export type Command =
   | { type: 'linux-backend'; backend: LinuxBackend }
   | { type: 'quit' };
 export interface PenAPI {
+  getViewportBounds(): Promise<{ x: number; y: number; width: number; height: number } | null>;
   getPreviewPointer(): Promise<{ x: number; y: number } | null>;
   getState(): Promise<State>;
   command(command: Command): Promise<{ ok: boolean; error?: string }>;

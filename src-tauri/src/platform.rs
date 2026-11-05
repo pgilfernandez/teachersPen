@@ -1,7 +1,7 @@
 #![allow(unexpected_cfgs)] // objc 0.2 macros predate rustc check-cfg.
 
 use serde_json::{json, Value};
-use tauri::{Monitor, Window};
+use tauri::{Monitor, WebviewWindow as Window};
 #[cfg(any(target_os = "windows", target_os = "linux"))]
 use tauri::Manager;
 type Result<T> = std::result::Result<T, String>;
@@ -192,7 +192,7 @@ pub fn configure(w: &Window, role: &str) -> Result<()> {
     #[cfg(target_os = "linux")]
     if role != "controller" {
         let window = w.clone();
-        let handle = w.app_handle();
+        let handle = w.app_handle().clone();
         w.run_on_main_thread(move || {
             use gtk::prelude::*;
             if let Ok(gtk) = window.gtk_window() {
@@ -335,12 +335,7 @@ pub fn configure(w: &Window, role: &str) -> Result<()> {
                     for y in 3..45 {
                         let half = (21.0_f64.powi(2) - (y as f64 + 0.5 - 24.0).powi(2)).sqrt();
                         let x = (24.0 - half).ceil() as i32;
-                        let _ = region.union_rectangle(&gtk::cairo::RectangleInt {
-                            x,
-                            y,
-                            width: 48 - x * 2,
-                            height: 1,
-                        });
+                        let _ = region.union_rectangle(&gtk::cairo::RectangleInt::new(x, y, 48 - x * 2, 1));
                     }
                     gdk.input_shape_combine_region(&region, 0, 0);
                 }
@@ -357,7 +352,7 @@ pub fn raise_controls(app: &tauri::AppHandle) {
     refresh_overlay_regions(app);
     #[cfg(target_os = "windows")]
     for label in ["toolbar", "mini", "timer-window", "preferences", "pie"] {
-        if let Some(window) = app.get_window(label) {
+        if let Some(window) = app.get_webview_window(label) {
             let target = window.clone();
             let _ = window.run_on_main_thread(move || {
                 #[link(name = "user32")]
@@ -377,7 +372,7 @@ pub fn raise_controls(app: &tauri::AppHandle) {
         let handle = app.clone();
         let _ = app.run_on_main_thread(move || {
             use gtk::prelude::*;
-            let overlays: Vec<_> = handle.windows().into_iter()
+            let overlays: Vec<_> = handle.webview_windows().into_iter()
                 .filter(|(label, _)| label.starts_with("overlay-"))
                 .map(|(_, window)| window)
                 .collect();
@@ -386,7 +381,7 @@ pub fn raise_controls(app: &tauri::AppHandle) {
                 .or_else(|| overlays.first())
                 .and_then(|window| window.gtk_window().ok());
             for label in ["toolbar", "mini", "timer-window", "preferences", "pie"] {
-                if let Some(window) = handle.get_window(label) {
+                if let Some(window) = handle.get_webview_window(label) {
                     if let Ok(gtk) = window.gtk_window() {
                         // XFWM keeps transient controls above their drawing
                         // parent, even when that parent receives keyboard focus.
@@ -465,7 +460,7 @@ pub fn refresh_overlay_regions(app: &tauri::AppHandle) {
             use gtk::prelude::*;
             let controls: Vec<_> = ["toolbar", "mini", "timer-window", "preferences", "pie"]
                 .iter()
-                .filter_map(|label| handle.get_window(label))
+                .filter_map(|label| handle.get_webview_window(label))
                 .filter_map(|window| {
                     let gtk = window.gtk_window().ok()?;
                     if !gtk.is_mapped() { return None; }
@@ -482,19 +477,14 @@ pub fn refresh_overlay_regions(app: &tauri::AppHandle) {
                     Some((x, y, gdk.width().max(0), gdk.height().max(0)))
                 })
                 .collect();
-            for (label, window) in handle.windows() {
+            for (label, window) in handle.webview_windows() {
                 if !label.starts_with("overlay-") { continue; }
                 let Ok(gtk) = window.gtk_window() else { continue; };
                 let Some(gdk) = gtk.window() else { continue; };
                 let (_, origin_x, origin_y) = gdk.origin();
-                let region = gtk::cairo::Region::create_rectangle(&gtk::cairo::RectangleInt {
-                    x: 0, y: 0,
-                    width: gdk.width().max(1), height: gdk.height().max(1),
-                });
+                let region = gtk::cairo::Region::create_rectangle(&gtk::cairo::RectangleInt::new(0, 0, gdk.width().max(1), gdk.height().max(1)));
                 for &(x, y, width, height) in &controls {
-                    let _ = region.subtract_rectangle(&gtk::cairo::RectangleInt {
-                        x: x - origin_x, y: y - origin_y, width, height,
-                    });
+                    let _ = region.subtract_rectangle(&gtk::cairo::RectangleInt::new(x - origin_x, y - origin_y, width, height));
                 }
                 gtk.shape_combine_region(Some(&region));
                 if gtk.accepts_focus() {
@@ -644,4 +634,27 @@ pub fn system_languages() -> Vec<String> {
         if let Some(locale) = locale { preferred.push(locale); }
         preferred
     }
+}
+
+// GTK window managers can constrain a requested monitor-sized window to the
+// work area. Return the actual WebView origin/allocation, not the requested one.
+#[cfg(target_os = "linux")]
+pub fn viewport_bounds(window: &Window) -> Result<Value> {
+    let (tx, rx) = std::sync::mpsc::sync_channel(1);
+    let target = window.clone();
+    window.with_webview(move |webview| {
+        use gtk::prelude::*;
+        let result = (|| {
+            let gtk = target.gtk_window().ok()?;
+            if !gtk.is_mapped() { return None; }
+            let view = webview.inner();
+            let (offset_x, offset_y) = view.translate_coordinates(&gtk, 0, 0)?;
+            let (_, x, y) = gtk.window()?.origin();
+            let (width, height) = (view.allocated_width(), view.allocated_height());
+            if width <= 0 || height <= 0 { return None; }
+            Some(json!({"x":x + offset_x,"y":y + offset_y,"width":width,"height":height}))
+        })();
+        let _ = tx.send(result.unwrap_or(Value::Null));
+    }).map_err(|e| e.to_string())?;
+    rx.recv_timeout(std::time::Duration::from_secs(1)).map_err(|e| e.to_string())
 }

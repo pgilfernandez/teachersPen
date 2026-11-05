@@ -4,7 +4,7 @@ import dialogPolyfill from 'dialog-polyfill';
 import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { actionLabels, actions, defaults, getPieRadius, type Action, type Command, type Settings, type State, type Tool, type ToolbarMode } from '../shared';
-import { RadialHover, radialSlotAt, isRadialActionEnabled } from '../radial';
+import { RadialHover, radialSlotAt, isRadialActionEnabled, pointInViewport } from '../radial';
 import { MINI_RADIUS, MINI_SIZE } from '../toolbar';
 import { Pencil, Slash, MoveUpRight, Rectangle, Circle, Undo2, Redo2, Trash2, Eye, EyeOff, Settings as SettingsIcon, Timer as TimerIcon, Whiteboard, Blackboard, GripVertical, MoveDiagonal, RotateCcw, ArrowDownUp, Play, Pause, Minimize, RectangleVertical, RectangleHorizontal, Power, X, Info, Coffee, ExternalLink, Bug, type EditableIcon } from './icons';
 import { DrawingHistory, type Stroke } from '../model';
@@ -52,13 +52,42 @@ function App() {
 }
 
 function PieMenu({ state }: { state: State }) {
+  const screenPoint = state.platform === 'linux' ? state.pie?.screenPoint : undefined;
+  const [point, setPoint] = useState<{ x: number; y: number } | null>(screenPoint ? null : state.pie);
+  useEffect(() => {
+    if (!screenPoint) return;
+    let stopped = false;
+    let frame = 0;
+    const sample = async () => {
+      try {
+        const bounds = await window.pen.getViewportBounds();
+        if (stopped) return;
+        if (bounds) {
+          const next = pointInViewport(screenPoint, bounds, { width: innerWidth, height: innerHeight });
+          setPoint(previous => previous?.x === next.x && previous?.y === next.y ? previous : next);
+        }
+      } catch {
+        // A window can disappear while its last native request is in flight.
+      } finally {
+        if (!stopped) frame = requestAnimationFrame(sample);
+      }
+    };
+    // Keep tracking native placement while open: the WM can move the window
+    // after mapping without changing the WebView's CSS viewport size.
+    void sample();
+    return () => { stopped = true; cancelAnimationFrame(frame); };
+  }, [screenPoint?.x, screenPoint?.y]);
+  return point ? <PositionedPieMenu state={state} point={point} /> : null;
+}
+
+function PositionedPieMenu({ state, point }: { state: State; point: { x: number; y: number } }) {
   const t = translator(state.settings.language);
   const settings = state.settings.pie;
   const slots = settings[state.pie!.menu === 0 ? 'slots' : 'slots2'];
   const hoverSlots = slots.map(action => action && isRadialActionEnabled(action, state) ? action : null);
   const radius = getPieRadius(settings);
   const margin = radius + settings.buttonSize / 2 + 6;
-  const center = { x: Math.max(Math.min(margin, innerWidth / 2), Math.min(state.pie!.x, innerWidth - margin)), y: Math.max(Math.min(margin, innerHeight / 2), Math.min(state.pie!.y, innerHeight - margin)) };
+  const center = { x: Math.max(Math.min(margin, innerWidth / 2), Math.min(point.x, innerWidth - margin)), y: Math.max(Math.min(margin, innerHeight / 2), Math.min(point.y, innerHeight - margin)) };
   const [ready, setReady] = useState(() => settings.animationMs === 0 || window.matchMedia('(prefers-reduced-motion: reduce)').matches || slots.every(slot => slot === null));
   const pendingAnimations = useRef(new Set(slots.flatMap((slot, index) => slot ? [index] : [])));
   const menu = useRef<HTMLDivElement>(null);

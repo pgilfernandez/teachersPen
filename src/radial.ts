@@ -31,3 +31,9 @@ export class RadialHover {
     return target;
   }
 }
+
+// Convert desktop coordinates using the mapped content area, including GTK/WM
+// offsets and the ratio between native allocation and CSS viewport pixels.
+export function pointInViewport(point: { x: number; y: number }, bounds: { x: number; y: number; width: number; height: number }, viewport: { width: number; height: number }) {
+  return { x: (point.x - bounds.x) * viewport.width / bounds.width, y: (point.y - bounds.y) * viewport.height / bounds.height };
+}
