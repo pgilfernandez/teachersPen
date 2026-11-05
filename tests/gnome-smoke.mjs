@@ -32,6 +32,13 @@ check(errors.length === 0, `register shortcuts: ${JSON.stringify(errors)}`);
 for (const action of ['clear', 'undo', 'redo']) call('action', {label: 'overlay-0', action});
 check(evaluate('global._teachersPenTest._areas[0].inputs.length') === 4, 'input region leaves a hole for controls');
 check(evaluate('global._teachersPenTest._escape') > 0, 'Escape is registered while drawing');
+evaluate('global._teachersPenTest._movePreview(60, 220); true');
+pause();
+check(evaluate('global._teachersPenTest._pointer.x') === 60, 'brush preview tracks stage pointer coordinates');
+check(evaluate('global._teachersPenTest._areas[0].history.strokes.length') === 0, 'preview does not create a stroke');
+state.settings.colors[0] = '#087bff'; state.settings.width = 18; state.settings.transparency = 25;
+call('broadcast', {state, controls: [{x: 100, y: 100, width: 200, height: 50}]});
+pause();
 for (const tool of ['freehand', 'line', 'arrow', 'rectangle', 'circle']) {
     state.tool = tool;
     call('broadcast', {state, controls: [{x: 100, y: 100, width: 200, height: 50}]});

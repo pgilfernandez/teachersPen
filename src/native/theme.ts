@@ -1,4 +1,4 @@
-import { listen } from '@tauri-apps/api/event';
+import { listen } from './events';
 import { applyTheme, type Appearance } from '../renderer/theme';
 import { host } from './host';
 

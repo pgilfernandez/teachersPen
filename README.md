@@ -43,7 +43,7 @@ TeachersPen targets the following desktop systems:
 | **Windows** | Windows 10 or later; 64-bit Intel/AMD | `.exe` installer |
 | **Linux** | 64-bit Intel/AMD; X11 desktop and compatible system libraries | `.AppImage` or `.deb` |
 
-Compatibility testing is still in progress across systems and devices. On Linux, the X11/XWayland backend has experimental Wayland support; a companion extension adds native drawing on GNOME 46 / Wayland (see below). Linux packages require WebKitGTK 4.0, which is not available by default on every distribution.
+Compatibility testing is still in progress across systems and devices. On Linux, the X11/XWayland backend has experimental Wayland support; a companion extension adds native drawing on GNOME 46 / Wayland (see below). Linux packages require WebKitGTK 4.1 (Ubuntu 22.04 or later).
 
 ## Installation
 
@@ -59,7 +59,7 @@ You do not need development tools to use an installed package.
 
 ## Development
 
-TeachersPen uses Tauri with the operating system's WebView and a shared React interface. Install Node.js, Rust, and the [Tauri platform prerequisites](https://v1.tauri.app/v1/guides/getting-started/prerequisites), then run:
+TeachersPen uses Tauri 2 with the operating system's WebView and a shared React interface. Install Node.js, Rust, and the [Tauri platform prerequisites](https://v2.tauri.app/start/prerequisites/), then run:
 
 ```sh
 npm ci

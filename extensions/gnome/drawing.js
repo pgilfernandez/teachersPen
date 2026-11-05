@@ -61,3 +61,13 @@ export function paintStroke(cr, stroke) {
     }
     cr.stroke();
 }
+
+// A transient brush sample, never added to drawing history.
+export function brushPreview(state, point, monitor, controls = [], tracing = false) {
+    if (!state?.drawing || state.pie || tracing || !point) return null;
+    const inside = r => point.x >= r.x && point.y >= r.y && point.x < r.x + r.width && point.y < r.y + r.height;
+    if (!inside(monitor) || controls.some(inside)) return null;
+    return {tool: 'freehand', color: state.settings.colors[state.color],
+        width: state.settings.width, transparency: state.settings.transparency,
+        points: [{x: point.x - monitor.x, y: point.y - monitor.y}]};
+}

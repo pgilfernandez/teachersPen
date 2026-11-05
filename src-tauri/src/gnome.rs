@@ -1,7 +1,7 @@
 //! Optional GNOME Shell drawing backend. The GTK controls still use XWayland.
 use serde_json::{json, Value};
 use std::sync::Mutex;
-use tauri::Manager;
+use tauri::{Manager, Emitter};
 
 const NAME: &str = "org.teacherspen.Gnome1";
 const PATH: &str = "/org/teacherspen/Gnome1";
@@ -93,7 +93,7 @@ pub fn controls(app: &tauri::AppHandle) -> Result<Value> {
     app.run_on_main_thread(move || {
         use gtk::prelude::*;
         let controls: Vec<Value> = ["toolbar", "mini", "timer-window", "preferences", "pie"].iter()
-            .filter_map(|label| handle.get_window(label))
+            .filter_map(|label| handle.get_webview_window(label))
             .filter_map(|window| {
                 let gtk = window.gtk_window().ok()?;
                 if !gtk.is_mapped() { return None; }

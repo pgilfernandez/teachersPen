@@ -1,4 +1,4 @@
-import { listen } from '@tauri-apps/api/event';
+import { listen } from './events';
 import { host } from './host';
 import { actions, actionLabels, defaults, parseSettings, tools, type Action, type Command, type Settings, type State, type BackendStatus, type ToolbarMode } from '../shared';
 import { translate, isLanguage, resolveSystemLanguage, defaultTimerText, isDefaultTimerText } from '../i18n';
@@ -147,7 +147,7 @@ export async function startController() {
     const display = displays.find(d => d.id === activeDisplay) || nearest(point);
     await create('pie', 'pie', display.bounds);
     await move('pie', display.bounds);
-    state.pie = { menu, x: point.x - display.bounds.x, y: point.y - display.bounds.y, serial: Date.now() };
+    state.pie = { menu, x: point.x - display.bounds.x, y: point.y - display.bounds.y, serial: Date.now(), ...(state.platform === 'linux' ? { screenPoint: { x: point.x, y: point.y } } : {}) };
     await broadcast(); await win('pie', 'show'); await win('pie', 'focus');
   }
   async function perform(action: Action, fromShortcut = false) {
