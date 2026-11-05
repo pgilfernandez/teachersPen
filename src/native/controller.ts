@@ -256,7 +256,7 @@ export async function startController() {
     const b = geometry.get('mini')!; await move('mini', { ...b, ...fitPosition(point, { width: MINI_SIZE, height: MINI_SIZE }, areaFor(point)) });
   }
   async function preferences() {
-    await setDrawing(false); const area = areaFor(await cursor()); const width = Math.min(430, area.width); const height = Math.min(800, area.height - 40);
+    await setDrawing(false); const area = areaFor(await cursor()); const width = Math.min(430, area.width); const height = Math.min(810, area.height - 40);
     await create('preferences', 'preferences', { x: area.x + (area.width - width) / 2, y: area.y + (area.height - height) / 2, width, height }, `${t('Preferencias')} · TeachersPen`);
     await win('preferences', 'show'); await win('preferences', 'focus');
   }
