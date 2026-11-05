@@ -249,9 +249,9 @@ html.window-pie, body.pie { overflow: hidden; user-select: none; color-scheme: v
 @media (prefers-reduced-motion: reduce) { .pie-item { animation-duration: 0ms !important; } }
 
 .preferences-tabs { display: flex; margin-bottom: 14px; border-bottom: 1px solid var(--ui-border); }
-.preferences-tabs button { flex: 1; padding: 7px 10px; background: transparent; color: var(--ui-muted); border-bottom: 2px solid transparent; }
+.preferences-tabs button { flex: 1; padding: 3px 6px; background: transparent; color: var(--ui-muted); border-bottom: 4px solid transparent; margin-bottom: 0; border-radius: 8px 8px 0 0; }
 .preferences-tabs button[aria-selected="false"]:hover { background: var(--ui-tab-hover); color: var(--ui-text); }
-.preferences-tabs button[aria-selected="true"] { background: var(--ui-tab-active); color: var(--ui-selected-ink); border-bottom-color: var(--ui-selected-ink); }
+.preferences-tabs button[aria-selected="true"] { background: var(--ui-tab-active); color: var(--ui-text); border-bottom-color: var(--ui-selected-ink); }
 .pie-slot-options { margin-top: 16px; margin-bottom: 14px; }
 
 .brush-preview { position: absolute; transform: translate(-50%, -50%); border-radius: 50%; pointer-events: none; visibility: hidden; }
