@@ -595,6 +595,7 @@ async fn host(window: Window, app: tauri::AppHandle, op: String, args: Value) ->
                 "donate" => "https://github.com/sponsors/pgilfernandez",
                 "paypal" => "https://www.paypal.com/donate?hosted_button_id=6N7UZHDQW3J6A",
                 "github" => "https://github.com/pgilfernandez/teachersPen",
+                "issues" => "https://github.com/pgilfernandez/teachersPen/issues",
                 _ => return Err("Unknown project link".into()),
             };
             tauri::api::shell::open(&app.shell_scope(), url, None).map_err(err)?;

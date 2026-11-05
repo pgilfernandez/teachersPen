@@ -6,7 +6,7 @@ import { createRoot } from 'react-dom/client';
 import { actionLabels, actions, defaults, getPieRadius, type Action, type Command, type Settings, type State, type Tool, type ToolbarMode } from '../shared';
 import { RadialHover, radialSlotAt, isRadialActionEnabled } from '../radial';
 import { MINI_RADIUS, MINI_SIZE } from '../toolbar';
-import { Pencil, Slash, MoveUpRight, Rectangle, Circle, Undo2, Redo2, Trash2, Eye, EyeOff, Settings as SettingsIcon, Timer as TimerIcon, Whiteboard, Blackboard, GripVertical, MoveDiagonal, RotateCcw, ArrowDownUp, Play, Pause, Minimize, RectangleVertical, RectangleHorizontal, Power, X, Info, type EditableIcon } from './icons';
+import { Pencil, Slash, MoveUpRight, Rectangle, Circle, Undo2, Redo2, Trash2, Eye, EyeOff, Settings as SettingsIcon, Timer as TimerIcon, Whiteboard, Blackboard, GripVertical, MoveDiagonal, RotateCcw, ArrowDownUp, Play, Pause, Minimize, RectangleVertical, RectangleHorizontal, Power, X, Info, Coffee, ExternalLink, Bug, type EditableIcon } from './icons';
 import { DrawingHistory, type Stroke } from '../model';
 import { paintStroke, strokeCursor } from './draw';
 import { appVersion, appCommit } from '../build-info';
@@ -595,7 +595,7 @@ function About({ state, onClose }: { state: State; onClose: () => void }) {
     const focused = document.activeElement;
     if (focused instanceof HTMLElement && dialog.current.contains(focused)) focused.blur();
   }, []);
-  const open = async (target: 'donate' | 'paypal' | 'github') => {
+  const open = async (target: 'donate' | 'paypal' | 'github' | 'issues') => {
     try {
       const result = await command({ type: 'about-link', target });
       if (!result.ok) setError(result.error || t('Abrir en el navegador'));
@@ -609,9 +609,15 @@ function About({ state, onClose }: { state: State; onClose: () => void }) {
       <p className="about-credit">developed with love by Pablo Gil Fernández</p>
       <p className="about-license">PolyForm Noncommercial 1.0.0</p>
       <div className="about-links">
-        <button className="donate-button" title="https://github.com/sponsors/pgilfernandez" onClick={() => void open('donate')}>{t('Donar')}</button>
-        <button className="donate-button" title="https://www.paypal.com/donate?hosted_button_id=6N7UZHDQW3J6A" aria-label={t('Donar con PayPal')} onClick={() => void open('paypal')}>PayPal</button>
-        <button title="https://github.com/pgilfernandez/teachersPen" onClick={() => void open('github')}>{t('Proyecto en GitHub')}</button>
+        <div className="about-link-row about-donate-row">
+          <span>{t('Invítame a un café:')}</span>
+          <button className="donate-button" title="https://github.com/sponsors/pgilfernandez" onClick={() => void open('donate')}><Coffee size={16} />{t('vía GitHub')}</button>
+          <button className="donate-button" title="https://www.paypal.com/donate?hosted_button_id=6N7UZHDQW3J6A" onClick={() => void open('paypal')}><Coffee size={16} />{t('vía PayPal')}</button>
+        </div>
+        <div className="about-link-row">
+          <button title="https://github.com/pgilfernandez/teachersPen" onClick={() => void open('github')}><ExternalLink size={16} />{t('Proyecto en GitHub')}</button>
+          <button title="https://github.com/pgilfernandez/teachersPen/issues" onClick={() => void open('issues')}><Bug size={16} />{t('Informar de un error')}</button>
+        </div>
       </div>
       {error && <p role="alert">{error}</p>}
     </div>

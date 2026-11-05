@@ -153,7 +153,7 @@ export type Command =
   | { type: 'mini-hit'; interactive: boolean }
   | { type: 'mini-pointer'; phase: 'start' | 'move' | 'end' | 'cancel'; x: number; y: number }
   | { type: 'preferences' }
-  | { type: 'about-link'; target: 'donate' | 'paypal' | 'github' }
+  | { type: 'about-link'; target: 'donate' | 'paypal' | 'github' | 'issues' }
   | { type: 'active-display' }
   | { type: 'history-state'; canUndo: boolean; canRedo: boolean; hasDrawings: boolean }
   | { type: 'record-shortcut'; active: boolean }

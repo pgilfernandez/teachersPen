@@ -26,6 +26,9 @@ import PowerSource from './assets/icons/power.svg';
 import XSource from './assets/icons/x.svg';
 import WhiteboardSource from './assets/icons/whiteboard.svg';
 import BlackboardSource from './assets/icons/blackboard.svg';
+import CoffeeSource from './assets/icons/coffee.svg';
+import ExternalLinkSource from './assets/icons/external-link.svg';
+import BugSource from './assets/icons/bug.svg';
 
 export type EditableIcon = ComponentType<{ size?: number; 'aria-hidden'?: boolean | 'true' | 'false' }>;
 
@@ -61,6 +64,9 @@ export const Power = icon(PowerSource);
 export const X = icon(XSource);
 export const Whiteboard = icon(WhiteboardSource);
 export const Blackboard = icon(BlackboardSource);
+export const Coffee = icon(CoffeeSource);
+export const ExternalLink = icon(ExternalLinkSource);
+export const Bug = icon(BugSource);
 
 export const Info = icon(InfoSource);
 
