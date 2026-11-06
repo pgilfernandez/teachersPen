@@ -20,7 +20,7 @@ import RotateCcwSource from './assets/icons/rotate-ccw.svg';
 import ArrowDownUpSource from './assets/icons/arrow-down-up.svg';
 import PlaySource from './assets/icons/play.svg';
 import PauseSource from './assets/icons/pause.svg';
-import MinimizeSource from './assets/icons/minimize.svg';
+import MinimizeSource from './assets/icons/minimize-2.svg';
 import RotateCwSource from './assets/icons/rotate-cw.svg';
 import PowerSource from './assets/icons/power.svg';
 import XSource from './assets/icons/x.svg';
