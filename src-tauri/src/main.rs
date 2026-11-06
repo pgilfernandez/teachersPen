@@ -212,7 +212,7 @@ fn create_window(app: &tauri::AppHandle, v: &Value) -> Result<()> {
         builder = builder.min_inner_size(380.0, 400.0);
     }
     if role == "board-close" {
-        builder = builder.min_inner_size(32.0, 32.0).max_inner_size(32.0, 32.0);
+        builder = builder.min_inner_size(32.0, 32.0).max_inner_size(72.0, 32.0);
     }
     #[cfg(any(target_os = "windows", target_os = "linux"))]
     {

@@ -74,10 +74,11 @@ export async function startController() {
   }
   async function updateBoardClose() {
     const full = state.settings.toolbarMode === 'visible' || state.toolbarExpanded;
-    const show = state.visible && state.background !== 'transparent' && !full && !state.pie;
+    const show = state.visible && state.background !== 'transparent';
     if (show) {
-      const area = (displays.find(display => display.id === activeDisplay) || displays[0]).workArea;
-      const rect = { x: area.x + area.width - 44, y: area.y + 12, width: 32, height: 32 };
+      const area = (displays.find(display => display.id === activeDisplay) || displays[0]).bounds;
+      const width = full ? 32 : 72;
+      const rect = { x: area.x + area.width - width - 12, y: area.y + 12, width, height: 32 };
       await create('board-close', 'board-close', rect);
       if (JSON.stringify(geometry.get('board-close')) !== JSON.stringify(rect)) await move('board-close', rect);
       if (!boardCloseShown) {

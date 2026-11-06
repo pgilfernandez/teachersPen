@@ -43,7 +43,7 @@ function App() {
   }, [state?.drawing]);
   useEffect(() => { if (state) document.documentElement.lang = state.settings.language; }, [state?.settings.language]);
   if (!state) return error ? <p role="alert">{error}</p> : null;
-  if (role === 'board-close') return state.visible && state.background !== 'transparent' && state.settings.toolbarMode !== 'visible' && !state.toolbarExpanded
+  if (role === 'board-close') return state.visible && state.background !== 'transparent'
     ? <BoardClose key={state.background} state={state} /> : null;
   if (role === 'pie') return state.pie ? <PieMenu key={state.pie.serial} state={state} /> : null;
   if (role === 'overlay') return <Overlay state={state} />;
@@ -55,10 +55,14 @@ function App() {
 
 function BoardClose({ state }: { state: State }) {
   const [hovered, setHovered] = useState(false);
-  return <button className={`board-close${hovered ? ' is-hovered' : ''}${state.linuxBackend?.active === 'gnome' ? ' shell-composited' : ''}`} aria-label={translate(state.settings.language, 'Cerrar')} title={translate(state.settings.language, 'Cerrar')}
-    style={{ color: state.background === 'white' ? '#000' : '#fff' }}
+  const t = translator(state.settings.language);
+  const full = state.settings.toolbarMode === 'visible' || state.toolbarExpanded;
+  return <div className="board-controls" style={{ color: state.background === 'white' ? '#000' : '#fff' }}>
+    {!full && <button className="board-close" aria-label={t('Mostrar barra completa')} title={t('Mostrar barra completa')} onClick={() => void command({ type: 'show-tools' })}><RectangleHorizontal size={24} aria-hidden="true" /></button>}
+    <button className={`board-close${hovered ? ' is-hovered' : ''}${state.linuxBackend?.active === 'gnome' ? ' shell-composited' : ''}`} aria-label={t('Cerrar')} title={t('Cerrar')}
     onPointerEnter={() => setHovered(true)} onPointerLeave={() => setHovered(false)} onPointerCancel={() => setHovered(false)}
-    onClick={() => { setHovered(false); void command({ type: 'background-close' }); }}><X size={24} aria-hidden="true" /></button>;
+    onClick={() => { setHovered(false); void command({ type: 'background-close' }); }}><X size={24} aria-hidden="true" /></button>
+  </div>;
 }
 
 function PieMenu({ state }: { state: State }) {
