@@ -186,6 +186,8 @@ fn create_window(app: &tauri::AppHandle, v: &Value) -> Result<()> {
         .accept_first_mouse(true)
         .decorations(role == "preferences")
         .transparent(role != "preferences")
+        // Windows' native shadow adds a white frame to undecorated windows.
+        .shadow(role == "preferences" || !cfg!(target_os = "windows"))
         .resizable(role == "preferences")
         .minimizable(!cfg!(target_os = "windows"))
         .always_on_top(role != "preferences" && role != "controller")
@@ -200,6 +202,10 @@ fn create_window(app: &tauri::AppHandle, v: &Value) -> Result<()> {
         .inner_size(number(b, "width").max(1.0), number(b, "height").max(1.0));
     if b["x"].is_number() {
         builder = builder.position(number(b, "x"), number(b, "y"));
+    }
+    #[cfg(target_os = "windows")]
+    if role != "preferences" {
+        builder = builder.background_color(tauri::window::Color(0, 0, 0, 0));
     }
     if role == "preferences" {
         builder = builder.min_inner_size(380.0, 400.0);
