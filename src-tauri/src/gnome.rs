@@ -37,7 +37,7 @@ pub fn initialize(app: &tauri::AppHandle, requested: &str) -> Value {
     };
     // Do not auto-start or enable an extension. It must already be available.
     let hold_available = match dispatch(&connection, "connect", &json!({})) {
-        Ok(info) if (info["version"] == 1 || info["version"] == 2) && info["controlCompositing"] == true => info["holdAvailable"] == true,
+        Ok(info) if (info["version"] == 1 || info["version"] == 2) && info["controlCompositing"] == true && info["boardCloseControl"] == true => info["holdAvailable"] == true,
         Ok(info) if info["version"] == 1 || info["version"] == 2 => return fallback(requested,
             "Update the TeachersPen GNOME extension from Preferences, then log out and back in to load the new control layers.".into()),
         Ok(_) => return fallback(requested, "Incompatible GNOME extension version.".into()),
@@ -94,7 +94,7 @@ pub fn controls(app: &tauri::AppHandle) -> Result<Value> {
     let (tx, rx) = std::sync::mpsc::channel();
     app.run_on_main_thread(move || {
         use gtk::prelude::*;
-        let controls: Vec<Value> = ["toolbar", "mini", "timer-window", "preferences", "pie"].iter()
+        let controls: Vec<Value> = ["toolbar", "mini", "timer-window", "preferences", "board-close", "pie"].iter()
             .filter_map(|label| handle.get_webview_window(label))
             .filter_map(|window| {
                 let gtk = window.gtk_window().ok()?;

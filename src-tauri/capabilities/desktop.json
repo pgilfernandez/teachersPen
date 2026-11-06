@@ -9,7 +9,8 @@
     "overlay-*",
     "preferences",
     "timer-window",
-    "pie"
+    "pie",
+    "board-close"
   ],
   "permissions": [
     "core:event:allow-listen",

@@ -164,6 +164,7 @@ fn create_window(app: &tauri::AppHandle, v: &Value) -> Result<()> {
         "preferences",
         "timer-window",
         "pie",
+        "board-close",
     ]
     .contains(&role)
         || label.len() > 64
@@ -187,8 +188,8 @@ fn create_window(app: &tauri::AppHandle, v: &Value) -> Result<()> {
         .decorations(role == "preferences")
         .transparent(role != "preferences")
         // Windows' native shadow adds a white frame to undecorated windows.
-        .shadow(role == "preferences" || !cfg!(target_os = "windows"))
-        .resizable(role == "preferences")
+        .shadow(role != "board-close" && (role == "preferences" || !cfg!(target_os = "windows")))
+        .resizable(role == "preferences" || role == "board-close")
         .minimizable(!cfg!(target_os = "windows"))
         .always_on_top(role != "preferences" && role != "controller")
         .skip_taskbar(if cfg!(any(target_os = "windows", target_os = "linux")) { role != "toolbar" } else { role != "preferences" })
@@ -209,6 +210,9 @@ fn create_window(app: &tauri::AppHandle, v: &Value) -> Result<()> {
     }
     if role == "preferences" {
         builder = builder.min_inner_size(380.0, 400.0);
+    }
+    if role == "board-close" {
+        builder = builder.min_inner_size(32.0, 32.0).max_inner_size(32.0, 32.0);
     }
     #[cfg(any(target_os = "windows", target_os = "linux"))]
     {

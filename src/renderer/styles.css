@@ -275,3 +275,11 @@ html.window-pie, body.pie { overflow: hidden; user-select: none; color-scheme: v
 
 .extension-installer p { font-size: 11px; line-height: 1.5; margin: 8px 0; }
 .extension-installer button { max-width: 100%; white-space: normal; }
+
+/* Keep the board exit control visually bare, including native button defaults. */
+html.window-board-close, body.board-close { overflow: hidden; }
+button.board-close { appearance: none; -webkit-appearance: none; display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; opacity: .5; }
+button.board-close:focus { outline: none; }
+button.board-close.is-hovered { opacity: 1; }
+
+button.board-close.shell-composited { opacity: 1; }

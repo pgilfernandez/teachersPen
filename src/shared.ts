@@ -128,6 +128,7 @@ export function parseSettings(input: unknown): Settings {
 }
 export type Command =
   | { type: 'cancel-drawing' }
+  | { type: 'background-close' }
   | { type: 'pie-close' }
   | { type: 'pie-select'; action: Action }
   | { type: 'pie-settings'; settings: Settings['pie'] }

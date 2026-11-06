@@ -36,6 +36,7 @@ export async function startController() {
   let recording = false;
   let initialized = false;
   let miniShown = false;
+  let boardCloseShown = false;
   let anchor: { point: Point; area: Area } | null = null;
   let anchorTimeout: ReturnType<typeof setTimeout>;
   let timerTimeout: ReturnType<typeof setTimeout>;
@@ -47,7 +48,8 @@ export async function startController() {
     const next = queue.then(fn); queue = next.catch(error => console.error('TeachersPen:', error)); return next;
   }
   const histories = new Map<string, { canUndo: boolean; canRedo: boolean; hasDrawings: boolean }>();
-  const broadcast = () => {
+  const broadcast = async () => {
+    await updateBoardClose();
     const history = histories.get(`overlay-${activeDisplay}`);
     state.hasDrawings = displays.some(display => histories.get(`overlay-${display.id}`)?.hasDrawings);
     state.canUndo = history?.canUndo ?? false;
@@ -69,6 +71,22 @@ export async function startController() {
     if (geometry.has(label)) return;
     geometry.set(label, bounds);
     try { await host('create', { label, role, bounds, title }); } catch (e) { geometry.delete(label); throw e; }
+  }
+  async function updateBoardClose() {
+    const full = state.settings.toolbarMode === 'visible' || state.toolbarExpanded;
+    const show = state.visible && state.background !== 'transparent' && !full && !state.pie;
+    if (show) {
+      const area = (displays.find(display => display.id === activeDisplay) || displays[0]).workArea;
+      const rect = { x: area.x + area.width - 44, y: area.y + 12, width: 32, height: 32 };
+      await create('board-close', 'board-close', rect);
+      if (JSON.stringify(geometry.get('board-close')) !== JSON.stringify(rect)) await move('board-close', rect);
+      if (!boardCloseShown) {
+        await win('board-close', 'show');
+        // Mutter can choose a different initial position while mapping a window.
+        await move('board-close', rect);
+      }
+    } else if (boardCloseShown) await win('board-close', 'hide');
+    boardCloseShown = show;
   }
   async function bounds(label: string) {
     const b = await win(label, 'get-bounds') as Area; geometry.set(label, b); return b;
@@ -273,6 +291,9 @@ export async function startController() {
       case 'cancel-drawing':
         if (!overlayLabels.has(source)) throw new Error(t('Ventana no autorizada'));
         await setDrawing(false); break;
+      case 'background-close':
+        if (source !== 'board-close') throw new Error(t('Ventana no autorizada'));
+        state.background = 'transparent'; break;
       case 'pie-close': await closePie(); break;
       case 'pie-select':
         if (source !== 'pie' || !state.pie || (c.action === 'pie' || c.action === 'pie2') || !state.settings.pie[state.pie.menu === 0 ? 'slots' : 'slots2'].includes(c.action)) throw new Error(t('Comando no autorizado'));

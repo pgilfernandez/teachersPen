@@ -43,12 +43,22 @@ function App() {
   }, [state?.drawing]);
   useEffect(() => { if (state) document.documentElement.lang = state.settings.language; }, [state?.settings.language]);
   if (!state) return error ? <p role="alert">{error}</p> : null;
+  if (role === 'board-close') return state.visible && state.background !== 'transparent' && state.settings.toolbarMode !== 'visible' && !state.toolbarExpanded
+    ? <BoardClose key={state.background} state={state} /> : null;
   if (role === 'pie') return state.pie ? <PieMenu key={state.pie.serial} state={state} /> : null;
   if (role === 'overlay') return <Overlay state={state} />;
   if (role === 'preferences') return <Preferences state={state} />;
   if (role === 'mini') return <MiniLauncher state={state} />;
   if (role === 'timer-window') return state.timer.visible ? <Timer state={state} /> : null;
   return <Toolbar state={state} />;
+}
+
+function BoardClose({ state }: { state: State }) {
+  const [hovered, setHovered] = useState(false);
+  return <button className={`board-close${hovered ? ' is-hovered' : ''}${state.linuxBackend?.active === 'gnome' ? ' shell-composited' : ''}`} aria-label={translate(state.settings.language, 'Cerrar')} title={translate(state.settings.language, 'Cerrar')}
+    style={{ color: state.background === 'white' ? '#000' : '#fff' }}
+    onPointerEnter={() => setHovered(true)} onPointerLeave={() => setHovered(false)} onPointerCancel={() => setHovered(false)}
+    onClick={() => { setHovered(false); void command({ type: 'background-close' }); }}><X size={24} aria-hidden="true" /></button>;
 }
 
 function PieMenu({ state }: { state: State }) {

@@ -93,6 +93,39 @@ try {
         wait("!global._teachersPenTest._state.pie && !global._teachersPenTest._controlClones.has('teacherspen-pie')");
     }
     print('Native app: live transparent radial above board and strokes on white, black and transparent backgrounds; cleanup on close');
+    evaluate("global._teachersPenTest._emit({type:'command', source:'preferences', command:{type:'toolbar-mode',mode:'hidden'}}); true");
+    wait("global._teachersPenTest._state.settings.toolbarMode === 'hidden'");
+    for (const background of ['white', 'black']) {
+        evaluate(`global._teachersPenTest._emit({type:'shortcut', action:'${background}'}); true`);
+        wait("global._teachersPenTest._controlClones.has('teacherspen-board-close')");
+        for (let i=0;i<5;i++) pause();
+        const button = evaluate("global._teachersPenTest._controls.find(c => c.windowRole === 'teacherspen-board-close')");
+        if (button.width !== 32 || button.height !== 32 || button.x !== 756 || button.y !== 44) throw new Error('Board close does not occupy its top-right 32px corner');
+        const x = Math.floor(button.x + button.width / 2), y = Math.floor(button.y + button.height / 2);
+        evaluate('global._teachersPenMouse.notify_absolute_motion(global._teachersPenTime(), 400, 400); true');
+        for (let i=0;i<3;i++) pause();
+        const idle = screenshot(background + '-close-idle')(x,y)[0];
+        if (idle < 80 || idle > 180) throw new Error(`Board close icon does not use half opacity: ${idle}`);
+        evaluate(`global._teachersPenMouse.notify_absolute_motion(global._teachersPenTime(), ${x}, ${y}); true`);
+        for (let i=0;i<3;i++) pause();
+        const hovered = screenshot(background + '-close-hover')(x,y)[0];
+        if (background === 'white' ? hovered > 20 : hovered < 235) throw new Error(`Board close icon has wrong color or hover opacity: ${hovered}`);
+        const count = evaluate('global._teachersPenTest._areas[0].history.strokes.length');
+        evaluate('global._teachersPenMouse.notify_button(global._teachersPenTime(), 1, global._teachersPenClutter.ButtonState.PRESSED); true');
+        pause();
+        evaluate('global._teachersPenMouse.notify_button(global._teachersPenTime(), 1, global._teachersPenClutter.ButtonState.RELEASED); true');
+        wait("global._teachersPenTest._state.background === 'transparent' && !global._teachersPenTest._controlClones.has('teacherspen-board-close')");
+        if (evaluate('global._teachersPenTest._areas[0].history.strokes.length') !== count) throw new Error('Closing board removed drawings');
+    }
+    evaluate("global._teachersPenTest._emit({type:'command', source:'preferences', command:{type:'toolbar-mode',mode:'minimal'}}); true");
+    evaluate("global._teachersPenTest._emit({type:'shortcut', action:'white'}); true");
+    wait("global._teachersPenTest._controlClones.has('teacherspen-board-close')");
+    evaluate("global._teachersPenTest._emit({type:'shortcut', action:'showToolbar'}); true");
+    wait("global._teachersPenTest._state.toolbarExpanded && !global._teachersPenTest._controlClones.has('teacherspen-board-close')");
+    evaluate("global._teachersPenTest._emit({type:'shortcut', action:'white'}); true");
+    evaluate("global._teachersPenTest._emit({type:'command', source:'preferences', command:{type:'toolbar-mode',mode:'visible'}}); true");
+    wait("global._teachersPenTest._state.settings.toolbarMode === 'visible'");
+    print('Native app: board close icon color, half/full hover opacity and real click preserve drawings');
     evaluate("global._teachersPenTest._emit({type:'command', source:'preferences', command:{type:'activation', activation:'hold'}}); true");
     wait("global._teachersPenTest._state.settings.activation === 'hold'");
     if (!evaluate('global._teachersPenTest._state.holdAvailable')) throw new Error('Hold not available in the native app');

@@ -44,7 +44,10 @@ export default class TeachersPen extends Extension {
                 this._activateShortcut(id, action);
         });
         this._keyCapture = global.stage.connect('captured-event', (_stage, event) => {
-            if (event.type() === Clutter.EventType.MOTION) this._movePreview(...event.get_coords());
+            if (event.type() === Clutter.EventType.MOTION) {
+                this._movePreview(...event.get_coords());
+                this._updateBoardCloseHover(...event.get_coords());
+            }
             return this._captureKey(event);
         });
         this._monitors = Main.layoutManager.connect('monitors-changed', () => {
@@ -87,7 +90,7 @@ export default class TeachersPen extends Extension {
 
     _dispatch(op, args) {
         switch (op) {
-        case 'connect': this._lastPing = GLib.get_monotonic_time(); return {version: 2, holdAvailable: true, controlCompositing: true, extensionVersion: this.metadata.version};
+        case 'connect': this._lastPing = GLib.get_monotonic_time(); return {version: 2, holdAvailable: true, controlCompositing: true, boardCloseControl: true, extensionVersion: this.metadata.version};
         case 'screens': return Main.layoutManager.monitors.map((m, id) => {
             const area = Main.layoutManager.getWorkAreaForMonitor(id);
             return {id, bounds: {x: m.x, y: m.y, width: m.width, height: m.height},
@@ -231,6 +234,15 @@ export default class TeachersPen extends Extension {
         for (const role of this._controlClones.keys()) this._clearControlClone(role);
     }
 
+    _updateBoardCloseHover(x, y) {
+        const clone = this._controlClones.get('teacherspen-board-close');
+        const control = this._controls.find(c => c.windowRole === 'teacherspen-board-close');
+        if (!clone || !control) return;
+        if (x === undefined) [x, y] = global.get_pointer();
+        clone.actor.opacity = x >= control.x && x < control.x + control.width
+            && y >= control.y && y < control.y + control.height ? 255 : 128;
+    }
+
     _updateControlClones() {
         const wanted = new Map();
         if (this._state && !Main.overview.visible && !Main.sessionMode.isLocked) {
@@ -238,7 +250,7 @@ export default class TeachersPen extends Extension {
             for (const control of this._controls) {
                 const role = control.windowRole;
                 if (!['teacherspen-toolbar', 'teacherspen-mini', 'teacherspen-timer-window',
-                    'teacherspen-preferences', 'teacherspen-pie'].includes(role)) continue;
+                    'teacherspen-preferences', 'teacherspen-board-close', 'teacherspen-pie'].includes(role)) continue;
                 if (role === 'teacherspen-pie' && !this._state.pie) continue;
                 const source = windows.find(actor => actor.meta_window.get_pid() === control.pid
                     && actor.meta_window.get_role() === role && actor.visible);
@@ -272,6 +284,7 @@ export default class TeachersPen extends Extension {
             const actor = this._controlClones.get(role).actor;
             actor.get_parent().set_child_above_sibling(actor, null);
         }
+        this._updateBoardCloseHover();
     }
 
     _update() {

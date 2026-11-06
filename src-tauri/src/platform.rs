@@ -193,7 +193,7 @@ pub fn configure(w: &Window, role: &str) -> Result<()> {
     if role != "controller" {
         let window = w.clone();
         let handle = w.app_handle().clone();
-        let control_role = if ["toolbar", "mini", "timer-window", "preferences", "pie"].contains(&role) {
+        let control_role = if ["toolbar", "mini", "timer-window", "preferences", "board-close", "pie"].contains(&role) {
             Some(format!("teacherspen-{}", w.label()))
         } else { None };
         w.run_on_main_thread(move || {
@@ -355,7 +355,7 @@ pub fn configure(w: &Window, role: &str) -> Result<()> {
 pub fn raise_controls(app: &tauri::AppHandle) {
     refresh_overlay_regions(app);
     #[cfg(target_os = "windows")]
-    for label in ["toolbar", "mini", "timer-window", "preferences", "pie"] {
+    for label in ["toolbar", "mini", "timer-window", "preferences", "board-close", "pie"] {
         if let Some(window) = app.get_webview_window(label) {
             let target = window.clone();
             let _ = window.run_on_main_thread(move || {
@@ -384,7 +384,7 @@ pub fn raise_controls(app: &tauri::AppHandle) {
                 .find(|window| window.is_focused().unwrap_or(false))
                 .or_else(|| overlays.first())
                 .and_then(|window| window.gtk_window().ok());
-            for label in ["toolbar", "mini", "timer-window", "preferences", "pie"] {
+            for label in ["toolbar", "mini", "timer-window", "preferences", "board-close", "pie"] {
                 if let Some(window) = handle.get_webview_window(label) {
                     if let Ok(gtk) = window.gtk_window() {
                         // XFWM keeps transient controls above their drawing
@@ -462,7 +462,7 @@ pub fn refresh_overlay_regions(app: &tauri::AppHandle) {
         let handle = app.clone();
         let _ = app.run_on_main_thread(move || {
             use gtk::prelude::*;
-            let controls: Vec<_> = ["toolbar", "mini", "timer-window", "preferences", "pie"]
+            let controls: Vec<_> = ["toolbar", "mini", "timer-window", "preferences", "board-close", "pie"]
                 .iter()
                 .filter_map(|label| handle.get_webview_window(label))
                 .filter_map(|window| {
@@ -478,7 +478,7 @@ pub fn refresh_overlay_regions(app: &tauri::AppHandle) {
                         return rect.map(|(left, top, width, height)|
                             (x + left, y + top, width, height, false));
                     }
-                    Some((x, y, gdk.width().max(0), gdk.height().max(0), window.label() == "pie"))
+                    Some((x, y, gdk.width().max(0), gdk.height().max(0), ["pie", "board-close"].contains(&window.label())))
                 })
                 .collect();
             for (label, window) in handle.webview_windows() {
