@@ -19,15 +19,21 @@ Annotations stay in place on the screen; they do not follow the content when you
 
 ## A toolbar that fits your workspace
 
-![TeachersPen horizontal toolbar with drawing tools, colors, and window controls](docs/images/bar.png)
+<img src="docs/images/bar.png" alt="TeachersPen horizontal toolbar with drawing tools, colors, and window controls" width="100%" />
 
 Move the toolbar wherever it suits you and choose a horizontal or vertical layout. Keep it visible, collapse it to a small floating button, or hide it and use keyboard shortcuts. You can reopen it from the menu-bar or system-tray icon.
 
 To get started, select a drawing tool and draw on the screen. Press **Ctrl+Shift+Space** to switch between drawing and interacting with your desktop. On macOS, use the **Control** key for this shortcut.
 
+## Pie menus
+
+<img src="docs/images/pie_1.png" alt="TeachersPen horizontal toolbar with drawing tools, colors, and window controls" width="30%" />
+
+Open either of the two customizable pie menus with a keyboard shortcut to access up to eight tools, colors, or actions around your pointer. Select an option by clicking or hovering over it. In Preferences, you can choose each menu's shortcut and actions, and adjust button size, spacing, opening animation, and hover delay.
+
 ## Preferences
 
-<img src="docs/images/preferences.png" alt="TeachersPen preferences showing language, drawing settings, colors, and keyboard shortcuts" width="430" />
+<img src="docs/images/preferences.png" alt="TeachersPen preferences showing language, drawing settings, colors, and keyboard shortcuts" width="100%" />
 
 Customize colors, drawing settings, keyboard shortcuts, and toolbar behavior. Choose whether a shortcut toggles drawing mode or activates it only while you hold the keys. Your preferences are saved automatically.
 
@@ -142,17 +148,3 @@ does not enable extensions in the user's current desktop session. Its temporary
 copy enables the Shell debug evaluator for the test only; the distributed
 extension never enables it.
 
-### Menú radial
-
-Pulsa **Ctrl+Mayús+S** para abrir el menú radial 1 junto al puntero o
-**Ctrl+Mayús+W** para abrir el menú radial 2 (colores por defecto). Admite ocho
-posiciones separadas por 45°, empezando arriba y siguiendo el sentido horario.
-En Preferencias → Menús radiales puedes cambiar cada atajo, asignar o vaciar
-las ocho posiciones de cada menú y ajustar
-el radio y la duración de animación compartidos, y elegir activación por clic o al pasar el
-puntero con un retardo configurable. Escape, el botón central o un clic fuera cierran el menú. El atajo sólo abre
-el menú: mantenerlo pulsado o volver a pulsarlo no lo cierra. Cerca de los bordes se desplaza el círculo
-para que todas las opciones permanezcan visibles.
-
-La paleta dispone de ocho colores editables en la pestaña General. Los colores
-1 a 8 usan Ctrl+Mayús+1 a Ctrl+Mayús+8 por defecto.
