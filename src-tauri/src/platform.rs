@@ -216,9 +216,9 @@ pub fn configure(w: &Window, role: &str) -> Result<()> {
                 unsafe {
                     // Tauri assigns ICON_SMALL only. Windows uses ICON_BIG for
                     // the taskbar; borrow the same icon owned by the window.
-                    let icon = SendMessageW(hwnd.0, 0x007F, 0, 0);
+                    let icon = SendMessageW(hwnd.0 as isize, 0x007F, 0, 0);
                     if icon != 0 {
-                        SendMessageW(hwnd.0, 0x0080, 1, icon);
+                        SendMessageW(hwnd.0 as isize, 0x0080, 1, icon);
                     }
                 }
             }
@@ -238,9 +238,9 @@ pub fn configure(w: &Window, role: &str) -> Result<()> {
                 unsafe {
                     // Tao keeps WS_CAPTION/WS_SYSMENU even without decorations.
                     // A shaped window can expose these native caption controls.
-                    let style = GetWindowLongPtrW(hwnd.0, -16);
-                    SetWindowLongPtrW(hwnd.0, -16, style & !(0x00C00000 | 0x00080000 | 0x00040000));
-                    SetWindowPos(hwnd.0, 0, 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0004 | 0x0010 | 0x0020);
+                    let style = GetWindowLongPtrW(hwnd.0 as isize, -16);
+                    SetWindowLongPtrW(hwnd.0 as isize, -16, style & !(0x00C00000 | 0x00080000 | 0x00040000));
+                    SetWindowPos(hwnd.0 as isize, 0, 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0004 | 0x0010 | 0x0020);
                 }
             }
         }).map_err(|e| e.to_string())?;
@@ -309,7 +309,7 @@ pub fn configure(w: &Window, role: &str) -> Result<()> {
             fn SetWindowRgn(w: isize, r: isize, redraw: i32) -> i32;
         }
         let s = w.scale_factor().map_err(|e| e.to_string())?;
-        let hwnd = w.hwnd().map_err(|e| e.to_string())?.0;
+        let hwnd = w.hwnd().map_err(|e| e.to_string())?.0 as isize;
         unsafe {
             SetWindowRgn(
                 hwnd,
@@ -361,7 +361,7 @@ pub fn raise_controls(app: &tauri::AppHandle) {
                 }
                 if target.is_visible().unwrap_or(false) {
                     if let Ok(hwnd) = target.hwnd() {
-                        unsafe { SetWindowPos(hwnd.0, -1, 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0010); }
+                        unsafe { SetWindowPos(hwnd.0 as isize, -1, 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0010); }
                     }
                 }
             });
@@ -510,8 +510,8 @@ pub fn taskbar_style(w: &Window) -> Result<()> {
             }
             if let Ok(hwnd) = window.hwnd() {
                 unsafe {
-                    let style = GetWindowLongPtrW(hwnd.0, -20);
-                    SetWindowLongPtrW(hwnd.0, -20, (style & !0x00040000) | 0x00000080);
+                    let style = GetWindowLongPtrW(hwnd.0 as isize, -20);
+                    SetWindowLongPtrW(hwnd.0 as isize, -20, (style & !0x00040000) | 0x00000080);
                 }
             }
         }).map_err(|e| e.to_string())?;
