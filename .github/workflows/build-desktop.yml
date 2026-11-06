@@ -68,12 +68,6 @@ jobs:
         run: npm run dist:mac -- --target ${{ matrix.target }} --ci
       - name: Verify macOS packaged licenses and sources
         run: npm run licenses:verify -- --app src-tauri/target/${{ matrix.target }}/release/bundle/macos/TeachersPen.app --report dist/license-macos-${{ matrix.arch }}.json
-      - name: Upload macOS license review
-        uses: actions/upload-artifact@v4
-        with:
-          name: licenses-macOS-${{ matrix.arch }}-${{ steps.commit.outputs.sha }}
-          path: dist/license-macos-*.json
-          if-no-files-found: error
       - name: Upload macOS installer
         uses: actions/upload-artifact@v4
         with:
@@ -127,12 +121,6 @@ jobs:
           call npm run dist:win -- --ci
       - name: Verify Windows installer licenses and sources
         run: npm run licenses:verify -- --bundle-dir src-tauri/target/release/bundle/nsis --report dist/license-windows.json
-      - name: Upload Windows license review
-        uses: actions/upload-artifact@v4
-        with:
-          name: licenses-Windows-${{ steps.commit.outputs.sha }}
-          path: dist/license-windows.json
-          if-no-files-found: error
       - name: Upload Windows installer
         uses: actions/upload-artifact@v4
         with:
@@ -203,12 +191,6 @@ jobs:
         run: npm run dist:linux -- --ci --verbose
       - name: Verify Linux installer licenses and sources
         run: npm run licenses:verify -- --bundle-dir src-tauri/target/release/bundle --gnome dist/gnome/teacherspen@pgilfernandez.github.io.shell-extension.zip --report dist/license-linux.json
-      - name: Upload Linux license review
-        uses: actions/upload-artifact@v4
-        with:
-          name: licenses-Linux-${{ steps.commit.outputs.sha }}
-          path: dist/license-linux.json
-          if-no-files-found: error
       - name: Upload Linux AppImage
         uses: actions/upload-artifact@v4
         with:
