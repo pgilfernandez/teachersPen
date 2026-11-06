@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { RadialHover, radialSlotAt, isRadialActionEnabled } from '../src/radial';
+import { RadialHover, radialSlotAt, isRadialActionEnabled, pointInViewport } from '../src/radial';
 import { defaults, getPieRadius } from '../src/shared';
 
 test('unfocused radial hit testing uses final circular positions and excludes center and empty slots', () => {
@@ -55,4 +55,10 @@ test('radial undo and redo follow history availability independently of drawing 
       }
     }
   }
+});
+
+test('radial pointer position uses the mapped viewport origin rather than the monitor origin', () => {
+  assert.deepEqual(pointInViewport({ x: 500, y: 400 }, { x: 0, y: 32, width: 1920, height: 1048 }, { width: 1920, height: 1048 }), { x: 500, y: 368 });
+  assert.deepEqual(pointInViewport({ x: -1500, y: 400 }, { x: -1920, y: 100, width: 1920, height: 1080 }, { width: 960, height: 540 }), { x: 210, y: 150 });
+  assert.deepEqual(pointInViewport({ x: 2440, y: -100 }, { x: 1920, y: -400, width: 2560, height: 1440 }, { width: 1280, height: 720 }), { x: 260, y: 150 });
 });

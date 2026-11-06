@@ -6,6 +6,8 @@ import './build-icons.mjs';
 import { buildNotices } from './build-notices.mjs';
 import { buildTarget } from './licensing.mjs';
 
+if (process.platform === 'linux') await import('./build-gnome.mjs');
+
 const out = 'dist-light';
 await mkdir(out, { recursive: true });
 await mkdir('src-tauri/binaries', { recursive: true });

@@ -61,3 +61,28 @@ export function paintStroke(cr, stroke) {
     }
     cr.stroke();
 }
+
+// A transient brush sample, never added to drawing history.
+export function brushPreview(state, point, monitor, controls = [], tracing = false) {
+    if (!state?.drawing || state.pie || tracing || !point) return null;
+    const inside = r => point.x >= r.x && point.y >= r.y && point.x < r.x + r.width && point.y < r.y + r.height;
+    if (!inside(monitor) || controls.some(inside)) return null;
+    return {tool: 'freehand', color: state.settings.colors[state.color],
+        width: state.settings.width, transparency: state.settings.transparency,
+        points: [{x: point.x - monitor.x, y: point.y - monitor.y}]};
+}
+
+// Transparent full-screen menus reserve input without cutting visible drawings.
+export function drawingRegions(monitor, controls, input = false) {
+    let regions = [monitor];
+    for (const control of controls) {
+        if (input || !control.inputOnly) regions = subtract(regions, control);
+    }
+    return regions;
+}
+
+export function chromeParams(version, input) {
+    return Number(version.split('.')[0]) < 50
+        ? {trackFullscreen: false, affectsInputRegion: input}
+        : {trackFullscreen: false};
+}

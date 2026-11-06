@@ -5,12 +5,14 @@ import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Meta from 'gi://Meta';
+import Pango from 'gi://Pango';
 import Shell from 'gi://Shell';
 import St from 'gi://St';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import * as Config from 'resource:///org/gnome/shell/misc/config.js';
 import {DrawingHistory} from './model.js';
-import {subtract, accelerator, paintStroke} from './drawing.js';
+import {drawingRegions, accelerator, paintStroke, brushPreview, chromeParams} from './drawing.js';
 
 const IFACE = 'org.teacherspen.Gnome1';
 const PATH = '/org/teacherspen/Gnome1';
@@ -20,6 +22,13 @@ const XML = `<node><interface name="${IFACE}">
 </interface></node>`;
 
 export default class TeachersPen extends Extension {
+    _addChrome(actor, input) {
+        // The X11 input-region option was removed in Shell 50. On Wayland,
+        // actor.reactive controls picking; keep the legacy option for Shell 46.
+        const params = chromeParams(Config.PACKAGE_VERSION, input);
+        Main.layoutManager.addChrome(actor, params);
+    }
+
     enable() {
         this._owner = null;
         this._held = new Map(); this._holdGrab = null;
@@ -33,7 +42,10 @@ export default class TeachersPen extends Extension {
             if (action && !Main.overview.visible && !Main.sessionMode.isLocked)
                 this._activateShortcut(id, action);
         });
-        this._keyCapture = global.stage.connect('captured-event', (_stage, event) => this._captureKey(event));
+        this._keyCapture = global.stage.connect('captured-event', (_stage, event) => {
+            if (event.type() === Clutter.EventType.MOTION) this._movePreview(...event.get_coords());
+            return this._captureKey(event);
+        });
         this._monitors = Main.layoutManager.connect('monitors-changed', () => {
             // Monitor IDs and logical coordinates must be renegotiated by the app.
             this._reset(); this._emit({type: 'disconnected', error: 'Screen layout changed. Restart TeachersPen.'});
@@ -144,8 +156,23 @@ export default class TeachersPen extends Extension {
         const actor = new St.DrawingArea({x: m.x, y: m.y, width: m.width, height: m.height, reactive: false});
         const area = {id, actor, monitor: {x: m.x, y: m.y, width: m.width, height: m.height}, history: new DrawingHistory(), inputs: []};
         actor.connect('repaint', () => this._paint(area));
-        Main.layoutManager.addChrome(actor, {affectsInputRegion: false, trackFullscreen: false});
+        this._addChrome(actor, false);
+        area.hint = new St.Label({reactive: false, visible: false,
+            style: 'background-color: rgba(23, 37, 54, 0.91); color: white; padding: 8px 16px; border-radius: 18px; font-size: 12px;'});
+        area.hint.clutter_text.ellipsize = Pango.EllipsizeMode.END;
+        this._addChrome(area.hint, false);
         this._areas.push(area);
+    }
+
+    _movePreview(x, y) {
+        if (!this._state?.drawing) return;
+        const previous = this._pointer;
+        this._pointer = {x, y};
+        for (const area of this._areas) {
+            const contains = p => p && p.x >= area.monitor.x && p.y >= area.monitor.y
+                && p.x < area.monitor.x + area.monitor.width && p.y < area.monitor.y + area.monitor.height;
+            if (contains(previous) || contains(this._pointer)) area.actor.queue_repaint();
+        }
     }
 
     _paint(area) {
@@ -153,8 +180,7 @@ export default class TeachersPen extends Extension {
         try {
             const state = this._state;
             if (!state) return;
-            let regions = [area.monitor];
-            for (const control of this._controls) regions = subtract(regions, control);
+            const regions = drawingRegions(area.monitor, this._controls);
             for (const r of regions) cr.rectangle(r.x - area.monitor.x, r.y - area.monitor.y, r.width, r.height);
             cr.clip();
             if (state.visible && state.background !== 'transparent') {
@@ -165,11 +191,31 @@ export default class TeachersPen extends Extension {
                 for (const stroke of area.history.strokes) paintStroke(cr, stroke);
                 if (this._stroke?.area === area) paintStroke(cr, this._stroke.stroke);
             }
+            const preview = brushPreview(state, this._pointer, area.monitor, this._controls,
+                !!this._stroke || Main.overview.visible || Main.sessionMode.isLocked);
+            if (preview) paintStroke(cr, preview);
         } finally { cr.$dispose(); }
+    }
+
+    _updateHint(area, drawing) {
+        const text = this._state?.drawingHint;
+        const visible = !!(drawing && this._state.settings.drawingHints && !this._state.pie && text);
+        area.hint.visible = visible;
+        if (!visible) return;
+        area.hint.set_text(text);
+        const work = Main.layoutManager.getWorkAreaForMonitor(area.id);
+        area.hint.set_width(-1);
+        const width = Math.min(area.hint.get_preferred_width(-1)[1], Math.max(1, work.width - 16));
+        area.hint.set_width(width);
+        const height = area.hint.get_preferred_height(width)[1];
+        area.hint.set_position(work.x + (work.width - width) / 2,
+            Math.max(work.y, work.y + work.height - 26 - height));
     }
 
     _update() {
         const drawing = this._state?.drawing && !Main.overview.visible && !Main.sessionMode.isLocked;
+        const [x, y] = global.get_pointer();
+        this._pointer = {x, y};
         if (drawing && !this._escape) {
             this._escape = global.display.grab_accelerator('Escape', Meta.KeyBindingFlags.IGNORE_AUTOREPEAT);
             if (this._escape) Main.wm.allowKeybinding(Meta.external_binding_name_for_action(this._escape), Shell.ActionMode.NORMAL);
@@ -180,6 +226,7 @@ export default class TeachersPen extends Extension {
         // Separate reactive rectangles leave real holes for Tauri controls. The
         // drawing surface itself never intercepts input outside drawing mode.
         for (const area of this._areas) {
+            this._updateHint(area, drawing);
             const signature = JSON.stringify([drawing, this._controls]);
             if (area.inputSignature === signature) { area.actor.queue_repaint(); continue; }
             area.inputSignature = signature;
@@ -188,8 +235,7 @@ export default class TeachersPen extends Extension {
             area.inputs = [];
             const active = this._state?.drawing && !Main.overview.visible && !Main.sessionMode.isLocked;
             if (active) {
-                let regions = [area.monitor];
-                for (const control of this._controls) regions = subtract(regions, control);
+                const regions = drawingRegions(area.monitor, this._controls, true);
                 for (const rect of regions) {
                     const actor = new St.Widget({...rect, reactive: true});
                     actor.connect('button-press-event', (_a, event) => this._press(area, event));
@@ -198,7 +244,7 @@ export default class TeachersPen extends Extension {
                         if (event.get_button() !== 1) return Clutter.EVENT_PROPAGATE;
                         this._motion(area, event); this._finish(); return Clutter.EVENT_STOP;
                     });
-                    Main.layoutManager.addChrome(actor, {affectsInputRegion: true, trackFullscreen: false});
+                    this._addChrome(actor, true);
                     area.inputs.push(actor);
                 }
             }
@@ -207,7 +253,15 @@ export default class TeachersPen extends Extension {
     }
 
     _press(area, event) {
-        if (event.get_button() !== 1 || !this._state?.drawing) return Clutter.EVENT_PROPAGATE;
+        if (!this._state?.drawing) return Clutter.EVENT_PROPAGATE;
+        if (event.get_button() === 3) {
+            // Match the WebView backend: discard an unfinished stroke and return
+            // input immediately, even while the activation shortcut is held.
+            this._stroke = null;
+            this._stopDrawing();
+            return Clutter.EVENT_STOP;
+        }
+        if (event.get_button() !== 1) return Clutter.EVENT_PROPAGATE;
         this._finish();
         const [x, y] = event.get_coords();
         const state = this._state;
@@ -271,7 +325,7 @@ export default class TeachersPen extends Extension {
             // Grab the stage so its drawing actors continue receiving pointer events.
             const grab = Main.pushModal(global.stage, {actionMode: Shell.ActionMode.NORMAL});
             this._holdGrab = grab;
-            if (grab.get_seat_state() !== Clutter.GrabState.ALL) {
+            if (typeof grab.get_seat_state === 'function' && grab.get_seat_state() !== Clutter.GrabState.ALL) {
                 this._dropHoldGrab();
                 this._emit({type: 'hold-error', error: 'Cannot capture shortcut release. Try again.'}); return;
             }
@@ -357,7 +411,7 @@ export default class TeachersPen extends Extension {
     }
 
     _reset() {
-        this._stroke = null; this._state = null; this._controls = [];
+        this._stroke = null; this._pointer = null; this._state = null; this._controls = [];
         this._clearBindings();
         if (this._escape) {
             Main.wm.allowKeybinding(Meta.external_binding_name_for_action(this._escape), Shell.ActionMode.NONE);
@@ -365,6 +419,7 @@ export default class TeachersPen extends Extension {
         }
         for (const area of this._areas) {
             for (const actor of area.inputs) actor.destroy();
+            area.hint.destroy();
             area.actor.destroy();
         }
         this._areas = [];

@@ -3,8 +3,8 @@ import './compat';
 import dialogPolyfill from 'dialog-polyfill';
 import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { actionLabels, actions, defaults, getPieRadius, type Action, type Command, type Settings, type State, type Tool, type ToolbarMode } from '../shared';
-import { RadialHover, radialSlotAt, isRadialActionEnabled } from '../radial';
+import { actionLabels, actions, defaults, getPieRadius, type Action, type Command, type Settings, type State, type Tool, type ToolbarMode, type GnomeExtensionStatus } from '../shared';
+import { RadialHover, radialSlotAt, isRadialActionEnabled, pointInViewport } from '../radial';
 import { MINI_RADIUS, MINI_SIZE } from '../toolbar';
 import { Pencil, Slash, MoveUpRight, Rectangle, Circle, Undo2, Redo2, Trash2, Eye, EyeOff, Settings as SettingsIcon, Timer as TimerIcon, Whiteboard, Blackboard, GripVertical, MoveDiagonal, RotateCcw, ArrowDownUp, Play, Pause, Minimize, RectangleVertical, RectangleHorizontal, Power, X, Info, Coffee, ExternalLink, Bug, type EditableIcon } from './icons';
 import { DrawingHistory, type Stroke } from '../model';
@@ -52,13 +52,42 @@ function App() {
 }
 
 function PieMenu({ state }: { state: State }) {
+  const screenPoint = state.platform === 'linux' ? state.pie?.screenPoint : undefined;
+  const [point, setPoint] = useState<{ x: number; y: number } | null>(screenPoint ? null : state.pie);
+  useEffect(() => {
+    if (!screenPoint) return;
+    let stopped = false;
+    let frame = 0;
+    const sample = async () => {
+      try {
+        const bounds = await window.pen.getViewportBounds();
+        if (stopped) return;
+        if (bounds) {
+          const next = pointInViewport(screenPoint, bounds, { width: innerWidth, height: innerHeight });
+          setPoint(previous => previous?.x === next.x && previous?.y === next.y ? previous : next);
+        }
+      } catch {
+        // A window can disappear while its last native request is in flight.
+      } finally {
+        if (!stopped) frame = requestAnimationFrame(sample);
+      }
+    };
+    // Keep tracking native placement while open: the WM can move the window
+    // after mapping without changing the WebView's CSS viewport size.
+    void sample();
+    return () => { stopped = true; cancelAnimationFrame(frame); };
+  }, [screenPoint?.x, screenPoint?.y]);
+  return point ? <PositionedPieMenu state={state} point={point} /> : null;
+}
+
+function PositionedPieMenu({ state, point }: { state: State; point: { x: number; y: number } }) {
   const t = translator(state.settings.language);
   const settings = state.settings.pie;
   const slots = settings[state.pie!.menu === 0 ? 'slots' : 'slots2'];
   const hoverSlots = slots.map(action => action && isRadialActionEnabled(action, state) ? action : null);
   const radius = getPieRadius(settings);
   const margin = radius + settings.buttonSize / 2 + 6;
-  const center = { x: Math.max(Math.min(margin, innerWidth / 2), Math.min(state.pie!.x, innerWidth - margin)), y: Math.max(Math.min(margin, innerHeight / 2), Math.min(state.pie!.y, innerHeight - margin)) };
+  const center = { x: Math.max(Math.min(margin, innerWidth / 2), Math.min(point.x, innerWidth - margin)), y: Math.max(Math.min(margin, innerHeight / 2), Math.min(point.y, innerHeight - margin)) };
   const [ready, setReady] = useState(() => settings.animationMs === 0 || window.matchMedia('(prefers-reduced-motion: reduce)').matches || slots.every(slot => slot === null));
   const pendingAnimations = useRef(new Set(slots.flatMap((slot, index) => slot ? [index] : [])));
   const menu = useRef<HTMLDivElement>(null);
@@ -470,6 +499,39 @@ function PieNumberField({ id, label, value, min, max, unit, onCommit }: {
   /> {unit}</span></div>;
 }
 
+function GnomeExtensionInstaller({ language }: { language: Settings['language'] }) {
+  const t = translator(language);
+  const [status, setStatus] = useState<GnomeExtensionStatus | null>(null);
+  const [busy, setBusy] = useState(true);
+  const [error, setError] = useState('');
+  const [installed, setInstalled] = useState(false);
+  useEffect(() => {
+    let active = true;
+    window.pen.getGnomeExtensionStatus().then(value => { if (active) setStatus(value); })
+      .catch(error => { if (active) setError(String(error)); }).finally(() => { if (active) setBusy(false); });
+    return () => { active = false; };
+  }, []);
+  const install = async () => {
+    setBusy(true); setError(''); setInstalled(false);
+    try {
+      await window.pen.installGnomeExtension();
+      setInstalled(true);
+      setStatus(await window.pen.getGnomeExtensionStatus());
+    } catch (error) { setError(String(error)); }
+    finally { setBusy(false); }
+  };
+  return <div className="extension-installer">
+    <p>{t('La extensión incluida es compatible con GNOME 46 y 50.')}{status?.shellVersion && ` GNOME ${status.shellVersion}`}</p>
+    <button type="button" disabled={busy || !status?.supported} onClick={() => void install()}>{t(busy ? 'Espera…' : status?.installedVersion != null ? 'Instalar o actualizar extensión de GNOME' : 'Instalar extensión de GNOME')}</button>
+    <p>{t('Se instala solo para tu usuario, sin descargas ni permisos de administrador.')}</p>
+    {status && !status.supported && <p role="status">{t('No se ha detectado una versión compatible de GNOME.')}</p>}
+    {status?.activation.userExtensionsDisabled && <p role="alert">{t('GNOME tiene desactivadas las extensiones de usuario. Actívalas en la aplicación Extensiones de GNOME.')}</p>}
+    {status?.activation.enabled && <p role="status">{t('La extensión está activa en GNOME.')}</p>}
+    {installed && !status?.activation.userExtensionsDisabled && <p role="status">{t('Extensión instalada. Cierra sesión y vuelve a entrar; después abre TeachersPen.')}</p>}
+    {error && <p role="alert">{t('No se ha podido instalar la extensión.')}{' '}{error}</p>}
+  </div>;
+}
+
 function Preferences({ state }: { state: State }) {
   const t = translator(state.settings.language);
   const [widthText, setWidthText] = useState(String(state.settings.width));
@@ -551,6 +613,7 @@ function Preferences({ state }: { state: State }) {
       <div className="setting-row"><label htmlFor="linux-backend">{t('Implementación')}</label><select id="linux-backend" title={t('Los cambios de implementación se aplican al reiniciar TeachersPen.')} value={state.settings.linuxBackend} disabled={busy} onChange={event => void saveChange({ type: 'linux-backend', backend: event.target.value as Settings['linuxBackend'] })}>
         <option value="auto">{t('Automática')} ({state.linuxBackend.active === 'gnome' ? t('Extensión de GNOME') : 'X11/XWayland'})</option><option value="gnome">{t('Extensión de GNOME')}</option><option value="x11">X11/XWayland</option>
       </select></div>
+      <GnomeExtensionInstaller language={state.settings.language} />
     </section>}
     </div>
     <div id="preferences-radial" role="tabpanel" aria-labelledby="tab-radial" hidden={tab !== 'radial'}>

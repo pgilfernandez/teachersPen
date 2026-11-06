@@ -1,0 +1,18 @@
+{
+  "identifier": "desktop",
+  "description": "Local windows may subscribe to native host events. Other operations go through the host command, which checks the calling window.",
+  "local": true,
+  "windows": [
+    "controller",
+    "toolbar",
+    "mini",
+    "overlay-*",
+    "preferences",
+    "timer-window",
+    "pie"
+  ],
+  "permissions": [
+    "core:event:allow-listen",
+    "core:event:allow-unlisten"
+  ]
+}

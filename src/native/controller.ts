@@ -1,4 +1,4 @@
-import { listen } from '@tauri-apps/api/event';
+import { listen } from './events';
 import { host } from './host';
 import { actions, actionLabels, defaults, parseSettings, tools, type Action, type Command, type Settings, type State, type BackendStatus, type ToolbarMode } from '../shared';
 import { translate, isLanguage, resolveSystemLanguage, defaultTimerText, isDefaultTimerText } from '../i18n';
@@ -52,7 +52,7 @@ export async function startController() {
     state.hasDrawings = displays.some(display => histories.get(`overlay-${display.id}`)?.hasDrawings);
     state.canUndo = history?.canUndo ?? false;
     state.canRedo = history?.canRedo ?? false;
-    return host('broadcast', state);
+    return host('broadcast', { ...state, drawingHint: `${t(actionLabels[state.tool])} · ${state.holding ? t('Suelta el atajo o clic secundario para interactuar') : t('Esc o clic secundario para interactuar')}` });
   };
   const write = (name: string, value: unknown) => host('write', { name, value });
   const read = async (name: string): Promise<any> => { try { return await host('read', { name }); } catch (e) { console.error(name, e); return null; } };
@@ -147,7 +147,7 @@ export async function startController() {
     const display = displays.find(d => d.id === activeDisplay) || nearest(point);
     await create('pie', 'pie', display.bounds);
     await move('pie', display.bounds);
-    state.pie = { menu, x: point.x - display.bounds.x, y: point.y - display.bounds.y, serial: Date.now() };
+    state.pie = { menu, x: point.x - display.bounds.x, y: point.y - display.bounds.y, serial: Date.now(), ...(state.platform === 'linux' ? { screenPoint: { x: point.x, y: point.y } } : {}) };
     await broadcast(); await win('pie', 'show'); await win('pie', 'focus');
   }
   async function perform(action: Action, fromShortcut = false) {

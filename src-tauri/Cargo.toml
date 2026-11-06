@@ -6,21 +6,22 @@ license = "PolyForm-Noncommercial-1.0.0"
 authors = ["Pablo Gil Fernández"]
 
 [build-dependencies]
-tauri-build = { version = "=1.5.6", features = [] }
+tauri-build = { version = "=2.7.4", features = [] }
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-tauri-plugin-single-instance = { git = "https://github.com/tauri-apps/plugins-workspace", rev = "1e407ed56455558cf751022fd68eca3b9e3713a0" }
-tauri = { version = "=1.8.3", features = ["system-tray", "global-shortcut", "macos-private-api", "process-command-api", "shell-open-api", "icon-png"] }
+tauri-plugin-global-shortcut = "=2.4.1"
+tauri-plugin-shell = "=2.6.0"
+tauri-plugin-single-instance = "=2.5.5"
+tauri = { version = "=2.12.5", features = [ "macos-private-api", "image-png", "tray-icon"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 objc = "0.2"
 cocoa = "0.24"
-tao = { version = "=0.16.11", default-features = false }
 
 [target.'cfg(target_os = "linux")'.dependencies]
-gtk = "0.15"
+gtk = "0.18"
 zbus = "=3.15.2"
 
 [features]

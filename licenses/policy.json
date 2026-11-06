@@ -1,6 +1,28 @@
 {
-  "permissive": ["MIT", "MIT-0", "Apache-2.0", "Apache-2.0 WITH LLVM-exception", "BSD-2-Clause", "BSD-3-Clause", "ISC", "Unicode-3.0", "Zlib", "Unlicense", "CC0-1.0", "0BSD"],
-  "reviewedMplCargo": ["cssparser", "cssparser-macros", "dtoa-short", "selectors", "thin-slice"],
-  "reviewedMplNpm": ["@resvg/resvg-js"],
+  "permissive": [
+    "MIT",
+    "MIT-0",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Unicode-3.0",
+    "Zlib",
+    "Unlicense",
+    "CC0-1.0",
+    "0BSD"
+  ],
+  "reviewedMplCargo": [
+    "cssparser",
+    "cssparser-macros",
+    "dtoa-short",
+    "selectors",
+    "thin-slice",
+    "option-ext"
+  ],
+  "reviewedMplNpm": [
+    "@resvg/resvg-js"
+  ],
   "projectLicense": "PolyForm-Noncommercial-1.0.0"
 }

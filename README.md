@@ -49,7 +49,7 @@ TeachersPen targets the following desktop systems:
 | **Windows** | Windows 10 or later; 64-bit Intel/AMD | `.exe` installer |
 | **Linux** | 64-bit Intel/AMD; X11 desktop and compatible system libraries | `.AppImage` or `.deb` |
 
-Compatibility testing is still in progress across systems and devices. On Linux, the X11/XWayland backend has experimental Wayland support; a companion extension adds native drawing on GNOME 46 / Wayland (see below). Linux packages require WebKitGTK 4.0, which is not available by default on every distribution.
+Compatibility testing is still in progress across systems and devices. On Linux, the X11/XWayland backend has experimental Wayland support; a companion extension adds native drawing on GNOME 46 and 50 / Wayland (see below). Linux packages require WebKitGTK 4.1 (Ubuntu 22.04 or later).
 
 ## Installation
 
@@ -65,7 +65,7 @@ You do not need development tools to use an installed package.
 
 ## Development
 
-TeachersPen uses Tauri with the operating system's WebView and a shared React interface. Install Node.js, Rust, and the [Tauri platform prerequisites](https://v1.tauri.app/v1/guides/getting-started/prerequisites), then run:
+TeachersPen uses Tauri 2 with the operating system's WebView and a shared React interface. Install Node.js, Rust, and the [Tauri platform prerequisites](https://v2.tauri.app/start/prerequisites/), then run:
 
 ```sh
 npm ci
@@ -92,7 +92,7 @@ Report problems or suggest improvements through [GitHub Issues](https://github.c
 ### GNOME Wayland backend
 
 The lightweight Linux application can use the companion GNOME Shell extension
-for native desktop drawing on **GNOME 46 / Wayland**. The toolbar, preferences
+for native desktop drawing on **GNOME 46 and 50 / Wayland**. The toolbar, preferences
 and timer remain GTK/XWayland windows; XWayland must be available. The drawing
 surface and global shortcuts run inside GNOME Shell, so the application does not
 need to capture the screen or use X11 to intercept drawing input.
@@ -104,7 +104,17 @@ backend in use and any connection error. An explicit GNOME selection also falls
 back with a visible diagnostic if the extension is unavailable, so Preferences
 remains accessible.
 
-Build and install the extension as the desktop user:
+On GNOME 46 or 50, open **Preferences → Linux integration → Install GNOME
+extension** (or **Install or update GNOME extension**). The Linux binary,
+including the AppImage, embeds the extension ZIP, so this works offline and
+installs only for the current user without administrator permissions. The app
+tries to enable it and explains when you need to log out and back in. Restart
+TeachersPen afterwards, with Automatic or GNOME extension selected. If GNOME
+has disabled user extensions globally, Preferences explains that this switch
+must be enabled in GNOME Extensions. The installer does not change that global
+preference or enable other extensions.
+
+Developers can also build and install the extension as the desktop user:
 
 ```sh
 npm ci
@@ -125,7 +135,7 @@ extension, quit TeachersPen and run `gnome-extensions uninstall teacherspen@pgil
 
 Current limits:
 
-- Only GNOME 46 is declared supported; other GNOME versions need validation.
+- GNOME 46 and 50 are declared supported; other GNOME versions need validation.
 - Native GNOME drawing supports **press to toggle** and **hold to draw** with
   extension version 2. Hold mode temporarily captures keyboard input; releasing
   the shortcut or pressing Escape returns input to the underlying application.
@@ -143,7 +153,7 @@ memory and is lost when switching implementation/restarting, as with the existin
 application.
 
 Validation: `npm test`, `npm run typecheck`, and `npm run test:gnome` (requires
-GNOME Shell 46, GJS and a working headless renderer). The GNOME test starts an isolated headless compositor with a virtual monitor; it
+GNOME Shell 46 or 50, GJS and a working headless renderer). The GNOME test starts an isolated headless compositor with a virtual monitor; it
 does not enable extensions in the user's current desktop session. Its temporary
 copy enables the Shell debug evaluator for the test only; the distributed
 extension never enables it.

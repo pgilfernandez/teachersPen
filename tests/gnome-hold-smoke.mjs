@@ -86,11 +86,28 @@ try {
     wait('global._teachersPenTest._held.size === 1');
     key('F12', false); wait('global._teachersPenTest._holdGrab === null');
     key('Shift_L', false); key('Super_L', false);
+    // Secondary button must cancel a held tool without waiting for key-up.
+    key('Control_L', true); key('Shift_L', true); key('space', true);
+    wait('global._teachersPenTest._held.size === 1');
+    state.drawing = true; state.holding = true; call('broadcast', {state, controls: []});
+    evaluate(`(() => {
+        const Clutter = global._teachersPenClutter;
+        global._teachersPenMouse = Clutter.get_default_backend().get_default_seat().create_virtual_device(Clutter.InputDeviceType.POINTER_DEVICE);
+        global._teachersPenMouse.notify_absolute_motion(global._teachersPenTime(), 400, 300);
+        return true;
+    })()`);
+    pause();
+    evaluate('global._teachersPenMouse.notify_button(global._teachersPenTime(), 3, global._teachersPenClutter.ButtonState.PRESSED); true');
+    wait('!global._teachersPenTest._state.drawing && global._teachersPenTest._holdGrab === null');
+    evaluate('global._teachersPenMouse.notify_button(global._teachersPenTime(), 3, global._teachersPenClutter.ButtonState.RELEASED); true');
+    call('broadcast', {state, controls: []});
+    check(evaluate('global._teachersPenTest._areas[0].inputs.length') === 0, 'right click rejects a stale held activation');
+    key('space', false); key('Shift_L', false); key('Control_L', false);
     key('b', true); key('b', false);
     const [read, contents] = GLib.file_get_contents(`${GLib.getenv('TEACHERSPEN_TEST_ROOT')}/typed.txt`);
     check(read && new TextDecoder().decode(contents) === 'cb', 'native Wayland client receives typing after hold');
     check(evaluate('global._teachersPenMain.modalCount') === 0, 'no keyboard/pointer grab leaked');
-    print('GNOME hold: real press/release, modifier release, overlap, shifted digits, Escape and stale updates passed');
+    print('GNOME hold: real press/release, modifier release, overlap, shifted digits, Escape, secondary click and stale updates passed');
 } finally {
     // Always return the virtual keyboard and desktop input, even after a test failure.
     evaluate('global._teachersPenTest._cancelHolds(); true');

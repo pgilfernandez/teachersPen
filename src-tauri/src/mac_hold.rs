@@ -3,8 +3,8 @@
 use crate::{err, release_native, trace, LiveState, Result};
 use serde_json::json;
 use std::{collections::HashMap, ffi::c_void, sync::Mutex};
-use tao::accelerator::Accelerator;
-use tauri::{AppHandle, Manager};
+use tauri_plugin_global_shortcut::Shortcut as Accelerator;
+use tauri::{AppHandle, Manager, Emitter};
 
 #[derive(Default)]
 pub struct HoldKeys {
@@ -66,7 +66,7 @@ pub fn press(app: &AppHandle, shortcut: &str) {
             };
         }
         if let Ok(mut keys) = app.state::<MacHold>().0.lock() {
-            keys.pressed.insert(a.id().0 as u32, mask);
+            keys.pressed.insert(a.id(), mask);
         }
     }
 }
@@ -194,7 +194,7 @@ pub fn install(app: &AppHandle) -> Result<()> {
     Ok(())
 }
 pub fn watch(app: &AppHandle, token: String, shortcut: &str) -> Result<()> {
-    let id = accelerator(shortcut)?.id().0 as u32;
+    let id = accelerator(shortcut)?.id();
     let down = {
         let store = app.state::<MacHold>();
         let mut keys = store.0.lock().map_err(err)?;

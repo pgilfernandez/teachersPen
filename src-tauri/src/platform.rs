@@ -1,7 +1,7 @@
 #![allow(unexpected_cfgs)] // objc 0.2 macros predate rustc check-cfg.
 
 use serde_json::{json, Value};
-use tauri::{Monitor, Window};
+use tauri::{Monitor, WebviewWindow as Window};
 #[cfg(any(target_os = "windows", target_os = "linux"))]
 use tauri::Manager;
 type Result<T> = std::result::Result<T, String>;
@@ -192,7 +192,7 @@ pub fn configure(w: &Window, role: &str) -> Result<()> {
     #[cfg(target_os = "linux")]
     if role != "controller" {
         let window = w.clone();
-        let handle = w.app_handle();
+        let handle = w.app_handle().clone();
         w.run_on_main_thread(move || {
             use gtk::prelude::*;
             if let Ok(gtk) = window.gtk_window() {
@@ -216,9 +216,9 @@ pub fn configure(w: &Window, role: &str) -> Result<()> {
                 unsafe {
                     // Tauri assigns ICON_SMALL only. Windows uses ICON_BIG for
                     // the taskbar; borrow the same icon owned by the window.
-                    let icon = SendMessageW(hwnd.0, 0x007F, 0, 0);
+                    let icon = SendMessageW(hwnd.0 as isize, 0x007F, 0, 0);
                     if icon != 0 {
-                        SendMessageW(hwnd.0, 0x0080, 1, icon);
+                        SendMessageW(hwnd.0 as isize, 0x0080, 1, icon);
                     }
                 }
             }
@@ -238,9 +238,9 @@ pub fn configure(w: &Window, role: &str) -> Result<()> {
                 unsafe {
                     // Tao keeps WS_CAPTION/WS_SYSMENU even without decorations.
                     // A shaped window can expose these native caption controls.
-                    let style = GetWindowLongPtrW(hwnd.0, -16);
-                    SetWindowLongPtrW(hwnd.0, -16, style & !(0x00C00000 | 0x00080000 | 0x00040000));
-                    SetWindowPos(hwnd.0, 0, 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0004 | 0x0010 | 0x0020);
+                    let style = GetWindowLongPtrW(hwnd.0 as isize, -16);
+                    SetWindowLongPtrW(hwnd.0 as isize, -16, style & !(0x00C00000 | 0x00080000 | 0x00040000));
+                    SetWindowPos(hwnd.0 as isize, 0, 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0004 | 0x0010 | 0x0020);
                 }
             }
         }).map_err(|e| e.to_string())?;
@@ -309,7 +309,7 @@ pub fn configure(w: &Window, role: &str) -> Result<()> {
             fn SetWindowRgn(w: isize, r: isize, redraw: i32) -> i32;
         }
         let s = w.scale_factor().map_err(|e| e.to_string())?;
-        let hwnd = w.hwnd().map_err(|e| e.to_string())?.0;
+        let hwnd = w.hwnd().map_err(|e| e.to_string())?.0 as isize;
         unsafe {
             SetWindowRgn(
                 hwnd,
@@ -335,12 +335,7 @@ pub fn configure(w: &Window, role: &str) -> Result<()> {
                     for y in 3..45 {
                         let half = (21.0_f64.powi(2) - (y as f64 + 0.5 - 24.0).powi(2)).sqrt();
                         let x = (24.0 - half).ceil() as i32;
-                        let _ = region.union_rectangle(&gtk::cairo::RectangleInt {
-                            x,
-                            y,
-                            width: 48 - x * 2,
-                            height: 1,
-                        });
+                        let _ = region.union_rectangle(&gtk::cairo::RectangleInt::new(x, y, 48 - x * 2, 1));
                     }
                     gdk.input_shape_combine_region(&region, 0, 0);
                 }
@@ -357,7 +352,7 @@ pub fn raise_controls(app: &tauri::AppHandle) {
     refresh_overlay_regions(app);
     #[cfg(target_os = "windows")]
     for label in ["toolbar", "mini", "timer-window", "preferences", "pie"] {
-        if let Some(window) = app.get_window(label) {
+        if let Some(window) = app.get_webview_window(label) {
             let target = window.clone();
             let _ = window.run_on_main_thread(move || {
                 #[link(name = "user32")]
@@ -366,7 +361,7 @@ pub fn raise_controls(app: &tauri::AppHandle) {
                 }
                 if target.is_visible().unwrap_or(false) {
                     if let Ok(hwnd) = target.hwnd() {
-                        unsafe { SetWindowPos(hwnd.0, -1, 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0010); }
+                        unsafe { SetWindowPos(hwnd.0 as isize, -1, 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0010); }
                     }
                 }
             });
@@ -377,7 +372,7 @@ pub fn raise_controls(app: &tauri::AppHandle) {
         let handle = app.clone();
         let _ = app.run_on_main_thread(move || {
             use gtk::prelude::*;
-            let overlays: Vec<_> = handle.windows().into_iter()
+            let overlays: Vec<_> = handle.webview_windows().into_iter()
                 .filter(|(label, _)| label.starts_with("overlay-"))
                 .map(|(_, window)| window)
                 .collect();
@@ -386,7 +381,7 @@ pub fn raise_controls(app: &tauri::AppHandle) {
                 .or_else(|| overlays.first())
                 .and_then(|window| window.gtk_window().ok());
             for label in ["toolbar", "mini", "timer-window", "preferences", "pie"] {
-                if let Some(window) = handle.get_window(label) {
+                if let Some(window) = handle.get_webview_window(label) {
                     if let Ok(gtk) = window.gtk_window() {
                         // XFWM keeps transient controls above their drawing
                         // parent, even when that parent receives keyboard focus.
@@ -465,7 +460,7 @@ pub fn refresh_overlay_regions(app: &tauri::AppHandle) {
             use gtk::prelude::*;
             let controls: Vec<_> = ["toolbar", "mini", "timer-window", "preferences", "pie"]
                 .iter()
-                .filter_map(|label| handle.get_window(label))
+                .filter_map(|label| handle.get_webview_window(label))
                 .filter_map(|window| {
                     let gtk = window.gtk_window().ok()?;
                     if !gtk.is_mapped() { return None; }
@@ -477,28 +472,20 @@ pub fn refresh_overlay_regions(app: &tauri::AppHandle) {
                         let state = handle.state::<ToolbarRegion>();
                         let rect = *state.0.lock().ok()?;
                         return rect.map(|(left, top, width, height)|
-                            (x + left, y + top, width, height));
+                            (x + left, y + top, width, height, false));
                     }
-                    Some((x, y, gdk.width().max(0), gdk.height().max(0)))
+                    Some((x, y, gdk.width().max(0), gdk.height().max(0), window.label() == "pie"))
                 })
                 .collect();
-            for (label, window) in handle.windows() {
+            for (label, window) in handle.webview_windows() {
                 if !label.starts_with("overlay-") { continue; }
                 let Ok(gtk) = window.gtk_window() else { continue; };
                 let Some(gdk) = gtk.window() else { continue; };
                 let (_, origin_x, origin_y) = gdk.origin();
-                let region = gtk::cairo::Region::create_rectangle(&gtk::cairo::RectangleInt {
-                    x: 0, y: 0,
-                    width: gdk.width().max(1), height: gdk.height().max(1),
-                });
-                for &(x, y, width, height) in &controls {
-                    let _ = region.subtract_rectangle(&gtk::cairo::RectangleInt {
-                        x: x - origin_x, y: y - origin_y, width, height,
-                    });
-                }
-                gtk.shape_combine_region(Some(&region));
+                let (visible, input) = overlay_regions(gdk.width().max(1), gdk.height().max(1), origin_x, origin_y, &controls);
+                gtk.shape_combine_region(Some(&visible));
                 if gtk.accepts_focus() {
-                    gtk.input_shape_combine_region(Some(&region));
+                    gtk.input_shape_combine_region(Some(&input));
                 } else {
                     gtk.input_shape_combine_region(Some(&gtk::cairo::Region::create()));
                 }
@@ -523,8 +510,8 @@ pub fn taskbar_style(w: &Window) -> Result<()> {
             }
             if let Ok(hwnd) = window.hwnd() {
                 unsafe {
-                    let style = GetWindowLongPtrW(hwnd.0, -20);
-                    SetWindowLongPtrW(hwnd.0, -20, (style & !0x00040000) | 0x00000080);
+                    let style = GetWindowLongPtrW(hwnd.0 as isize, -20);
+                    SetWindowLongPtrW(hwnd.0 as isize, -20, (style & !0x00040000) | 0x00000080);
                 }
             }
         }).map_err(|e| e.to_string())?;
@@ -643,5 +630,56 @@ pub fn system_languages() -> Vec<String> {
         let mut preferred: Vec<String> = std::env::var("LANGUAGE").unwrap_or_default().split(':').filter(|v| !v.is_empty()).map(str::to_owned).collect();
         if let Some(locale) = locale { preferred.push(locale); }
         preferred
+    }
+}
+
+// GTK window managers can constrain a requested monitor-sized window to the
+// work area. Return the actual WebView origin/allocation, not the requested one.
+#[cfg(target_os = "linux")]
+pub fn viewport_bounds(window: &Window) -> Result<Value> {
+    let (tx, rx) = std::sync::mpsc::sync_channel(1);
+    let target = window.clone();
+    window.with_webview(move |webview| {
+        use gtk::prelude::*;
+        let result = (|| {
+            let gtk = target.gtk_window().ok()?;
+            if !gtk.is_mapped() { return None; }
+            let view = webview.inner();
+            let (offset_x, offset_y) = view.translate_coordinates(&gtk, 0, 0)?;
+            let (_, x, y) = gtk.window()?.origin();
+            let (width, height) = (view.allocated_width(), view.allocated_height());
+            if width <= 0 || height <= 0 { return None; }
+            Some(json!({"x":x + offset_x,"y":y + offset_y,"width":width,"height":height}))
+        })();
+        let _ = tx.send(result.unwrap_or(Value::Null));
+    }).map_err(|e| e.to_string())?;
+    rx.recv_timeout(std::time::Duration::from_secs(1)).map_err(|e| e.to_string())
+}
+
+#[cfg(target_os = "linux")]
+fn overlay_regions(width: i32, height: i32, origin_x: i32, origin_y: i32, controls: &[(i32, i32, i32, i32, bool)]) -> (gtk::cairo::Region, gtk::cairo::Region) {
+    let visible = gtk::cairo::Region::create_rectangle(&gtk::cairo::RectangleInt::new(0, 0, width, height));
+    let input = visible.copy();
+    for &(x, y, width, height, input_only) in controls {
+        let rect = gtk::cairo::RectangleInt::new(x - origin_x, y - origin_y, width, height);
+        let _ = input.subtract_rectangle(&rect);
+        if !input_only { let _ = visible.subtract_rectangle(&rect); }
+    }
+    (visible, input)
+}
+
+#[cfg(all(test, target_os = "linux"))]
+mod region_tests {
+    #[test]
+    fn transparent_radial_blocks_input_without_hiding_annotations() {
+        let controls = [(-1920, 100, 1920, 1080, true), (-1800, 120, 300, 50, false)];
+        let (visible, input) = super::overlay_regions(1920, 1080, -1920, 100, &controls);
+        assert!(visible.contains_point(500, 500));
+        assert!(!visible.contains_point(130, 30));
+        assert!(input.is_empty());
+        let (closed_visible, closed_input) = super::overlay_regions(1920, 1080, -1920, 100, &controls[1..]);
+        assert!(closed_visible.contains_point(500, 500));
+        assert!(closed_input.contains_point(500, 500));
+        assert!(!closed_input.contains_point(130, 30));
     }
 }

@@ -34,7 +34,10 @@ optional platform variants and build tools. The policy rejects missing,
 unknown and incompatible licenses. OR expressions may select an allowed
 alternative; AND expressions require every license to be allowed.
 
-MPL is accepted only for named reviewed packages. Their exact sources are
+MPL is accepted only for named reviewed packages. `option-ext` 0.2.0 is an
+unmodified MPL-2.0 dependency of Tauri 2 via `dirs-sys`; its manifest and full
+license text were checked and its exact sources are included with the other MPL
+components. Their exact sources are
 included in the application resources. @resvg/resvg-js is reviewed as a build
 tool; it is not included in the frontend bundle.
 

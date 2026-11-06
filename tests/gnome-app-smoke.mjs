@@ -35,6 +35,8 @@ try {
     if (evaluate('global._teachersPenTest._state.linuxBackend.active') !== 'gnome') throw new Error('Native app did not select GNOME');
     evaluate("global._teachersPenTest._emit({type: 'shortcut', action: 'toggle'}); true");
     wait('global._teachersPenTest._state.drawing === true');
+    wait('global._teachersPenTest._areas[0].hint.visible');
+    if (!evaluate('global._teachersPenTest._areas[0].hint.text === global._teachersPenTest._state.drawingHint')) throw new Error('Native hint does not match the localized controller text');
     evaluate("global._teachersPenTest._emit({type: 'shortcut', action: 'toggle'}); true");
     wait('global._teachersPenTest._state.drawing === false');
     evaluate("global._teachersPenTest._emit({type:'command', source:'preferences', command:{type:'activation', activation:'hold'}}); true");

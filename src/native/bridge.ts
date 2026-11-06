@@ -1,4 +1,4 @@
-import { listen } from '@tauri-apps/api/event';
+import { listen } from './events';
 import { host } from './host';
 import type { Action, Command, PenAPI, State } from '../shared';
 
@@ -25,6 +25,9 @@ export function installBridge() {
     });
   }
   const api: PenAPI = {
+    getGnomeExtensionStatus: () => host('gnome-extension-status'),
+    installGnomeExtension: () => host('gnome-extension-install'),
+    getViewportBounds: () => host('viewport-bounds'),
     getPreviewPointer: () => host('preview-pointer'),
     getState: () => request<State>({ type: 'get-state' }), command: value => request(value),
     onState: fn => { states.add(fn); return () => { states.delete(fn); }; },
