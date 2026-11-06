@@ -37,7 +37,9 @@ pub fn initialize(app: &tauri::AppHandle, requested: &str) -> Value {
     };
     // Do not auto-start or enable an extension. It must already be available.
     let hold_available = match dispatch(&connection, "connect", &json!({})) {
-        Ok(info) if info["version"] == 1 || info["version"] == 2 => info["holdAvailable"] == true,
+        Ok(info) if (info["version"] == 1 || info["version"] == 2) && info["controlCompositing"] == true => info["holdAvailable"] == true,
+        Ok(info) if info["version"] == 1 || info["version"] == 2 => return fallback(requested,
+            "Update the TeachersPen GNOME extension from Preferences, then log out and back in to load the new control layers.".into()),
         Ok(_) => return fallback(requested, "Incompatible GNOME extension version.".into()),
         Err(_) => return fallback(requested, "Install and enable the TeachersPen GNOME extension, then restart TeachersPen.".into()),
     };
@@ -103,10 +105,12 @@ pub fn controls(app: &tauri::AppHandle) -> Result<Value> {
                     let state = handle.state::<crate::platform::ToolbarRegion>();
                     let rect = *state.0.lock().ok()?;
                     if let Some((left, top, width, height)) = rect {
-                        return Some(json!({"x":x+left,"y":y+top,"width":width,"height":height}));
+                        return Some(json!({"x":x+left,"y":y+top,"width":width,"height":height,
+                            "inputOnly":true,"windowRole":"teacherspen-toolbar","pid":std::process::id()}));
                     }
                 }
-                Some(json!({"x":x,"y":y,"width":gdk.width(),"height":gdk.height(),"inputOnly":window.label() == "pie"}))
+                Some(json!({"x":x,"y":y,"width":gdk.width(),"height":gdk.height(),"inputOnly":true,
+                    "windowRole":format!("teacherspen-{}", window.label()), "pid": std::process::id()}))
             }).collect();
         let _ = tx.send(Value::Array(controls));
     }).map_err(|e| e.to_string())?;

@@ -31,6 +31,7 @@ export default class TeachersPen extends Extension {
 
     enable() {
         this._owner = null;
+        this._controlClones = new Map();
         this._held = new Map(); this._holdGrab = null;
         this._areas = []; this._escape = 0; this._bindings = new Map(); this._state = null; this._controls = [];
         this._exported = Gio.DBusExportedObject.wrapJSObject(XML, this);
@@ -53,8 +54,9 @@ export default class TeachersPen extends Extension {
         this._lock = Main.sessionMode.connect('updated', () => {
             if (Main.sessionMode.isLocked) { this._reset(); this._emit({type: 'disconnected', error: 'Session locked. Restart TeachersPen after unlocking.'}); }
         });
-        this._overview = Main.overview.connect('showing', () => { this._stopDrawing(); for (const area of this._areas) area.actor.hide(); });
-        this._overviewHidden = Main.overview.connect('hidden', () => { for (const area of this._areas) area.actor.show(); });
+        this._overview = Main.overview.connect('showing', () => { this._clearControlClones(); this._stopDrawing(); for (const area of this._areas) area.actor.hide(); });
+        this._overviewHidden = Main.overview.connect('hidden', () => { for (const area of this._areas) area.actor.show(); this._updateControlClones(); });
+        this._windowMapped = global.window_manager.connect('map', () => this._updateControlClones());
         this._watchdog = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 1, () => {
             if (this._owner && GLib.get_monotonic_time() - this._lastPing > 6000000) {
                 this._reset(); this._emit({type: 'disconnected', error: 'TeachersPen connection timed out. Restart TeachersPen.'});
@@ -85,7 +87,7 @@ export default class TeachersPen extends Extension {
 
     _dispatch(op, args) {
         switch (op) {
-        case 'connect': this._lastPing = GLib.get_monotonic_time(); return {version: 2, holdAvailable: true};
+        case 'connect': this._lastPing = GLib.get_monotonic_time(); return {version: 2, holdAvailable: true, controlCompositing: true, extensionVersion: this.metadata.version};
         case 'screens': return Main.layoutManager.monitors.map((m, id) => {
             const area = Main.layoutManager.getWorkAreaForMonitor(id);
             return {id, bounds: {x: m.x, y: m.y, width: m.width, height: m.height},
@@ -124,6 +126,9 @@ export default class TeachersPen extends Extension {
         }
         case 'shortcuts': return this._shortcuts(args);
         case 'ping':
+            // GTK may report a mapped window before Mutter exposes its actor.
+            // Retry even when its geometry has not changed since broadcast.
+            this._updateControlClones();
             if (this._holdGrab && Main.modalCount > 1) this._cancelHolds();
             this._lastPing = GLib.get_monotonic_time();
             if (JSON.stringify(args) !== JSON.stringify(this._controls)) { this._controls = args; this._update(); }
@@ -212,7 +217,65 @@ export default class TeachersPen extends Extension {
             Math.max(work.y, work.y + work.height - 26 - height));
     }
 
+    _clearControlClone(role) {
+        const clone = this._controlClones.get(role);
+        if (!clone) return;
+        this._controlClones.delete(role);
+        const {actor, source, signals, opacity} = clone;
+        for (const id of signals) source.disconnect(id);
+        source.opacity = opacity;
+        actor.destroy();
+    }
+
+    _clearControlClones() {
+        for (const role of this._controlClones.keys()) this._clearControlClone(role);
+    }
+
+    _updateControlClones() {
+        const wanted = new Map();
+        if (this._state && !Main.overview.visible && !Main.sessionMode.isLocked) {
+            const windows = global.get_window_actors();
+            for (const control of this._controls) {
+                const role = control.windowRole;
+                if (!['teacherspen-toolbar', 'teacherspen-mini', 'teacherspen-timer-window',
+                    'teacherspen-preferences', 'teacherspen-pie'].includes(role)) continue;
+                if (role === 'teacherspen-pie' && !this._state.pie) continue;
+                const source = windows.find(actor => actor.meta_window.get_pid() === control.pid
+                    && actor.meta_window.get_role() === role && actor.visible);
+                if (source) wanted.set(role, source);
+            }
+        }
+        for (const [role, clone] of this._controlClones) {
+            if (wanted.get(role) !== clone.source) this._clearControlClone(role);
+        }
+        for (const [role, source] of wanted) {
+            if (this._controlClones.has(role)) continue;
+            // Keep the real window mapped for focus/input. Composite its live
+            // alpha content above the complete board and strokes, with no holes.
+            const actor = new Clutter.Clone({source, reactive: false});
+            actor.add_constraint(new Clutter.BindConstraint({source, coordinate: Clutter.BindCoordinate.ALL}));
+            this._addChrome(actor, false);
+            const opacity = source.opacity;
+            const signals = [
+                // A clone uses its own root opacity. Suppress the lower original
+                // so translucent corners and shadows are composited only once.
+                source.connect('notify::opacity', () => { if (source.opacity !== 0) source.opacity = 0; }),
+                source.connect('destroy', () => this._clearControlClone(role)),
+                source.connect('notify::visible', () => { if (!source.visible) this._clearControlClone(role); }),
+            ];
+            this._controlClones.set(role, {actor, source, signals, opacity});
+            source.opacity = 0;
+        }
+        // Existing controls must remain above newly created monitor surfaces;
+        // radial menus are last in the native controls list and paint on top.
+        for (const role of wanted.keys()) {
+            const actor = this._controlClones.get(role).actor;
+            actor.get_parent().set_child_above_sibling(actor, null);
+        }
+    }
+
     _update() {
+        this._updateControlClones();
         const drawing = this._state?.drawing && !Main.overview.visible && !Main.sessionMode.isLocked;
         const [x, y] = global.get_pointer();
         this._pointer = {x, y};
@@ -411,6 +474,7 @@ export default class TeachersPen extends Extension {
     }
 
     _reset() {
+        this._clearControlClones();
         this._stroke = null; this._pointer = null; this._state = null; this._controls = [];
         this._clearBindings();
         if (this._escape) {
@@ -434,6 +498,7 @@ export default class TeachersPen extends Extension {
     disable() {
         this._emit({type: 'disconnected', error: 'GNOME extension disabled. Restart TeachersPen or select X11/XWayland.'});
         this._detach();
+        global.window_manager.disconnect(this._windowMapped);
         global.display.disconnect(this._accelerator);
         global.stage.disconnect(this._keyCapture);
         Main.layoutManager.disconnect(this._monitors);

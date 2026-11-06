@@ -193,9 +193,13 @@ pub fn configure(w: &Window, role: &str) -> Result<()> {
     if role != "controller" {
         let window = w.clone();
         let handle = w.app_handle().clone();
+        let control_role = if ["toolbar", "mini", "timer-window", "preferences", "pie"].contains(&role) {
+            Some(format!("teacherspen-{}", w.label()))
+        } else { None };
         w.run_on_main_thread(move || {
             use gtk::prelude::*;
             if let Ok(gtk) = window.gtk_window() {
+                if let Some(ref role) = control_role { gtk.set_role(role); }
                 let resized = handle.clone();
                 gtk.connect_size_allocate(move |_, _| refresh_overlay_regions(&resized));
                 let mapped = handle.clone();

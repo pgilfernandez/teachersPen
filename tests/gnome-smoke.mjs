@@ -21,7 +21,8 @@ const pause = () => {
     loop.run();
 };
 pause();
-check(call('connect').version === 2, 'protocol version');
+const connectionInfo = call('connect');
+check(connectionInfo.version === 2 && connectionInfo.controlCompositing === true, 'protocol version and live control composition capability');
 const screens = call('screens');
 check(screens.length > 0 && screens[0].workArea.width > 0, 'logical monitors');
 call('create', {label: 'overlay-0'});
