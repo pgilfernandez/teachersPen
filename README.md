@@ -47,7 +47,7 @@ TeachersPen targets the following desktop systems:
 | --- | --- | --- |
 | **macOS** | macOS 11 Big Sur or later; Intel or Apple Silicon | `.dmg` |
 | **Windows** | Windows 10 or later; 64-bit Intel/AMD | `.exe` installer |
-| **Linux** | 64-bit Intel/AMD; X11 desktop and compatible system libraries | `.AppImage` or `.deb` |
+| **Linux** | 64-bit Intel/AMD; X11 or GNOME/Wayland desktop and compatible system libraries. GNOME/Wayland requires the TeachersPen GNOME extension. | `.AppImage` or `.deb` |
 
 Compatibility testing is still in progress across systems and devices. On Linux, the X11/XWayland backend has experimental Wayland support; a companion extension adds native drawing on GNOME 46 and 50 / Wayland (see below). Linux packages require WebKitGTK 4.1 (Ubuntu 22.04 or later).
 
