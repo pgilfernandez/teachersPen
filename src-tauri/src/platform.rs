@@ -264,7 +264,11 @@ pub fn configure(w: &Window, role: &str) -> Result<()> {
                 return;
             };
             let ns = ptr as id;
-            if role != "preferences" && role != "controller" {
+            if role == "preferences" {
+                // Preferences must stay above the annotation panels (1000–1004),
+                // including opaque boards, while remaining a normal focusable window.
+                let _: () = msg_send![ns,setLevel:1005i64];
+            } else if role != "controller" {
                 let level: i64 = if role == "pie" {
                     1004
                 } else if role == "overlay" {

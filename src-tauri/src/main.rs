@@ -191,7 +191,7 @@ fn create_window(app: &tauri::AppHandle, v: &Value) -> Result<()> {
         .shadow(role != "board-close" && (role == "preferences" || !cfg!(target_os = "windows")))
         .resizable(role == "preferences" || role == "board-close")
         .minimizable(!cfg!(target_os = "windows"))
-        .always_on_top(role != "preferences" && role != "controller")
+        .always_on_top(role != "controller")
         .skip_taskbar(if cfg!(any(target_os = "windows", target_os = "linux")) { role != "toolbar" } else { role != "preferences" })
         .disable_drag_drop_handler()
         .on_navigation(|url| {
