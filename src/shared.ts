@@ -68,20 +68,20 @@ export function getPieRadius(settings: Pick<Settings['pie'], 'radius' | 'buttonS
 
 export function defaults(): Settings {
   const keys: Partial<Record<Action, string>> = {
-    toggle: 'Space', freehand: 'A', line: 'D', arrow: 'F', rectangle: 'G', circle: 'H',
+    toggle: 'Space', freehand: 'A', line: 'G', arrow: 'F', rectangle: 'S', circle: 'H',
     color0: '1', color1: '2', color2: '3', color3: '4', color4: '5', color5: '6', color6: '7', color7: '8',
     undo: 'Z', redo: 'Y', clear: 'X', visible: 'C', timer: 'T', white: 'V', black: 'B',
-    nextColor: 'Q', pie: 'S', pie2: 'W'
+    nextColor: 'Q', pie: 'D', pie2: 'W'
   };
   return {
     linuxBackend: 'auto',
-    pie: { animationMs: 160, trigger: 'click', radius: 100, buttonSize: 48, hoverMs: 80, slots: ['freehand', 'line', 'arrow', 'black', 'visible', 'white', 'rectangle', 'circle'], slots2: ['color0', 'color1', 'color2', 'color3', 'color4', 'color5', 'color6', 'color7'] },
+    pie: { animationMs: 160, trigger: 'click', radius: 100, buttonSize: 48, hoverMs: 80, slots: ['freehand', 'line', 'arrow', 'showToolbar', 'visible', 'black', 'rectangle', 'circle'], slots2: ['color0', 'color1', 'color2', 'color3', 'color4', 'color5', 'color6', 'color7'] },
     language: 'en', followSystemLanguage: true, activation: 'toggle',
     toolbarMode: 'visible',
     toolbarOrientation: 'horizontal', drawingHints: true,
     width: 6, transparency: 0, colors: ['#ef4444', '#087bff', '#78cc00', '#e3cd00', '#be38f3', '#000000', '#c0c0c0', '#ffffff'], timerSeconds: 300,
     timerText: defaultTimerText('en'), timerColor: '#ffffff', timerDirection: 'down',
-    shortcuts: Object.fromEntries(actions.map(action => [action, action === 'rectangle' ? 'Control+G' : action === 'redo' ? 'Control+Alt+Shift+Z' : keys[action] ? `Control+Shift+${keys[action]}` : ''])) as Record<Action, string>
+    shortcuts: Object.fromEntries(actions.map(action => [action, action === 'redo' ? 'Control+Alt+Shift+Z' : keys[action] ? `Control+Shift+${keys[action]}` : ''])) as Record<Action, string>
   };
 }
 export function parseSettings(input: unknown): Settings {

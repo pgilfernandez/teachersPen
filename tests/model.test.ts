@@ -53,7 +53,7 @@ test('preferences from disk are bounded, validated and retain the exit shortcut'
 test('radial preferences migrate old settings and constrain untrusted slots', () => {
   const old = parseSettings({ width: 4, shortcuts: { arrow: 'Alt+A' } });
   assert.equal(old.shortcuts.arrow, 'Alt+A');
-  assert.equal(old.shortcuts.pie, 'Control+Shift+S');
+  assert.equal(old.shortcuts.pie, 'Control+Shift+D');
   assert.equal(old.pie.slots.length, 8);
   const parsed = parseSettings({ pie: { animationMs: -10, radius: 999, hoverMs: 9999, trigger: 'invalid', slots: ['undo', 'pie', 'bogus', null, 'color1', 'line', 'clear', 'redo', 'timer'] } });
   assert.deepEqual(parsed.pie, { animationMs: 0, radius: 220, buttonSize: 48, hoverMs: 1500, trigger: 'click', slots: ['undo', null, null, null, 'color1', 'line', 'clear', 'redo'], slots2: defaults().pie.slots2 });
@@ -86,12 +86,14 @@ test('both radial menus validate slots independently and support all eight color
 
 test('default shortcuts match the supplied configuration and preserve explicit unassignments', () => {
   const settings = defaults();
-  assert.equal(settings.shortcuts.line, 'Control+Shift+D');
+  assert.equal(settings.shortcuts.line, 'Control+Shift+G');
   assert.equal(settings.shortcuts.arrow, 'Control+Shift+F');
-  assert.equal(settings.shortcuts.rectangle, 'Control+G');
+  assert.equal(settings.shortcuts.rectangle, 'Control+Shift+S');
   assert.equal(settings.shortcuts.circle, 'Control+Shift+H');
   assert.equal(settings.shortcuts.redo, 'Control+Alt+Shift+Z');
-  assert.deepEqual(settings.pie.slots, ['freehand', 'line', 'arrow', 'black', 'visible', 'white', 'rectangle', 'circle']);
+  assert.equal(settings.shortcuts.pie, 'Control+Shift+D');
+  assert.equal(settings.shortcuts.pie2, 'Control+Shift+W');
+  assert.deepEqual(settings.pie.slots, ['freehand', 'line', 'arrow', 'showToolbar', 'visible', 'black', 'rectangle', 'circle']);
   assert.equal(parseSettings({ shortcuts: { color5: '' } }).shortcuts.color5, '');
 });
 
